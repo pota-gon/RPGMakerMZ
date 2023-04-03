@@ -66,8 +66,10 @@ https://opensource.org/licenses/mit-license.php
     }
     function Potadra_numberArray(data) {
         const arr = [];
-        for (const value of JSON.parse(data)) {
-            arr.push(Number(value));
+        if (data) {
+            for (const value of JSON.parse(data)) {
+                arr.push(Number(value));
+            }
         }
         return arr;
     }

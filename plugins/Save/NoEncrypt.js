@@ -60,7 +60,7 @@ https://opensource.org/licenses/mit-license.php
             return true;
         }
     }
-    function Potadra_isTest(play_test) {
+    function Potadra_isTest(play_test = true) {
         return !play_test || Utils.isOptionValid("test");
     }
 

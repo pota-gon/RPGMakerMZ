@@ -9,6 +9,9 @@
 ・アップデート情報
 - パラメータの詳細説明を修正
 
+・TODO
+1個のときの表示指定
+
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
 https://opensource.org/licenses/mit-license.php

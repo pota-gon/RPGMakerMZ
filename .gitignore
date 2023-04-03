@@ -18,6 +18,7 @@ plugins/*
 !plugins/Save
 !plugins/Shop
 !plugins/Skill
+!plugins/State
 !plugins/Switch
 !plugins/System
 !plugins/Title
@@ -27,6 +28,9 @@ plugins/Debug/PluginCount.js
 plugins/Debug/Test.js
 plugins/Event/ChangeWand.js
 plugins/Event/Info.js
+plugins/Level/HideReserveLevelUp.js
+plugins/Level/LevelCap.js
+plugins/Level/LevelUpSound.js
 plugins/Max/Max.js
 plugins/Max/MaxStatus.js
 plugins/Menu/CustomMenuCommand.js
@@ -35,5 +39,7 @@ plugins/Name/NameSkill.js
 plugins/Name/NameSwitch.js
 plugins/Neta/PluginScouter.js
 plugins/Save/StartDelete.js
+plugins/State/Shield.js
 plugins/System/LearningDevice.js
+plugins/System/Loading.js
 plugins/System/MoveSpeed.js

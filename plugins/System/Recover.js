@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-全回復 Ver1.0.4(2022/9/10)
+全回復 Ver1.0.5(2023/4/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Recover.js
 @orderAfter dsJobChangeMZ
@@ -8,7 +8,8 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+- ステート解除から除外する設定追加
+- 競合対策を実施
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -34,6 +35,12 @@ https://opensource.org/licenses/mit-license.php
 
 TPは、TP持ち越しの特徴がある場合のみ回復します。  
 ※ TP持ち越しがない場合は、回復はしていますがリセットされます。
+
+@param ExceptClearStates
+@type state[]
+@text 解除除外ステート
+@desc ステート解除から除外するステートを指定
+@default []
 
 @param BattleStartRecover
 @type boolean
@@ -271,6 +278,15 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
+    function Potadra_numberArray(data) {
+        const arr = [];
+        if (data) {
+            for (const value of JSON.parse(data)) {
+                arr.push(Number(value));
+            }
+        }
+        return arr;
+    }
     function Potadra_convertBool(bool) {
         if (bool === "false" || bool === '' || bool === undefined) {
             return false;
@@ -294,6 +310,7 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
+    const ExceptClearStates  = Potadra_numberArray(params.ExceptClearStates);
     const BattleStartRecover = Potadra_convertBool(params.BattleStartRecover);
     const StartRecoverSwitch = Number(params.StartRecoverSwitch || 0);
     const StartHpRecover     = Potadra_convertBool(params.StartHpRecover);
@@ -327,20 +344,31 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
     /**
      * 全回復
      */
-    Game_Actor.prototype.recoverAllTp = function(clear_states = true, hp_recover = true, mp_recover = true, tp_recover = true) {
+    function recoverAllTp(actor, clear_states = true, hp_recover = true, mp_recover = true, tp_recover = true) {
         if (clear_states) {
-            this.clearStates();
+            clearStates(actor);
         }
         if (hp_recover) {
-            this._hp = this.mhp;
+            actor._hp = actor.mhp;
         }
         if (mp_recover) {
-            this._mp = this.mmp;
+            actor._mp = actor.mmp;
         }
         if (tp_recover) {
-            this._tp = this.maxTp();
+            actor._tp = actor.maxTp();
         }
-    };
+    }
+
+    /**
+     * ステート情報をクリア
+     */
+    function clearStates(actor) {
+        for (const stateId of actor._states) {
+            if (!ExceptClearStates.includes(stateId)) {
+                actor.eraseState(stateId);
+            }
+        }
+    }
 
     /**
      * 戦闘開始
@@ -350,7 +378,7 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
             const _BattleManager_startBattle = BattleManager.startBattle;
             BattleManager.startBattle = function() {
                 $gameParty.battleMembers().forEach(function(actor) {
-                    actor.recoverAllTp(StartClearStates, StartHpRecover, StartMpRecover, StartTpRecover);
+                    recoverAllTp(actor, StartClearStates, StartHpRecover, StartMpRecover, StartTpRecover);
                 }, this);
                 _BattleManager_startBattle.apply(this, arguments);
             };
@@ -367,7 +395,7 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
             const _BattleManager_endBattle = BattleManager.endBattle;
             BattleManager.endBattle = function(result) {
                 $gameParty.battleMembers().forEach(function(actor) {
-                    actor.recoverAllTp(EndClearStates, EndHpRecover, EndMpRecover, EndTpRecover);
+                    recoverAllTp(actor, EndClearStates, EndHpRecover, EndMpRecover, EndTpRecover);
                 }, this);
                 _BattleManager_endBattle.apply(this, arguments);
             };
@@ -390,7 +418,7 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
 
                 // レベルアップした場合のみ回復
                 if (this._level > lastLevel) {
-                    this.recoverAllTp(LevelClearStates, LevelHpRecover, LevelMpRecover, LevelTpRecover);
+                    recoverAllTp(this, LevelClearStates, LevelHpRecover, LevelMpRecover, LevelTpRecover);
                 }
             };
 
@@ -408,7 +436,7 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
 
                 // レベルアップした場合のみ回復
                 if (this._level > lastLevel) {
-                    this.recoverAllTp(LevelClearStates, LevelHpRecover, LevelMpRecover, LevelTpRecover);
+                    recoverAllTp(this, LevelClearStates, LevelHpRecover, LevelMpRecover, LevelTpRecover);
                 }
             };
         }
@@ -425,14 +453,14 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
             const _Game_Actor_changeClass = Game_Actor.prototype.changeClass;
             Game_Actor.prototype.changeClass = function(classId, keepExp) {
                 _Game_Actor_changeClass.apply(this, arguments);
-                this.recoverAllTp(ClassClearStates, ClassHpRecover, ClassMpRecover, ClassTpRecover);
+                recoverAllTp(actor, ClassClearStates, ClassHpRecover, ClassMpRecover, ClassTpRecover);
             };
 
             if (dsJobChangeMZ) {
                 const _Game_Actor_changeClassEx = Game_Actor.prototype.changeClassEx;
                 Game_Actor.prototype.changeClassEx = function(classId, keepExp) {
                     _Game_Actor_changeClassEx.apply(this, arguments);
-                    this.recoverAllTp(ClassClearStates, ClassHpRecover, ClassMpRecover, ClassTpRecover);
+                    recoverAllTp(actor, ClassClearStates, ClassHpRecover, ClassMpRecover, ClassTpRecover);
                 };
             }
         }
@@ -448,7 +476,7 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
         if (Potadra_checkSwitch(TpRecoverSwitch)) {
             Game_Interpreter.prototype.command314 = function(params) {
                 this.iterateActorEx(params[0], params[1], actor => {
-                    actor.recoverAllTp();
+                    recoverAllTp(actor);
                 });
                 return true;
             };

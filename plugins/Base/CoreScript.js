@@ -1,16 +1,13 @@
 /*:
 @plugindesc
-コアスクリプト Ver0.5.0(2022/9/10)
+コアスクリプト Ver0.5.1(2023/4/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Base/CoreScript.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 開発版を公開
-
-・TODO
-- ヘルプ更新
+- 運ステート付加影響追加
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -88,6 +85,14 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
 @on 変更する
 @off 変更しない
 @default false
+
+@param EnableLukState
+@type boolean
+@text 運ステート付加影響
+@desc 運をステート付加に影響させるか
+@on 影響する
+@off 影響しない
+@default true
 */
 
 /*~struct~ItemList:
@@ -175,6 +180,7 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
     const isTopHelpMode      = Potadra_convertBool(params.isTopHelpMode);
     const isBottomButtonMode = Potadra_convertBool(params.isBottomButtonMode);
     const ChangeHitFormula   = Potadra_convertBool(params.ChangeHitFormula);
+    const EnableLukState     = Potadra_convertBool(params.EnableLukState);
 
     // 他プラグイン連携(プラグインの導入有無)
     const NameItem = Potadra_isPlugin('NameItem');
@@ -301,6 +307,19 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
          */
         Game_Action.prototype.itemEva = function(target) {
             return 0;
+        };
+    }
+
+    // 運ステート付加影響
+    if (!EnableLukState) {
+        /**
+         * 
+         *
+         * @param {} target - 
+         * @returns {} 
+         */
+        Game_Action.prototype.lukEffectRate = function(target) {
+            return 1;
         };
     }
 })();

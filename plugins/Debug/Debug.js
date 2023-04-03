@@ -158,7 +158,7 @@ ONのプラグインがない状態で、ゲームを起動可能になります
     function Potadra_isPlugin(plugin_name) {
         return PluginManager._scripts.includes(plugin_name);
     }
-    function Potadra_isTest(play_test) {
+    function Potadra_isTest(play_test = true) {
         return !play_test || Utils.isOptionValid("test");
     }
 

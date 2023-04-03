@@ -1,14 +1,14 @@
 /*:
 @plugindesc
-タイトル処理 Ver1.3.4(2022/9/10)
+タイトル処理 Ver1.3.5(2023/4/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Title/Title.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- ヘルプ修正
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+- タイトルの文字色を変更できる機能追加
+- バージョンID表示をデフォルト表示しないように修正
 
 ・TODO
 - ヘルプ更新
@@ -23,6 +23,12 @@ https://opensource.org/licenses/mit-license.php
 
 ## 使い方
 
+
+@param TitleColor
+@type color
+@text タイトル文字色
+@desc タイトルの文字色
+@default 0
 
 @param SelectOnlyNewGame
 @type boolean
@@ -87,7 +93,7 @@ https://opensource.org/licenses/mit-license.php
     @desc $dataSystem["versionId"]を表示するかの設定
     @on 表示する
     @off 表示しない
-    @default true
+    @default false
 
     @param VersionIdName
     @parent Version
@@ -116,6 +122,7 @@ https://opensource.org/licenses/mit-license.php
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
+    const TitleColor        = Number(params.TitleColor || 0);
     const SelectOnlyNewGame = Potadra_convertBool(params.SelectOnlyNewGame);
     const FixedTitle        = Potadra_convertBool(params.FixedTitle);
     const FixedTitleName    = String(params.FixedTitleName) || '';
@@ -158,6 +165,11 @@ https://opensource.org/licenses/mit-license.php
             bitmap.outlineColor = "black";
             bitmap.outlineWidth = 8;
             bitmap.fontSize = 72;
+
+            if (TitleColor !== 0) {
+                bitmap.textColor = ColorManager.textColor(TitleColor);
+            }
+
             bitmap.drawText(text, x, y, maxWidth, 48, "center");
         };
     }
@@ -168,9 +180,13 @@ https://opensource.org/licenses/mit-license.php
     const _Scene_Title_createForeground = Scene_Title.prototype.createForeground;
     Scene_Title.prototype.createForeground = function() {
         _Scene_Title_createForeground.apply(this, arguments);
+
+        // サブタイトルの描画
         if (SubTitle) {
             this.drawSubTitle();
         }
+
+        // バージョンの描画
         if (Version) {
             this.drawVersion();
         }
@@ -188,6 +204,7 @@ https://opensource.org/licenses/mit-license.php
         bitmap.outlineColor = 'black';
         bitmap.outlineWidth = 8;
         bitmap.fontSize = 36;
+        bitmap.textColor = ColorManager.normalColor();
         bitmap.drawText(text, x, y, maxWidth, 48, 'center');
     };
 
@@ -212,6 +229,7 @@ https://opensource.org/licenses/mit-license.php
         bitmap.outlineColor = 'black';
         bitmap.outlineWidth = 8;
         bitmap.fontSize = 24;
+        bitmap.textColor = ColorManager.normalColor();
         bitmap.drawText(text, x, y, maxWidth, 48);
     };
 })();

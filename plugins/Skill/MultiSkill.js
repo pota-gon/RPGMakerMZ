@@ -12,6 +12,7 @@
 
 ・TODO
 - ヘルプ更新
+- クールタイム・オーバーヒートの実装
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
