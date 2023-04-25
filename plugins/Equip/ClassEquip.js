@@ -56,7 +56,7 @@ https://opensource.org/licenses/mit-license.php
         width = width || 168;
         this.resetTextColor();
         let name = NoneClassName;
-        for (var index = 4; index <= 5; index++) {
+        for (let index = 4; index <= 5; index++) {
             const equips = actor.equips();
             const item   = equips[index];
 
