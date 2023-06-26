@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-プラグイン数カウント Ver1.0.0(2023/4/25)
+プラグイン数カウント Ver1.0.1(2023/6/26)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Debug/PluginCount.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 公開
+- コンソールログの出力方法を修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -53,9 +53,6 @@ https://opensource.org/licenses/mit-license.php
             return dir + '/';
         }
     }
-    function Potadra_info(message) {
-        if (Potadra_isTest()) console.info(message);
-    }
     function Potadra_isTest(play_test = true) {
         return !play_test || Utils.isOptionValid("test");
     }
@@ -79,8 +76,8 @@ https://opensource.org/licenses/mit-license.php
                 if (line.status) on_count++;
             }
         }
-        Potadra_info('総プラグイン数:' + line_count);
-        Potadra_info('ONになっているプラグイン数:' + on_count);
+        console.info('総プラグイン数:' + line_count);
+        console.info('ONになっているプラグイン数:' + on_count);
     }
 
     if (Potadra_isTest(PlayTest)) countPlugins();

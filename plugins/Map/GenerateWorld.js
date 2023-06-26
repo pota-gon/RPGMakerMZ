@@ -1,13 +1,21 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.5.4(2023/4/3)
+ワールド自動生成 Ver0.5.5(2023/6/26)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Map/GenerateWorld.js
+@orderAfter wasdKeyMZ
 @orderAfter GridScrollMap
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.5.5
+- 乗り物の座標を指定したときに、0,0座標に近い座標に移動してしまうバグ修正
+- ロンチプラグインの wasdKeyMZ.js と競合するため、順番をエラー表示するように修正
+- コマンドキーを変更出来なかったバグ修正
+- コマンドキーのワールド再生成キーのデフォルトを M => R に変更
+- コマンドキーのパラメータをコンボボックスに変更し、キーを選択できるように変更
+- コンソールログの出力方法を修正
 * Ver0.5.4
 - 巨大なマップ等でバイオームの判定が遅くなっていた問題を修正
 - デバッグ文をテストプレイ時のみコンソールに出力するように修正
@@ -201,17 +209,181 @@ https://github.com/pota-gon/GenerateWorld
 
     @param RegenerateKey
     @parent CommandKey
-    @type string
+    @type combo
     @text ワールド再生成
     @desc ワールド再生成のキー
-    @default M
+    @default R
+    @option A
+    @option B
+    @option C
+    @option D
+    @option E
+    @option F
+    @option G
+    @option H
+    @option I
+    @option J
+    @option K
+    @option L
+    @option M
+    @option N
+    @option O
+    @option P
+    @option Q
+    @option R
+    @option S
+    @option T
+    @option U
+    @option V
+    @option W
+    @option X
+    @option Y
+    @option Z
+    @option 0
+    @option 1
+    @option 2
+    @option 3
+    @option 4
+    @option 5
+    @option 6
+    @option 7
+    @option 8
+    @option 9
+    @option T0
+    @option T1
+    @option T2
+    @option T3
+    @option T4
+    @option T5
+    @option T6
+    @option T7
+    @option T8
+    @option T9
+    @option T*
+    @option T+
+    @option T-
+    @option T.
+    @option T/
+    @option :
+    @option ;
+    @option ,
+    @option -
+    @option .
+    @option /
+    @option @
+    @option [
+    @option \|
+    @option ]
+    @option ^
+    @option \_
+    @option F1
+    @option F2
+    @option F3
+    @option F4
+    @option F5
+    @option F6
+    @option F7
+    @option F8
+    @option F9
+    @option F10
+    @option F11
+    @option F12
+    @option BackSpace
+    @option Pause
+    @option 変換
+    @option 無変換
+    @option End
+    @option Home
+    @option Delete
 
     @param ExportJsonKey
     @parent CommandKey
-    @type string
+    @type combo
     @text マップJSON出力(イベントあり)
     @desc マップJSON出力のキー
     @default E
+    @option A
+    @option B
+    @option C
+    @option D
+    @option E
+    @option F
+    @option G
+    @option H
+    @option I
+    @option J
+    @option K
+    @option L
+    @option M
+    @option N
+    @option O
+    @option P
+    @option Q
+    @option R
+    @option S
+    @option T
+    @option U
+    @option V
+    @option W
+    @option X
+    @option Y
+    @option Z
+    @option 0
+    @option 1
+    @option 2
+    @option 3
+    @option 4
+    @option 5
+    @option 6
+    @option 7
+    @option 8
+    @option 9
+    @option T0
+    @option T1
+    @option T2
+    @option T3
+    @option T4
+    @option T5
+    @option T6
+    @option T7
+    @option T8
+    @option T9
+    @option T*
+    @option T+
+    @option T-
+    @option T.
+    @option T/
+    @option :
+    @option ;
+    @option ,
+    @option -
+    @option .
+    @option /
+    @option @
+    @option [
+    @option \|
+    @option ]
+    @option ^
+    @option \_
+    @option F1
+    @option F2
+    @option F3
+    @option F4
+    @option F5
+    @option F6
+    @option F7
+    @option F8
+    @option F9
+    @option F10
+    @option F11
+    @option F12
+    @option BackSpace
+    @option Pause
+    @option 変換
+    @option 無変換
+    @option End
+    @option Home
+    @option Delete
 
     @param OutputJsonKey
     @parent CommandKey
@@ -220,6 +392,88 @@ https://github.com/pota-gon/GenerateWorld
     @desc マップJSON出力のキー
     同一マップに出力する場合は、イベントも出力します
     @default O
+    @option A
+    @option B
+    @option C
+    @option D
+    @option E
+    @option F
+    @option G
+    @option H
+    @option I
+    @option J
+    @option K
+    @option L
+    @option M
+    @option N
+    @option O
+    @option P
+    @option Q
+    @option R
+    @option S
+    @option T
+    @option U
+    @option V
+    @option W
+    @option X
+    @option Y
+    @option Z
+    @option 0
+    @option 1
+    @option 2
+    @option 3
+    @option 4
+    @option 5
+    @option 6
+    @option 7
+    @option 8
+    @option 9
+    @option T0
+    @option T1
+    @option T2
+    @option T3
+    @option T4
+    @option T5
+    @option T6
+    @option T7
+    @option T8
+    @option T9
+    @option T*
+    @option T+
+    @option T-
+    @option T.
+    @option T/
+    @option :
+    @option ;
+    @option ,
+    @option -
+    @option .
+    @option /
+    @option @
+    @option [
+    @option \|
+    @option ]
+    @option ^
+    @option \_
+    @option F1
+    @option F2
+    @option F3
+    @option F4
+    @option F5
+    @option F6
+    @option F7
+    @option F8
+    @option F9
+    @option F10
+    @option F11
+    @option F12
+    @option BackSpace
+    @option Pause
+    @option 変換
+    @option 無変換
+    @option End
+    @option Home
+    @option Delete
 
     @param PlayTestKey
     @parent CommandKey
@@ -862,9 +1116,6 @@ https://github.com/pota-gon/GenerateWorld
             return false;
         }
     }
-    function Potadra_debug(message) {
-        if (Potadra_isTest()) console.debug(message);
-    }
     function Potadra_meta(meta, tag) {
         if (meta) {
             const data = meta[tag];
@@ -911,6 +1162,70 @@ https://github.com/pota-gon/GenerateWorld
         const day  = date.getFullYear() + '_' + (date.getMonth() + 1).padZero(2) + '_' + date.getDate().padZero(2);
         const time = date.getHours().padZero(2) + '_' + date.getMinutes().padZero(2) + '_' + date.getSeconds().padZero(2);
         return day + '_' + time;
+    }
+    function Potadra_keyCode(key) {
+        const key_mapper = {
+            'Tab': 9, 'Enter': 13, 'Shift': 16, 'Ctrl': 17, 'Alt': 18, 'Esc': 27, 'Space': 32,
+            'PageUp': 33, 'PageDown': 34, 'Left': 37, 'Up': 38, 'Right': 39, 'Down': 40, 'Insert': 45,
+            'A': 65,    'a': 65,
+            'B': 66,    'b': 66,
+            'C': 67,    'c': 67,
+            'D': 68,    'd': 68,
+            'E': 69,    'e': 69,
+            'F': 70,    'f': 70,
+            'G': 71,    'g': 71,
+            'H': 72,    'h': 72,
+            'I': 73,    'i': 73,
+            'J': 74,    'j': 74,
+            'K': 75,    'k': 75,
+            'L': 76,    'l': 76,
+            'M': 77,    'm': 77,
+            'N': 78,    'n': 78,
+            'O': 79,    'o': 79,
+            'P': 80,    'p': 80,
+            'Q': 81,    'q': 81,
+            'R': 82,    'r': 82,
+            'S': 83,    's': 83,
+            'T': 84,    't': 84,
+            'U': 85,    'u': 85,
+            'V': 86,    'v': 86,
+            'W': 87,    'w': 87,
+            'X': 88,    'x': 88,
+            'Y': 89,    'y': 89,
+            'Z': 90,    'z': 90,
+            '0': 48,    'T0': 96,
+            '1': 49,    'T1': 97,
+            '2': 50,    'T2': 98,
+            '3': 51,    'T3': 99,
+            '4': 52,    'T4': 100,
+            '5': 53,    'T5': 101,
+            '6': 54,    'T6': 102,
+            '7': 55,    'T7': 103,
+            '8': 56,    'T8': 104,
+            '9': 57,    'T9': 105,
+            'T*': 106,  'T+': 107, 'T-': 109, 'T.': 110, 'T/': 111,
+            ':': 186,   ';': 187, ',' : 188, '-': 189,
+            '.': 190,   '/': 191, '@': 192, '[': 192,
+            '\|': 220,  ']': 221, '^': 222, '\_': 226,
+            'F1': 112,  'f1': 112,
+            'F2': 113,  'f2': 113,
+            'F3': 114,  'f3': 114,
+            'F4': 115,  'f4': 115,
+            'F5': 116,  'f5': 116,
+            'F6': 117,  'f6': 117,
+            'F7': 118,  'f7': 118,
+            'F8': 119,  'f8': 119,
+            'F9': 120,  'f9': 120,
+            'F10': 121, 'f10': 121,
+            'F11': 122, 'f11': 122,
+            'F12': 123, 'f12': 123,
+            'BackSpace': 8, 'Pause': 19, '変換': 28, '無変換': 29, 'End': 35, 'Home': 36, 'Delete': 46,
+            'NumLock': 144, 'ScrollLock': 145, 'CapsLock': 240, 'ひらがな': 242, '半角/全角': 244,
+        };
+        const key_code = key_mapper[key];
+        const result = Object.keys(Input.keyMapper).find(code => Number(code) === key_code);
+        if (result) return false;
+        return key_code;
     }
     function PotadraAutoTile_FLOOR_AUTOTILE_TABLE() {
         return {
@@ -1255,8 +1570,8 @@ https://github.com/pota-gon/GenerateWorld
     function PotadraSpawn_setPositionVehicle(current_x, current_y, min_x = 0, min_y = 0, max_x = $dataMap.width, max_y = $dataMap.height) {
         let boats = PotadraSpawn_checkBoat(current_x, current_y, min_x, min_y, max_x, max_y);
         PotadraSpawn_checkShip(current_x, current_y, min_x, min_y, max_x, max_y, boats[0], boats[1]);
-        PotadraSpawn_checkAirShip(current_x, current_y, max_x, max_y);
-        PotadraSpawn_checkAirShip(min_x, min_y, max_x, max_y);
+        let move_airship = PotadraSpawn_checkAirShip(current_x, current_y, max_x, max_y);
+        if (!move_airship) PotadraSpawn_checkAirShip(min_x, min_y, current_x, current_y);
     }
     function PotadraSpawn_check(x, y, d) {
         const x2 = $gameMap.roundXWithDirection(x, d);
@@ -1272,18 +1587,24 @@ https://github.com/pota-gon/GenerateWorld
         }
         return true;
     }
+    function PotadraSpawn_isLandOk(x, y) {
+        return PotadraSpawn_check(x, y, 2) || PotadraSpawn_check(x, y, 4) || PotadraSpawn_check(x, y, 6) || PotadraSpawn_check(x, y, 8);
+    }
     function PotadraSpawn_checkBoat(current_x, current_y, min_x, min_y, max_x, max_y) {
-        if ($gameMap.boat()._mapId === $gameMap.mapId()) {
-            let boat_x = $dataSystem.boat.startX;
-            let boat_y = $dataSystem.boat.startY;
+        let boat = $gameMap.boat();
+        if (boat._mapId === $gameMap.mapId()) {
+            let boat_x = boat._x;
+            let boat_y = boat._y;
+            if ($gameMap.isBoatPassable(boat_x, boat_y) && PotadraSpawn_isLandOk(boat_x, boat_y) && !(boat_x === current_x && boat_y === current_y)) {
+                boat.setPosition(boat_x, boat_y);
+                return [boat_x, boat_y];
+            }
             for (let x = min_x; x < max_x; x++) {
                 for (let y = min_y; y < max_y; y++) {
                     if (x === current_x && y === current_y) continue;
-                    if ($gameMap.isBoatPassable(x, y) && (PotadraSpawn_check(x, y, 2) || PotadraSpawn_check(x, y, 4) || PotadraSpawn_check(x, y, 6) || PotadraSpawn_check(x, y, 8))) {
-                        $gameMap.boat().setPosition(x, y);
-                        boat_x = x;
-                        boat_y = y;
-                        return [boat_x, boat_y];
+                    if ($gameMap.isBoatPassable(x, y) && PotadraSpawn_isLandOk(x, y)) {
+                        boat.setPosition(x, y);
+                        return [x, y];
                     }
                 }
             }
@@ -1291,12 +1612,19 @@ https://github.com/pota-gon/GenerateWorld
         return [-1, -1];
     }
     function PotadraSpawn_checkShip(current_x, current_y, min_x, min_y, max_x, max_y, boat_x, boat_y) {
-        if ($gameMap.ship()._mapId === $gameMap.mapId()) {
+        let ship = $gameMap.ship();
+        if (ship._mapId === $gameMap.mapId()) {
+            let ship_x = ship._x;
+            let ship_y = ship._y;
+            if ($gameMap.isShipPassable(ship_x, ship_y) && PotadraSpawn_isLandOk(ship_x, ship_y) && !(ship_x === current_x && ship_y === current_y) && !(ship_x === boat_x && ship_y === boat_y)) {
+                ship.setPosition(ship_x, ship_y);
+                return true;
+            }
             for (let x = min_x; x < max_x; x++) {
                 for (let y = min_y; y < max_y; y++) {
                     if ( (x === current_x && y === current_y) || (x === boat_x && y === boat_y)) continue;
-                    if ($gameMap.isShipPassable(x, y) && (PotadraSpawn_check(x, y, 2) || PotadraSpawn_check(x, y, 4) || PotadraSpawn_check(x, y, 6) || PotadraSpawn_check(x, y, 8))) {
-                        $gameMap.ship().setPosition(x, y);
+                    if ($gameMap.isShipPassable(x, y) && PotadraSpawn_isLandOk(x, y)) {
+                        ship.setPosition(x, y);
                         return true;
                     }
                 }
@@ -1304,16 +1632,24 @@ https://github.com/pota-gon/GenerateWorld
         }
     }
     function PotadraSpawn_checkAirShip(min_x, min_y, max_x, max_y) {
-        if ($gameMap.airship()._mapId === $gameMap.mapId()) {
+        let airship = $gameMap.airship();
+        if (airship._mapId === $gameMap.mapId()) {
+            let air_x = airship._x;
+            let air_y = airship._y;
+            if ($gameMap.isAirshipLandOk(air_x, air_y)) {
+                airship.setPosition(air_x, air_y);
+                return true;
+            }
             for (let x = min_x; x < max_x; x++) {
                 for (let y = min_y; y < max_y; y++) {
                     if ($gameMap.isAirshipLandOk(x, y)) {
-                        $gameMap.airship().setPosition(x, y);
+                        airship.setPosition(x, y);
                         return true;
                     }
                 }
             }
         }
+        return false;
     }
 
 
@@ -1584,7 +1920,7 @@ https://github.com/pota-gon/GenerateWorld
         seed = Array.from(new Set(p.filter(Boolean).concat(seed)));
 
         let endTime = Date.now(); // 終了時間
-        Potadra_debug('シード設定時間: ' + (endTime - firstTime) + 'ms'); // 何ミリ秒かかったかを表示する
+        console.debug('シード設定時間: ' + (endTime - firstTime) + 'ms'); // 何ミリ秒かかったかを表示する
 
         let startTime = Date.now(); // 開始時間
 
@@ -1593,7 +1929,7 @@ https://github.com/pota-gon/GenerateWorld
             CustomBiome();
 
             endTime = Date.now(); // 終了時間
-            Potadra_debug('カスタムバイオーム判定時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
+            console.debug('カスタムバイオーム判定時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
         } else {
             // マップ初期化
             resetMap();
@@ -1602,7 +1938,7 @@ https://github.com/pota-gon/GenerateWorld
             setBiome(SEED_LENGTH, seed);
 
             endTime = Date.now(); // 終了時間
-            Potadra_debug('バイオーム設定時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
+            console.debug('バイオーム設定時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
         }
 
         // ワールド自動生成マップかどうかの判定
@@ -1618,7 +1954,7 @@ https://github.com/pota-gon/GenerateWorld
         fixWorld();
 
         endTime = Date.now(); // 終了時間
-        Potadra_debug('地形の整形時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
+        console.debug('地形の整形時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
 
         startTime = Date.now(); // 開始時間
 
@@ -1626,7 +1962,7 @@ https://github.com/pota-gon/GenerateWorld
         setAutoTile();
 
         endTime = Date.now(); // 終了時間
-        Potadra_debug('オートタイル配置時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
+        console.debug('オートタイル配置時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
 
         startTime = Date.now(); // 開始時間
 
@@ -1634,10 +1970,10 @@ https://github.com/pota-gon/GenerateWorld
         setEvents();
     
         endTime = Date.now(); // 終了時間
-        Potadra_debug('イベント設定配置時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
+        console.debug('イベント設定配置時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
 
         endTime = Date.now(); // 終了時間
-        Potadra_debug('マップ作成時間: ' + (endTime - firstTime) + 'ms'); // 何ミリ秒かかったかを表示する
+        console.debug('マップ作成時間: ' + (endTime - firstTime) + 'ms'); // 何ミリ秒かかったかを表示する
     }
 
     //==============================================================================
@@ -1765,7 +2101,7 @@ https://github.com/pota-gon/GenerateWorld
         4208: {'top_tile' : [[3200, 0, 1, 0], [3392, 0.3, 0.5, 1], [3488, 0.5, 1, 1]], 'bottom_tile' : [[3200, 0, -1, 0], [4208, 0, -1, 1]]}, // 穴
         4256: {'top_tile' : [[3200, 0, 1, 0], [4256, 0, 1, 1]], 'bottom_tile' : [[3200, 0, -1, 0]]}, // 丘（砂岩）
         4304: {'top_tile' : [[3968, 0, 1, 0], [4304, 0, 1, 1]], 'bottom_tile' : [[3968, 0, -1, 0]]} // 丘（雪）
-    }
+    };
 
     function MiniatureTileId(x, y, z = 0) {
         let tileId = _Game_Map_tileId.call(this, x, y, z);
@@ -1852,7 +2188,7 @@ https://github.com/pota-gon/GenerateWorld
                         } else if (BIOME[tile]) {
                             createBiome(x, y, BIOME[tile], SEED_LENGTH, seed);
                         } else {
-                            // Potadra_debug(tile);
+                            // console.debug(tile);
                         }
                     }
                 }
@@ -2160,7 +2496,7 @@ https://github.com/pota-gon/GenerateWorld
         // const BiomeTileSets   = Biome; // JSON.parse(Biome);
         // const tile_set        = BiomeTileSets.tile_set;
         // const biome_tile_sets = BiomeTileSets.biome_tile_sets;
-        // Potadra_debug(BiomeTileSets);
+        // console.debug(BiomeTileSets);
 
         const value = PotadraPerlinNoise_my_noise(x, y, seed_length, seed);
         TopTile(value, x, y, biome.top_tile);
@@ -2829,16 +3165,38 @@ https://github.com/pota-gon/GenerateWorld
     // コマンドキー
     //==============================================================================
     if (CommandKey && Potadra_isTest(PlayTestKey)) {
-        if (RegenerateKey === 'M') Input.keyMapper[77] = 'M';
-        if (ExportJsonKey === 'E') Input.keyMapper[69] = 'E';
-        if (OutputJsonKey === 'O') Input.keyMapper[79] = 'O';
+        let regenerate_code, export_json_code, output_json_code;
+        if (RegenerateKey) {
+            regenerate_code = Potadra_keyCode(RegenerateKey);
+            if (regenerate_code) {
+                Input.keyMapper[regenerate_code] = RegenerateKey;
+            } else {
+                console.warn('ワールド再生成のキーが競合しています。この機能を使う場合はプラグインパラメータから他のキーを指定してください。');
+            }
+        }
+        if (ExportJsonKey) {
+            export_json_code = Potadra_keyCode(ExportJsonKey);
+            if (export_json_code) {
+                Input.keyMapper[export_json_code] = ExportJsonKey;
+            } else {
+                console.warn('マップJSON出力(イベントあり)のキーが競合しています。この機能を使う場合はプラグインパラメータから他のキーを指定してください。');
+            }
+        }
+        if (OutputJsonKey) {
+            output_json_code = Potadra_keyCode(OutputJsonKey);
+            if (output_json_code) {
+                Input.keyMapper[output_json_code] = OutputJsonKey;
+            } else {
+                console.warn('マップJSON出力(イベントなし)のキーが競合しています。この機能を使う場合はプラグインパラメータから他のキーを指定してください。');
+            }
+        }
 
         const _Game_Player_triggerButtonAction = Game_Player.prototype.triggerButtonAction;
         Game_Player.prototype.triggerButtonAction = function() {
             const value = _Game_Player_triggerButtonAction.apply(this, arguments);
-            if (Input.isTriggered(RegenerateKey)) RegenerateWorld();
-            if (Input.isTriggered(ExportJsonKey)) JsonExport(SameMapExportJson, true);
-            if (Input.isTriggered(OutputJsonKey)) JsonExport(SameMapExportJson, false);
+            if (regenerate_code && Input.isTriggered(RegenerateKey)) RegenerateWorld();
+            if (export_json_code && Input.isTriggered(ExportJsonKey)) JsonExport(SameMapExportJson, true);
+            if (output_json_code && Input.isTriggered(OutputJsonKey)) JsonExport(SameMapExportJson, false);
             return value;
         };
     }

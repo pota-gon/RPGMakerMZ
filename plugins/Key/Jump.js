@@ -1,13 +1,14 @@
 /*:
 @plugindesc
-ジャンプ Ver1.0.0(2022/12/2)
+ジャンプ Ver1.0.1(2023/6/26)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Key/Jump.js
+@orderAfter wasdKeyMZ
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 公開
+- ロンチプラグインの wasdKeyMZ.js と競合するため、順番をエラー表示するように修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
