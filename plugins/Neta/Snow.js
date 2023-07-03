@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-雪オプション Ver1.0.2(2022/12/2)
+雪オプション Ver1.0.3(2023/7/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Neta/Snow.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- URLを修正
+- オプションの最大値の設定判定が想定より大きくなっていた問題を修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -60,9 +60,6 @@ https://opensource.org/licenses/mit-license.php
             return true;
         }
     }
-    function Potadra_isPlugin(plugin_name) {
-        return PluginManager._scripts.includes(plugin_name);
-    }
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
@@ -71,10 +68,7 @@ https://opensource.org/licenses/mit-license.php
     // 各パラメータ用定数
     const NewGameOption = Potadra_convertBool(params.NewGameOption);
     const Power         = Number(params.Power) || 5;
-    const OptionName    = String(params.OptionName) || '雪';    
-
-    const AutoSave = Potadra_isPlugin('AutoSave');
-    const Peaceful = Potadra_isPlugin('Peaceful');
+    const OptionName    = String(params.OptionName) || '雪';
 
     /**
      * オプションデータを生成して返す
@@ -107,12 +101,8 @@ https://opensource.org/licenses/mit-license.php
      */
     const _Scene_Options_maxCommands = Scene_Options.prototype.maxCommands;
     Scene_Options.prototype.maxCommands = function() {
-        const max_commands = _Scene_Options_maxCommands.apply(this, arguments);
-        let snow_max_commands = 8;
-        if (AutoSave) snow_max_commands++;
-        if (Peaceful) snow_max_commands++;
-        // Increase this value when adding option items.
-        return Math.max(snow_max_commands, max_commands);
+        let max_commands = _Scene_Options_maxCommands.apply(this, arguments);
+        return max_commands += 1;
     };
 
     /**

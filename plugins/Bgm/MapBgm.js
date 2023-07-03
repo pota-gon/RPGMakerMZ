@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-マップ戦闘BGM Ver1.2.6(2022/12/2)
+マップ戦闘BGM Ver1.2.7(2023/7/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Bgm/MapBgm.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- URLを修正
+- 戦闘終了ME停止が正しく動作していないバグ修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -83,13 +83,9 @@ https://opensource.org/licenses/mit-license.php
      */
     const _BattleManager_playVictoryMe = BattleManager.playVictoryMe;
     BattleManager.playVictoryMe = function() {
-        if (Potadra_checkSwitch(MapBgmSwitch)) {
-            if (StopVictoryMe) {
-                AudioManager.playMe($gameSystem.victoryMe());
-            }
-        } else {
-            _BattleManager_playVictoryMe.apply(this, arguments);
-        }
+        if (Potadra_checkSwitch(MapBgmSwitch) && StopVictoryMe) return true;
+        
+        _BattleManager_playVictoryMe.apply(this, arguments);
     };
 
     /**

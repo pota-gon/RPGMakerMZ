@@ -1,14 +1,13 @@
 /*:
 @plugindesc
-オートセーブオプション Ver1.0.4(2022/9/10)
+オートセーブオプション Ver1.0.5(2023/7/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Option/AutoSave.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- ヘルプ更新
-- TODO追加
+- オプションの最大値の設定判定が想定より大きくなっていた問題を修正
 
 ・TODO
 - ヘルプ更新
@@ -28,17 +27,8 @@ https://opensource.org/licenses/mit-license.php
 (() => {
     'use strict';
 
-    // ベースプラグインの処理
-    function Potadra_isPlugin(plugin_name) {
-        return PluginManager._scripts.includes(plugin_name);
-    }
-
     // 初期値
     ConfigManager.autoSave = false;
-
-    // 他プラグイン連携(プラグインの導入有無)
-    const Peaceful = Potadra_isPlugin('Peaceful');
-    const Snow     = Potadra_isPlugin('Snow');
 
     /**
      * オプションデータを生成して返す
@@ -71,12 +61,8 @@ https://opensource.org/licenses/mit-license.php
      */
     const _Scene_Options_maxCommands = Scene_Options.prototype.maxCommands;
     Scene_Options.prototype.maxCommands = function() {
-        const max_commands = _Scene_Options_maxCommands.apply(this, arguments);
-        let auto_save_max_commands = 8;
-        if (Peaceful) auto_save_max_commands++;
-        if (Snow) auto_save_max_commands++;
-        // Increase this value when adding option items.
-        return Math.max(auto_save_max_commands, max_commands);
+        let max_commands = _Scene_Options_maxCommands.apply(this, arguments);
+        return max_commands += 1;
     };
 
     /**

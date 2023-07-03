@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-Exp固定 Ver1.0.1(2022/9/10)
+Exp固定 Ver1.0.2(2023/7/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/FixedExp.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- TODO追加
+- 固定経験値が正しく反映されていなかったのを修正
 
 ・TODO
 - ヘルプ更新
@@ -53,6 +53,8 @@ https://opensource.org/licenses/mit-license.php
      * @param {number} level - レベル
      */
     Game_Actor.prototype.expForLevel = function(level) {
-        return FixedExp * level;
+        if (level === 1) return 0;
+
+        return FixedExp * (level - 1);
     };
 })();
