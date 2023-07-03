@@ -1,16 +1,13 @@
 /*:
 @plugindesc
-敵グループランダム決定 Ver1.3.8(2022/9/10)
+敵グループランダム決定 Ver1.3.9(2023/7/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/RandomTroop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 敵キャラを空中に配置できるタグ <空中> 追加
-- ヘルプ修正
-- meta データの取得処理を修正
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+- サイドビューで位置が指定されているモンスターを整列しないように修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -38,22 +35,34 @@ https://opensource.org/licenses/mit-license.php
 
 タグを指定しない場合は、 通常の敵グループとして扱われます。
 
-・<MIN:1>  
+<MIN:1>  
 敵キャラの最低出現数を1～8で指定します。
 
-・<MAX:1>  
+<MAX:1>  
 敵キャラの最大出現数を1～8で指定します。
 
-・<FIX:1>  
+<FIX:1>  
 固定する敵キャラを1～8で指定します。  
 1～8の順番は敵グループに追加した順番です。  
 最初に追加したものが、1番になります。
 
 ### メモ(敵キャラ)
 
-・<空中>  
+<空中>  
 こうもりなどの空中に飛んでいる敵を上部に表示します。  
 タグ名はパラメータで変更可能です。
+
+### サイドビューでの設定について
+フロントビュー用のプラグインであるため、
+サイドビューの整列機能は実装の予定はありません。
+
+※ 注意
+敵グループで設定したモンスター数より、<MAX:X>で指定したXの値が大きい場合、
+超過したモンスターについては、フロントビュー用の整列で配置が決定します。
+
+砂川さんの NRP_TroopRandomFormation.js を使用することで、
+サイドビューでも配置を整列出来るため、そちらをご利用ください。
+https://newrpg.seesaa.net/article/475049887.html
 
 @param SkyName
 @type string
@@ -154,10 +163,14 @@ https://opensource.org/licenses/mit-license.php
             }
 
             // 抽選する敵キャラのIDを配列に格納
-            let ary = [];
+            let ary   = [];
+            let ary_x = [];
+            let ary_y = [];
             for (const member of members) {
                 if ($dataEnemies[member.enemyId]) {
                     ary.push(member.enemyId);
+                    ary_x.push(member.x);
+                    ary_y.push(member.y);
                 }
             }
 
@@ -190,6 +203,10 @@ https://opensource.org/licenses/mit-license.php
                     enemyId = ary[Math.floor(Math.random() * ary.length)];
                 }
                 let x = first + (first * i) * 2;
+                if ($gameSystem.isSideView()) {
+                    if (ary_x[i]) x = ary_x[i];
+                    if (ary_y[i]) y = ary_y[i];
+                }
                 const enemy = new Game_Enemy(enemyId, x, y);
 
                 // Y座標指定
