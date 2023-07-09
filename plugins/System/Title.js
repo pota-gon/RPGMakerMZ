@@ -1,14 +1,14 @@
 /*:
 @plugindesc
-タイトル処理 Ver1.3.5(2023/4/3)
+タイトル処理 Ver1.4.0(2023/7/9)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Title/Title.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Title.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- タイトルの文字色を変更できる機能追加
-- バージョンID表示をデフォルト表示しないように修正
+- 固定タイトルとサブタイトルの設定を簡易化
+- タイトルの文字色がタイトル固定表示しか有効になっていなかったのを修正
 
 ・TODO
 - ヘルプ更新
@@ -39,30 +39,14 @@ https://opensource.org/licenses/mit-license.php
 @default false
 
 @param FixedTitle
-@type boolean
-@text タイトル固定表示
-@desc タイトルの固定表示を使用するかの設定
-@on 表示する
-@off 表示しない
-@default false
-
-    @param FixedTitleName
-    @parent FixedTitle
-    @text 固定タイトル
-    @desc 固定タイトルの表示内容
+@text 固定タイトル
+@desc 固定タイトルの表示内容
+空文字で固定タイトルは使用しません
 
 @param SubTitle
-@type boolean
-@text サブタイトル表示
-@desc サブタイトルを表示するかの設定
-@on 表示する
-@off 表示しない
-@default false
-
-    @param SubTitleName
-    @parent SubTitle
-    @text サブタイトル
-    @desc サブタイトルの表示内容
+@text サブタイトル
+@desc サブタイトルの表示内容
+空文字でサブタイトルは表示しません
 
 @param Version
 @type boolean
@@ -124,10 +108,8 @@ https://opensource.org/licenses/mit-license.php
     // 各パラメータ用変数
     const TitleColor        = Number(params.TitleColor || 0);
     const SelectOnlyNewGame = Potadra_convertBool(params.SelectOnlyNewGame);
-    const FixedTitle        = Potadra_convertBool(params.FixedTitle);
-    const FixedTitleName    = String(params.FixedTitleName) || '';
-    const SubTitle          = Potadra_convertBool(params.SubTitle);
-    const SubTitleName      = String(params.SubTitleName) || '';
+    const FixedTitle        = String(params.FixedTitle);
+    const SubTitle          = String(params.SubTitle);
     const Version           = Potadra_convertBool(params.Version);
     const VersionName       = String(params.VersionName) || 'ver';
     const VersionPos        = Number(params.VersionPos || 1);
@@ -159,7 +141,28 @@ https://opensource.org/licenses/mit-license.php
             const x = 20;
             const y = Graphics.height / 4;
             const maxWidth = Graphics.width - x * 2;
-            const text = FixedTitleName;
+            const text = FixedTitle;
+            const bitmap = this._gameTitleSprite.bitmap;
+            bitmap.fontFace = $gameSystem.mainFontFace();
+            bitmap.outlineColor = "black";
+            bitmap.outlineWidth = 8;
+            bitmap.fontSize = 72;
+
+            if (TitleColor !== 0) {
+                bitmap.textColor = ColorManager.textColor(TitleColor);
+            }
+
+            bitmap.drawText(text, x, y, maxWidth, 48, "center");
+        };
+    } else {
+        /**
+         * ゲームタイトルの描画
+         */
+        Scene_Title.prototype.drawGameTitle = function() {
+            const x = 20;
+            const y = Graphics.height / 4;
+            const maxWidth = Graphics.width - x * 2;
+            const text = $dataSystem.gameTitle;
             const bitmap = this._gameTitleSprite.bitmap;
             bitmap.fontFace = $gameSystem.mainFontFace();
             bitmap.outlineColor = "black";
@@ -199,7 +202,7 @@ https://opensource.org/licenses/mit-license.php
         const x = 20;
         const y = Graphics.height / 4 + 70;
         const maxWidth = Graphics.width - x * 2;
-        const text = SubTitleName;
+        const text = SubTitle;
         const bitmap = this._gameTitleSprite.bitmap;
         bitmap.outlineColor = 'black';
         bitmap.outlineWidth = 8;

@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-ファストトラベル Ver0.9.5(2022/12/2)
+ファストトラベル Ver0.9.6(2023/7/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Map/FastTravel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 変数が0番のときにも変数を設定してしまうバグ修正
+- メニュー表示名の設定をコンボボックスに変更
 
 ・TODO
 - 右にコマンド配置
@@ -27,10 +27,12 @@ https://opensource.org/licenses/mit-license.php
 ## 使い方
 
 @param MenuCommand
+@type combo
 @text メニュー表示名
 @desc メニューの表示名
 空文字でメニューに表示しません
 @default ファストトラベル
+@option ファストトラベル
 
     @param MenuSwitch
     @parent MenuCommand

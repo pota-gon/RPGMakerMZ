@@ -2,7 +2,7 @@
 @plugindesc
 雪オプション Ver1.0.3(2023/7/3)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Neta/Snow.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Option/Snow.js
 @target MZ
 @author ポテトードラゴン
 

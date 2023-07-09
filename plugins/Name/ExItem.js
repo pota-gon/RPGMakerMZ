@@ -1,15 +1,12 @@
 /*:
 @plugindesc
-アイテム名参照制御文字 Ver1.2.4(2022/9/10)
+アイテム名参照制御文字 Ver1.2.5(2023/7/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Name/ExItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 検索時のバグ修正
-
-・TODO
 - ヘルプ更新
 
 Copyright (c) 2023 ポテトードラゴン
@@ -21,7 +18,11 @@ https://opensource.org/licenses/mit-license.php
 アイテム名を参照する制御文字 \II を追加します。
 
 ## 使い方
+\II[ポーション] のようにアイテム名を記載すると、
+[アイコン]ポーション のようにアイコンとアイテム名が表示されるようになります。
 
+アイテム名には、武器や防具も指定することが出来ます。
+同じアイテム名がある場合は、最初に見つけたアイテム名が表示されます。
 */
 (() => {
     'use strict';
