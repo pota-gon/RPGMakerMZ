@@ -1,16 +1,14 @@
 /*:
 @plugindesc
-ドロップアイテム個数表示 Ver1.3.5(2022/9/10)
+ドロップアイテム個数表示 Ver1.3.6(2023/7/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/DropItemCount.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- パラメータの詳細説明を修正
-
-・TODO
-1個のときの表示指定
+- アイテムの入手数が1個のとき、メッセージを変更できる機能追加
+- ヘルプ修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -20,12 +18,9 @@ https://opensource.org/licenses/mit-license.php
 ## 概要
 ドロップアイテムの個数をまとめて表示します。
 
+## 使い方
 同じアイテムを複数落としたときの表示が簡易化されます。  
 細かい表示内容はパラメータで変更することも出来ます。
-
-## 使い方
-初期設定は必要ありません。  
-プラグイン導入だけで動作します。
 
 ### 導入前
 ポーションを手に入れた！  
@@ -41,6 +36,13 @@ https://opensource.org/licenses/mit-license.php
 @desc アイテム入手時のメッセージ。無記入の場合、表示しません
 %1: アイコン番号 %2: アイテム名 %3: 個数
 @default \I[%1]%2を%3個手に入れた！
+
+@param OneItemMessage
+@type multiline_string
+@text アイテム1個時入手メッセージ
+@desc アイテムが1個のときの入手時のメッセージ。無記入の場合、
+使用しません。%1: アイコン番号 %2: アイテム名 %3: 個数
+@default 
 */
 (() => {
     'use strict';
@@ -57,6 +59,7 @@ https://opensource.org/licenses/mit-license.php
 
     // 各パラメータ用変数
     const ObtainItemMessage = String(params.ObtainItemMessage);
+    const OneItemMessage    = String(params.OneItemMessage);
 
     /**
      * 戦闘の進行を管理する静的クラスです。
@@ -92,7 +95,9 @@ https://opensource.org/licenses/mit-license.php
                 if (item) {
                     // 同じアイテムを重複して表示しないようにする
                     if (gain_items.indexOf(item) == -1) {
-                        if (ObtainItemMessage) {
+                        if (OneItemMessage && item_counts[item.name] === 1) {
+                            $gameMessage.add(OneItemMessage.format(item.iconIndex, item.name, item_counts[item.name]));
+                        } else if (ObtainItemMessage) {
                             $gameMessage.add(ObtainItemMessage.format(item.iconIndex, item.name, item_counts[item.name]));
                         }
                         gain_items.push(item);
