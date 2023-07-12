@@ -1,15 +1,13 @@
 /*:
 @plugindesc
-名前データベース Ver0.10.5(2022/9/10)
+名前データベース Ver0.10.6(2023/7/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- アクター初期装備で二刀流を可能にする装備を付けたときに、装備が外れることがある問題を修正
-- 検索時のバグ修正
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+- アクターにスキル習得できるメモ設定<スキル,1,ヒール>を追加
 
 ・TODO
 - ヘルプ更新
@@ -106,8 +104,7 @@ https://opensource.org/licenses/mit-license.php
         }
         return false;
     }
-    function Potadra_learnings(actor) {
-        const data = Potadra_metaData(actor.currentClass().meta['スキル']);
+    function Potadra_learning(data) {
         const learnings = [];
         if (data) {
             for (const value of data) {
@@ -121,6 +118,11 @@ https://opensource.org/licenses/mit-license.php
             }
         }
         return learnings;
+    }
+    function Potadra_learnings(actor) {
+        const actor_data = Potadra_metaData(actor.actor().meta['スキル']);
+        const class_data = Potadra_metaData(actor.currentClass().meta['スキル']);
+        return Potadra_learning(actor_data).concat(Potadra_learning(class_data));
     }
 
     // パラメータ用変数

@@ -1,17 +1,13 @@
 /*:
 @plugindesc
-レベル上限突破 Ver0.14.1(2022/9/10)
+レベル上限突破 Ver0.14.2(2023/7/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Max/MaxLevel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 初期レベルを指定できる機能追加
-- meta データの取得処理を修正
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
-
-・TODO
+- アクター初期値メモ設定追加
 - ヘルプ更新
 
 Copyright (c) 2023 ポテトードラゴン
@@ -23,7 +19,38 @@ https://opensource.org/licenses/mit-license.php
 レベルの上限を変更します。
 
 ## 使い方
+アクターのメモ欄に以下のいずれかのメモを記載します。
 
+### レベル設定
+アクターの初期レベルと最大レベルをメモ欄で設定できます。  
+データベースの設定より、こちらのレベル設定が優先されます。  
+省略した場合は、データベースの設定が適用されます。
+
+<初期レベル:1>
+=> 初期レベルを 1 にする。
+
+<最大レベル:99>
+=> 最大レベルを 99 にする。
+
+### 能力値設定
+初期値と成長率を設定します。職業の能力値設定は無効になり、  
+アクターのメモ欄で設定するようになります。
+
+<初期値:120,120,15,15,15,15,15,15>
+=> アクターの初期値を HP,MP,攻撃力,防御力,魔法力,魔法防御,敏捷性,運 
+   で指定します。レベルごとの成長率は、HP・MPが10、他の能力値は1
+
+※ メモ欄未記載の場合
+=> アクターの初期値を HP・MP: 100 他の能力値は 10 で指定します。
+   レベルごとの成長率は、HP・MPが10、他の能力値は1
+
+<モブ>
+=> アクターの初期値を HP・MP: 50 他の能力値は 5 で指定します。
+   レベルごとの成長率は、HP・MPが10、他の能力値は1
+
+<ザコ>
+=> アクターの初期値を HP・MP: 10 他の能力値は 1 で指定します。
+   レベルごとの成長率は、HP・MPが10、他の能力値は1
 
 @param MinLevel
 @type number
@@ -34,6 +61,14 @@ https://opensource.org/licenses/mit-license.php
 @max 999999999999999
 @min 0
 
+    @param MinLevelName
+    @parent MinLevel
+    @type string
+    @text 初期レベル名称
+    @desc アクターのメモに記載するメタデータ(<初期レベル>)の名称
+          データベースの設定より、こちらのレベル設定が優先されます
+    @default 初期レベル
+
 @param MaxLevel
 @type number
 @text 最大レベル
@@ -42,6 +77,21 @@ https://opensource.org/licenses/mit-license.php
 @default 9999
 @max 999999999999999
 @min 0
+
+    @param MaxLevelName
+    @parent MaxLevel
+    @type string
+    @text 最大レベル名称
+    @desc アクターのメモに記載するメタデータ(<最大レベル>)の名称
+          データベースの設定より、こちらのレベル設定が優先されます
+    @default 最大レベル
+
+@param InitName
+@type string
+@text 初期値名称
+@desc アクターのメモに記載するメタデータ(<初期値>)の名称
+      レベルごとの成長率は、HP・MPが10、他の能力値は1
+@default 初期値
 
 @param SmallFishName
 @type string
@@ -158,8 +208,7 @@ https://opensource.org/licenses/mit-license.php
     function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
         return Potadra_search(data, name, column, search_column, val, initial);
     }
-    function Potadra_learnings(actor) {
-        const data = Potadra_metaData(actor.currentClass().meta['スキル']);
+    function Potadra_learning(data) {
         const learnings = [];
         if (data) {
             for (const value of data) {
@@ -174,6 +223,11 @@ https://opensource.org/licenses/mit-license.php
         }
         return learnings;
     }
+    function Potadra_learnings(actor) {
+        const actor_data = Potadra_metaData(actor.actor().meta['スキル']);
+        const class_data = Potadra_metaData(actor.currentClass().meta['スキル']);
+        return Potadra_learning(actor_data).concat(Potadra_learning(class_data));
+    }
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
@@ -182,6 +236,9 @@ https://opensource.org/licenses/mit-license.php
     // 各パラメータ用変数
     const MinLevel       = Number(params.MinLevel || 1);
     const MaxLevel       = Number(params.MaxLevel || 9999);
+    const MinLevelName   = String(params.MinLevelName || '初期レベル');
+    const MaxLevelName   = String(params.MaxLevelName || '最大レベル');
+    const InitName       = String(params.InitName || '初期値');
     const SmallFishName  = String(params.SmallFishName || 'ザコ');
     const MobName        = String(params.MobName || 'モブ');
     const MaxLevelMenu   = Potadra_convertBool(params.MaxLevelMenu);
@@ -222,8 +279,8 @@ https://opensource.org/licenses/mit-license.php
     Game_Actor.prototype.setup = function(actorId) {
         _Game_Actor_setup.apply(this, arguments);
         const actor = this.actor(); // $dataActors[actorId];
-        const min_level_str = Potadra_meta(actor.meta, '初期レベル');
-        const max_level_str = Potadra_meta(actor.meta, '最大レベル');
+        const min_level_str = Potadra_meta(actor.meta, MinLevelName);
+        const max_level_str = Potadra_meta(actor.meta, MaxLevelName);
         let min_level = min_level_str ? Number(min_level_str) : MinLevel;
         let max_level = max_level_str ? Number(max_level_str) : MaxLevel;
         if (min_level > max_level) min_level = max_level;
@@ -242,7 +299,7 @@ https://opensource.org/licenses/mit-license.php
      * @returns {}
      */
     Game_Actor.prototype.maxLevel = function() {
-        const max_level_str = Potadra_meta(this.actor().meta, '最大レベル');
+        const max_level_str = Potadra_meta(this.actor().meta, MaxLevelName);
         let max_level = max_level_str ? Number(max_level_str) : MaxLevel;
         if (max_level === 0) {
             max_level = Infinity;
@@ -271,15 +328,17 @@ https://opensource.org/licenses/mit-license.php
      * @returns {}
      */
     Game_Actor.prototype.paramBase = function(paramId) {
-        const data = Potadra_metaData(this.actor().meta[TextManager.param(paramId)], ',');
+        const actor = this.actor();
+        const data = Potadra_metaData(actor.meta[TextManager.param(paramId)], ',');
         let init_param, param; // 初期値, 増加値
 
         if (data) {
             init_param = Number(data[0]);
             param      = Number(data[1]);
         } else {
-            const small_fish = Potadra_meta(this.actor().meta, SmallFishName);
-            const mob        = Potadra_meta(this.actor().meta, MobName);
+            const init_params = Potadra_metaData(actor.meta[InitName], ',');
+            const small_fish  = Potadra_meta(actor.meta, SmallFishName);
+            const mob         = Potadra_meta(actor.meta, MobName);
             if (paramId == 0 || paramId == 1) {
                 param = 10;
                 if (small_fish) {
@@ -299,6 +358,8 @@ https://opensource.org/licenses/mit-license.php
                     init_param = 10;
                 }
             }
+
+            if (init_params) init_param = Number(init_params[paramId]);
         }
 
         return init_param + (param * (this._level - 1));

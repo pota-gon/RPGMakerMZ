@@ -2,7 +2,7 @@
 @plugindesc
 敵キャラレベル追加 Ver0.13.4(2022/12/2)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Level/EnemyLevel.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Other/EnemyLevel.js
 @target MZ
 @author ポテトードラゴン
 
