@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-コアスクリプト Ver0.5.1(2023/4/3)
+コアスクリプト Ver0.5.2(2023/7/30)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Base/CoreScript.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 運ステート付加影響追加
+- 控えメンバーの経験値獲得率を変更するパラメータ追加
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -93,6 +93,14 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
 @on 影響する
 @off 影響しない
 @default true
+
+@param ExpRate
+@type number
+@text 経験値獲得率
+@desc 控えメンバーの経験獲得率
+@decimals 2
+@default 1.0
+@min 0
 */
 
 /*~struct~ItemList:
@@ -181,6 +189,7 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
     const isBottomButtonMode = Potadra_convertBool(params.isBottomButtonMode);
     const ChangeHitFormula   = Potadra_convertBool(params.ChangeHitFormula);
     const EnableLukState     = Potadra_convertBool(params.EnableLukState);
+    const ExpRate            = Number(params.ExpRate) || 1;
 
     // 他プラグイン連携(プラグインの導入有無)
     const NameItem = Potadra_isPlugin('NameItem');
@@ -322,4 +331,13 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
             return 1;
         };
     }
+
+    /**
+     * 控えメンバーの経験獲得率を取得
+     *
+     * @returns {number} 控えメンバーの経験獲得率
+     */
+    Game_Actor.prototype.benchMembersExpRate = function() {
+        return $dataSystem.optExtraExp ? ExpRate : 0;
+    };
 })();

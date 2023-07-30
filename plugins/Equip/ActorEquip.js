@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-アクター装備 Ver1.0.1(2022/12/2)
+アクター装備 Ver1.0.2(2023/7/30)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Equip/ActorEquip.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- ヘルプ更新
+- 装備スロット変更(ChangeSlot.js)の種別タグ追加による競合を修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -215,9 +215,7 @@ https://opensource.org/licenses/mit-license.php
      */
     Game_Actor.prototype.bestEquipItem = function(slotId) {
         const etypeId = this.equipSlots()[slotId];
-        const items = $gameParty
-            .equipItems()
-            .filter(item => item.etypeId === etypeId && this.canEquip(item) && (checkActor(this.actorId(), etypeId, item)) && onlyEquip(this, item));
+        const items = this.PotadraEquipItems(slotId, etypeId);
         let bestItem = null;
         let bestPerformance = -1000;
         for (let i = 0; i < items.length; i++) {
@@ -228,5 +226,15 @@ https://opensource.org/licenses/mit-license.php
             }
         }
         return bestItem;
+    };
+    if (typeof Game_Actor.prototype.PotadraEquipItems !== 'function') {
+        Game_Actor.prototype.PotadraEquipItems = function(slotId, etypeId) {
+            return $gameParty.equipItems().filter(item => item.etypeId === etypeId && this.canEquip(item));
+        };
+    }
+    const _Game_Actor_PotadraEquipItems = Game_Actor.prototype.PotadraEquipItems;
+    Game_Actor.prototype.PotadraEquipItems = function(slotId, etypeId) {
+        const items = _Game_Actor_PotadraEquipItems_apply(this, arguments);
+        return items.filter(item => checkActor(this.actorId(), etypeId, item) && onlyEquip(this, item));
     };
 })();

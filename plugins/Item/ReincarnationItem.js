@@ -1,16 +1,15 @@
 /*:
 @plugindesc
-転生アイテム Ver1.1.5(2022/12/2)
+転生アイテム Ver1.2.0(2023/7/30)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Item/ReincarnationItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- URLを修正
-
-・TODO
-- 転生後のレベル指定
+- 転生後のレベルを指定できるように修正
+- 転生後のパラメータをメモ欄で設定できるように変更
+- 競合対策追加
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -21,91 +20,60 @@ https://opensource.org/licenses/mit-license.php
 メモ欄のタグで指定したレベルで使用可能になる転生アイテムを追加します。
 
 ## 使い方
-1. 転生用アイテムを作成  
-2. メモに <転生:転生可能なレベル> を指定  
-<転生:99> で レベル99 で転生可能になる  
-3. パラメータから、転生後の能力値の増加率のレートを設定します。  
-デフォルトは、すべて 現在の能力の 1/10 が加算されます。
+1. 転生用アイテムを作成します。  
+2. アイテムのメモ欄に以下のメモを記載します。  
 
-転生後は、レベル1 になります。
+<転生:99,1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1>
+=> 転生の設定を
+転生可能Lv,転生後Lv,最大HP,最大MP,攻撃力,防御力,魔法力,魔法防御,敏捷性,運
+で指定します。
+
+・転生可能Lv  
+転生可能になるレベルを指定します。
+
+・転生後Lv  
+転生アイテムを使った後のレベルを指定します。
+
+・最大HP  
+転生後に加算される最大HPを指定します。  
+転生後、アクターの最大HP × このパラメータ が加算されます。
+
+・最大MP  
+転生後に加算される最大MPを指定します。  
+転生後、アクターの最大MP × このパラメータ が加算されます。
+
+・攻撃力  
+転生後に加算される攻撃力を指定します。  
+転生後、アクターの攻撃力 × このパラメータ が加算されます。
+
+・防御力  
+転生後に加算される防御力を指定します。  
+転生後、アクターの防御力 × このパラメータ が加算されます。
+
+・魔法力  
+転生後に加算される魔法力を指定します。  
+転生後、アクターの魔法力 × このパラメータ が加算されます。
+
+・魔法防御  
+転生後に加算される魔法防御を指定します。  
+転生後、アクターの魔法防御 × このパラメータ が加算されます。
+
+・敏捷性  
+転生後に加算される敏捷性を指定します。  
+転生後、アクターの敏捷性 × このパラメータ が加算されます。
+
+・運  
+転生後に加算される運を指定します。  
+転生後、アクターの運 × このパラメータ が加算されます。
+
+転生後の能力値の増加率のレートは、0.1 にすると、  
+現在の能力の 1/10 が加算されます。
 
 @param ReincarnationMetaName
 @text 転生タグ
 @desc メモ欄のタグ名
 空文字の場合は、 "転生" になります
 @default 転生
-
-@param MHP
-@type number
-@text 転生後最大HP
-@desc 転生後に加算される最大HP
-転生後、アクターの最大HP × このパラメータ が加算されます
-@decimals 2
-@default 0.1
-@min 0
-
-@param MMP
-@type number
-@text 転生後最大MP
-@desc 転生後に加算される最大MP
-転生後、アクターの最大MP × このパラメータ が加算されます
-@decimals 2
-@default 0.1
-@min 0
-
-@param ATK
-@type number
-@text 転生後攻撃力
-@desc 転生後に加算される攻撃力
-転生後、アクターの攻撃力 × このパラメータ が加算されます
-@decimals 2
-@default 0.1
-@min 0
-
-@param DEF
-@type number
-@text 転生後防御力
-@desc 転生後に加算される防御力
-転生後、アクターの防御力 × このパラメータ が加算されます
-@decimals 2
-@default 0.1
-@min 0
-
-@param MAT
-@type number
-@text 転生後魔法力
-@desc 転生後に加算される魔法力
-転生後、アクターの魔法力 × このパラメータ が加算されます
-@decimals 2
-@default 0.1
-@min 0
-
-@param MDF
-@type number
-@text 転生後魔法防御
-@desc 転生後に加算される魔法防御
-転生後、アクターの魔法防御 × このパラメータ が加算されます
-@decimals 2
-@default 0.1
-@min 0
-
-@param AGI
-@type number
-@text 転生後敏捷性
-@desc 転生後に加算される敏捷性
-転生後、アクターの敏捷性 × このパラメータ が加算されます
-@decimals 2
-@default 0.1
-@min 0
-
-@param LUK
-@type number
-@text 転生後運
-@desc 転生後に加算される運
-転生後、アクターの運 × このパラメータ が加算されます
-@decimals 2
-@default 0.1
-@min 0
 */
 (() => {
     'use strict';
@@ -115,15 +83,11 @@ https://opensource.org/licenses/mit-license.php
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
-    function Potadra_meta(meta, tag) {
-        if (meta) {
-            const data = meta[tag];
+    function Potadra_metaData(meta_data, delimiter = '\n') {
+        if (meta_data) {
+            const data = meta_data.split(delimiter);
             if (data) {
-                if (data !== true) {
-                    return data.trim();
-                } else {
-                    return true;
-                }
+                return data.map(datum => datum.trim());
             }
         }
         return false;
@@ -135,14 +99,6 @@ https://opensource.org/licenses/mit-license.php
 
     // 各パラメータ用変数
     const ReincarnationMetaName = String(params.ReincarnationMetaName) || "転生";
-    const MHP                   = Number(params.MHP) || 0.1;
-    const MMP                   = Number(params.MMP) || 0.1;
-    const ATK                   = Number(params.ATK) || 0.1;
-    const DEF                   = Number(params.DEF) || 0.1;
-    const MAT                   = Number(params.MAT) || 0.1;
-    const MDF                   = Number(params.MDF) || 0.1;
-    const AGI                   = Number(params.AGI) || 0.1;
-    const LUK                   = Number(params.LUK) || 0.1;
 
     /**
      * 
@@ -152,7 +108,7 @@ https://opensource.org/licenses/mit-license.php
     const _Game_Action_apply = Game_Action.prototype.apply;
     Game_Action.prototype.apply = function(target) {
         _Game_Action_apply.apply(this, arguments);
-        this.applyReincarnation(target, this.item());
+        applyReincarnation(this, target);
     };
 
     /**
@@ -161,8 +117,19 @@ https://opensource.org/licenses/mit-license.php
      * @param {} item - 
      * @param {} target - 
      */
-    Game_Action.prototype.applyReincarnation = function(target, item) {
+    function applyReincarnation(action, target) {
+        const item = action.item();
         if (testApplyReincarnation(target, item)) {
+            const data = Potadra_metaData(item.meta[ReincarnationMetaName], ',');
+            const LV  = Number(data[1]) || 1;
+            const MHP = Number(data[2]) || 0.1;
+            const MMP = Number(data[3]) || 0.1;
+            const ATK = Number(data[4]) || 0.1;
+            const DEF = Number(data[5]) || 0.1;
+            const MAT = Number(data[6]) || 0.1;
+            const MDF = Number(data[7]) || 0.1;
+            const AGI = Number(data[8]) || 0.1;
+            const LUK = Number(data[9]) || 0.1;
             target.addParam(0, Math.floor(target.mhp * MHP));
             target.addParam(1, Math.floor(target.mmp * MMP));
             target.addParam(2, Math.floor(target.atk * ATK));
@@ -171,10 +138,10 @@ https://opensource.org/licenses/mit-license.php
             target.addParam(5, Math.floor(target.mdf * MDF));
             target.addParam(6, Math.floor(target.agi * AGI));
             target.addParam(7, Math.floor(target.luk * LUK));
-            target.changeLevel(1, false);
+            target.changeLevel(LV, false);
         }
-        this.makeSuccess(target);
-    };
+        action.makeSuccess(target);
+    }
 
     /**
      * アイテム使用可能判定
@@ -195,9 +162,9 @@ https://opensource.org/licenses/mit-license.php
      * @param {} item - 
      */
     function testApplyReincarnation(target, item) {
-        const reincarnation_level = Potadra_meta(item.meta, ReincarnationMetaName);
+        const reincarnation_level = Potadra_metaData(item.meta[ReincarnationMetaName], ',');
         if (reincarnation_level) {
-            return target.level >= Number(reincarnation_level);
+            return target.level >= Number(reincarnation_level[0]);
         } else {
             return false;
         }

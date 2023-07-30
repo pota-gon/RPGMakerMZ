@@ -1,14 +1,14 @@
 /*:
 @plugindesc
-装備スロット変更 Ver1.4.3(2022/9/10)
+装備スロット変更 Ver1.4.4(2023/7/30)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Equip/ChangeSlot.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 装備スロットの列を変更する機能を追加
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+- 同じ種別の装備は1つしか装備できなくなる種別タグを追加
+- 強力な装備など一定数しか装備できない装備制限タグを追加
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -33,6 +33,18 @@ https://opensource.org/licenses/mit-license.php
 4. 身体
 5. 装飾品
 
+### 種別タグについて
+装飾品などで、兜・靴など同じ種別の装備は1つしか  
+装備できないようにするためのメモ欄タグの名称
+
+1. 装備タイプを 装飾品 など複数ある装備タイプにする。  
+2. メモ欄に <種別:兜> 等など、種別を記載する。  
+3. 装飾品の <種別:兜> は、1種類しか装備できなくなります。
+
+### 装備制限タグについて
+強力な装備など一定数しか装備できないメモ欄タグの名称  
+例: <装備制限:1> で1つしか装備できない装備にできます。
+
 @param Slots
 @type number[]
 @text 装備スロット
@@ -55,6 +67,22 @@ https://opensource.org/licenses/mit-license.php
 @desc スロットの列数
 @default 1
 @min 1
+
+@param Type
+@type combo
+@text 種別タグ
+@desc 装飾品などで、兜・靴など同じ種別の装備は1つしか
+装備できないようにするためのメモ欄タグの名称<種別:兜>
+@default 種別
+@option 種別
+
+@param Limit
+@type combo
+@text 装備制限タグ
+@desc 強力な装備など一定数しか装備できないメモ欄タグの名称
+例: <装備制限:1> で1つしか装備できない装備にできます
+@default 装備制限
+@option 装備制限
 */
 (() => {
     'use strict';
@@ -80,6 +108,19 @@ https://opensource.org/licenses/mit-license.php
             return true;
         }
     }
+    function Potadra_meta(meta, tag) {
+        if (meta) {
+            const data = meta[tag];
+            if (data) {
+                if (data !== true) {
+                    return data.trim();
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
@@ -89,6 +130,8 @@ https://opensource.org/licenses/mit-license.php
     const Slots              = Potadra_numberArray(params.Slots);
     const FixStatusEquipOver = Potadra_convertBool(params.FixStatusEquipOver);
     const Slot               = Number(params.Slot) || 0;
+    const Type               = String(params.Type) || '種別';
+    const Limit              = String(params.Limit) || '装備制限';
 
     /**
      * アクターを扱うクラスです。
@@ -147,4 +190,92 @@ https://opensource.org/licenses/mit-license.php
             return Slot;
         };
     }
+
+    /**
+     * アイテムをリストに含めるかどうか
+     *
+     * @param {} item - 
+     * @returns {} 
+     */
+    const _Window_EquipItem_includes = Window_EquipItem.prototype.includes;
+    Window_EquipItem.prototype.includes = function(item) {
+        let value = _Window_EquipItem_includes.apply(this, arguments);
+        if (value === true && item) {
+            // 種別装備チェック
+            value = canEquipType(this._actor, item, this._slotId);
+
+            // 装備制限チェック
+            if (value === true) value = catEquipLimit(this._actor, item);
+        }
+        return value;
+    };
+
+    // 種別装備チェック
+    function canEquipType(actor, item, slotId) {
+        const item_type = Potadra_meta(item.meta, Type);
+
+        if (item_type) {
+            const equips = actor.equips();
+            for (let i = 0; i < equips.length; i++) {
+                const equip_item = equips[i];
+                if (equip_item && i !== slotId) {
+                    const equip_item_type = Potadra_meta(equip_item.meta, Type);
+                    if (equip_item_type && item_type === equip_item_type) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    // 装備制限チェック
+    function catEquipLimit(actor, item) {
+        const item_limit_str = Potadra_meta(item.meta, Limit);
+        let limit_count = 1;
+
+        if (item_limit_str) {
+            const item_limit = Number(item_limit_str);
+            for (const equip_item of actor.equips()) {
+                if (equip_item && equip_item === item) {
+                    limit_count++;
+                    if (limit_count > item_limit) return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 指定スロットの最強装備を返す
+     *
+     * @param {number} slotId - スロットID
+     * @returns {} 
+     */
+    Game_Actor.prototype.bestEquipItem = function(slotId) {
+        const etypeId = this.equipSlots()[slotId];
+        const items = this.PotadraEquipItems(slotId, etypeId);
+        let bestItem = null;
+        let bestPerformance = -1000;
+        for (let i = 0; i < items.length; i++) {
+            const performance = this.calcEquipItemPerformance(items[i]);
+            if (performance > bestPerformance) {
+                bestPerformance = performance;
+                bestItem = items[i];
+            }
+        }
+        return bestItem;
+    };
+    if (typeof Game_Actor.prototype.PotadraEquipItems !== 'function') {
+        Game_Actor.prototype.PotadraEquipItems = function(slotId, etypeId) {
+            return $gameParty.equipItems().filter(item => item.etypeId === etypeId && this.canEquip(item));
+        };
+    }
+    const _Game_Actor_PotadraEquipItems = Game_Actor.prototype.PotadraEquipItems;
+    Game_Actor.prototype.PotadraEquipItems = function(slotId, etypeId) {
+        const items = _Game_Actor_PotadraEquipItems_apply(this, arguments);
+        return items.filter(item => canEquipType(this, item, slotId) && catEquipLimit(this, item));
+    };
 })();

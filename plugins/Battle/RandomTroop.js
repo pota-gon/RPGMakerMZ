@@ -1,13 +1,14 @@
 /*:
 @plugindesc
-敵グループランダム決定 Ver1.3.9(2023/7/3)
+敵グループランダム決定 Ver1.4.0(2023/7/30)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/RandomTroop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- サイドビューで位置が指定されているモンスターを整列しないように修正
+- 設定がおかしい場合にエラー落ちしてしまうバグ修正
+- ヘルプ更新
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -45,6 +46,7 @@ https://opensource.org/licenses/mit-license.php
 固定する敵キャラを1～8で指定します。  
 1～8の順番は敵グループに追加した順番です。  
 最初に追加したものが、1番になります。
+また、<FIX:1,2>と , で区切ることで、複数の敵キャラを固定することができます。
 
 ### メモ(敵キャラ)
 
@@ -137,9 +139,9 @@ https://newrpg.seesaa.net/article/475049887.html
         const min_pattern = /<min:\s*(\d+)>/i;
         const fix_pattern = /<fix:(\s*.+?)>/i;
         const name        = this.troop().name;
-        let max_match = name.match(max_pattern);
-        let min_match = name.match(min_pattern);
-        let fix_match = name.match(fix_pattern);
+        const max_match = name.match(max_pattern);
+        const min_match = name.match(min_pattern);
+        const fix_match = name.match(fix_pattern);
 
         if (max_match || min_match) {
             this.clear();
@@ -150,10 +152,10 @@ https://newrpg.seesaa.net/article/475049887.html
             let max = members.length;
             let min = 1;
             if (max_match) {
-                max = max_match[1];
+                max = Number(max_match[1]);
             }
             if (min_match) {
-                min = min_match[1];
+                min = Number(min_match[1]);
             }
 
             // 敵キャラの出現数を算出

@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-名前データベース Ver0.10.6(2023/7/12)
+名前データベース Ver0.10.7(2023/7/30)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- アクターにスキル習得できるメモ設定<スキル,1,ヒール>を追加
+- アクター初期装備: 装飾品1 などで何番目に装備するか設定できる機能追加
 
 ・TODO
 - ヘルプ更新
@@ -35,7 +35,7 @@ https://opensource.org/licenses/mit-license.php
     @param ActorEquipMetaName
     @parent ActorEquip
     @text アクター初期装備タグ
-    @desc アクターの初期装備に使うノートタグの名称
+    @desc アクターの初期装備に使うメモ欄タグの名称
     デフォルトは 装備
     @default 装備
 
@@ -138,7 +138,60 @@ https://opensource.org/licenses/mit-license.php
     // アクターの初期装備
     if (ActorEquip && !Utils.isOptionValid("btest")) {
         /**
+         * 装備判定
          *
+         * @param {} actor -
+         * @returns {}
+         */
+        function initEquip(actor) {
+            const slots      = actor.equipSlots();
+            const _equips    = actor._equips;
+            const meta       = actor.actor().meta;
+            const dual       = actor.isDualWield();
+
+            const tmpType = {};
+            const equipTypes = [];
+
+            // 装備
+            for (let i = 0; i < slots.length; i++) {
+                const slot = slots[i];
+                const meta_datum = meta[ActorEquipMetaName + (i + 1)];
+                if (meta_datum) {
+                    const data = equipData(slot, dual);
+                    _equips[i].setEquip(slot === 1 || (slot === 2 && dual), Potadra_nameSearch(data, meta_datum.trim()));
+                }
+                if (tmpType[slot]) {
+                    tmpType[slot]++;
+                    equipTypes[i] = tmpType[slot];
+                } else {
+                    tmpType[slot] = 1;
+                    equipTypes[i] = 1;
+                }
+            }
+
+            // 装備タイプ名
+            for (let i = 0; i < slots.length; i++) {
+                const slot = slots[i];
+                const meta_datum = meta[ActorEquipMetaName + (i + 1)];
+                const data = equipData(slot, dual);
+                if (meta_datum) {
+                    _equips[i].setEquip(slot === 1 || (slot === 2 && dual), Potadra_nameSearch(data, meta_datum.trim()));
+                }
+
+                let equip_meta = meta[$dataSystem.equipTypes[slot] + equipTypes[i]];
+                if (equip_meta) {
+                    _equips[i].setEquip(slot === 1 || (slot === 2 && dual), Potadra_nameSearch(data, equip_meta.trim()));
+                } else if (equipTypes[i] === 1) {
+                    equip_meta = meta[$dataSystem.equipTypes[slot]];
+                    if (equip_meta) {
+                        _equips[i].setEquip(slot === 1 || (slot === 2 && dual), Potadra_nameSearch(data, equip_meta.trim()));
+                    }
+                }
+            }
+        }
+
+        /**
+         * 武器・防具判定
          *
          * @param {} slot -
          * @returns {}
@@ -168,29 +221,11 @@ https://opensource.org/licenses/mit-license.php
         Game_Actor.prototype.initEquips = function(equips) {
             _Game_Actor_initEquips.apply(this, arguments);
 
-            const slots   = this.equipSlots();
-            const _equips = this._equips;
-            const meta    = this.actor().meta;
-
-            let dual = this.isDualWield();
-            for (let j = 0; j < slots.length; j++) {
-                const meta_datum = meta[ActorEquipMetaName + (j + 1)];
-                if (meta_datum) {
-                    const data = equipData(slots[j], dual);
-                    _equips[j].setEquip(slots[j] === 1 || (slots[j] === 2 && dual), Potadra_nameSearch(data, meta_datum.trim()));
-                }
-            }
+            initEquip(this);
             this.refresh();
 
             // 二刀流を可能にする装備判定・武器・防具タイプ用
-            dual = this.isDualWield();
-            for (let j = 0; j < slots.length; j++) {
-                const meta_datum = meta[ActorEquipMetaName + (j + 1)];
-                if (meta_datum) {
-                    const data = equipData(slots[j], dual);
-                    _equips[j].setEquip(slots[j] === 1 || (slots[j] === 2 && dual), Potadra_nameSearch(data, meta_datum.trim()));
-                }
-            }
+            initEquip(this);
             this.releaseUnequippableItems(true);
             this.refresh();
         };
