@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.5.5(2023/6/26)
+ワールド自動生成 Ver0.5.6(2023/9/2)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,11 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.5.6
+- リファクタリング
+- セーブデータ保持をWeb以外でも有効にできるように変更
+- プラグインコマンドのヘルプを一部修正
+- 一部プラグインパラメータの必要性がほとんどないため、廃止
 * Ver0.5.5
 - 乗り物の座標を指定したときに、0,0座標に近い座標に移動してしまうバグ修正
 - ロンチプラグインの wasdKeyMZ.js と競合するため、順番をエラー表示するように修正
@@ -91,7 +96,6 @@ https://github.com/pota-gon/GenerateWorld
 @type boolean
 @text セーブデータ保持
 @desc セーブデータを保持するか
-保持しないはWeb実行時のみ有効
 @on 保持する
 @off 保持しない
 @default true
@@ -119,370 +123,8 @@ https://github.com/pota-gon/GenerateWorld
 @parent Tilesets
 @type struct<Maps>[]
 @text マップ設定
-@desc マップごとに必要な設定
-
-@param RegenerateCommand
-@type combo
-@text ワールド再生成コマンド名
-@desc メニューからワールド再生成が出来るコマンド
-空文字でメニューに表示しません
-@default ワールド再生成
-@option ワールド再生成
-
-    @param HideRegenerateSwitch
-    @parent RegenerateCommand
-    @type switch
-    @text メニュー非表示スイッチ
-    @desc OFFのときメニューにコマンドを非表示にします
-    0(なし)の場合、常にメニューへ表示します
-    @default 0
-
-    @param DisableRegenerateSwitch
-    @parent RegenerateCommand
-    @type switch
-    @text メニュー禁止スイッチ
-    @desc ONのときコマンドの使用を禁止します
-    @default 0
-
-    @param PlayTestRegenerate
-    @parent RegenerateCommand
-    @type boolean
-    @text テスト時のみ有効
-    @desc テスト時のみ有効にするか
-    @on 有効にする
-    @off 常に有効
-    @default true
-
-@param ExportJsonCommand
-@type combo
-@text マップJSON出力
-@desc メニューからマップJSON出力が出来るコマンド
-空文字でメニューに表示しません
-@default マップJSON出力
-@option マップJSON出力
-
-    @param SameMapExportJson
-    @parent ExportJsonCommand
-    @type boolean
-    @text 同一マップJSON出力
-    @desc 同一マップにJSONを出力するか
-    出力しない場合、新規マップとして出力されます
-    @on 出力する
-    @off 出力しない
-    @default false
-
-    @param EventExport
-    @parent ExportJsonCommand
-    @type boolean
-    @text イベント出力
-    @desc イベントを出力するか
-    同一マップでは設定に関係なく出力します
-    @on 出力する
-    @off 出力しない
-    @default false
-
-    @param BackupJson
-    @parent ExportJsonCommand
-    @type boolean
-    @text JSONバックアップ
-    @desc バックアップするか
-    @on バックアップする
-    @off バックアップしない
-    @default true
-
-    @param PlayTestExportJson
-    @parent ExportJsonCommand
-    @type boolean
-    @text テスト時のみ有効
-    @desc テスト時のみ有効にするか
-    @on 有効にする
-    @off 常に有効
-    @default true
-
-@param CommandKey
-@type boolean
-@text コマンドキー対応
-@desc コマンドをキーで実行できるようにするか
-@on キーで実行可能
-@off キーで実行しない
-@default true
-
-    @param RegenerateKey
-    @parent CommandKey
-    @type combo
-    @text ワールド再生成
-    @desc ワールド再生成のキー
-    @default R
-    @option A
-    @option B
-    @option C
-    @option D
-    @option E
-    @option F
-    @option G
-    @option H
-    @option I
-    @option J
-    @option K
-    @option L
-    @option M
-    @option N
-    @option O
-    @option P
-    @option Q
-    @option R
-    @option S
-    @option T
-    @option U
-    @option V
-    @option W
-    @option X
-    @option Y
-    @option Z
-    @option 0
-    @option 1
-    @option 2
-    @option 3
-    @option 4
-    @option 5
-    @option 6
-    @option 7
-    @option 8
-    @option 9
-    @option T0
-    @option T1
-    @option T2
-    @option T3
-    @option T4
-    @option T5
-    @option T6
-    @option T7
-    @option T8
-    @option T9
-    @option T*
-    @option T+
-    @option T-
-    @option T.
-    @option T/
-    @option :
-    @option ;
-    @option ,
-    @option -
-    @option .
-    @option /
-    @option @
-    @option [
-    @option \|
-    @option ]
-    @option ^
-    @option \_
-    @option F1
-    @option F2
-    @option F3
-    @option F4
-    @option F5
-    @option F6
-    @option F7
-    @option F8
-    @option F9
-    @option F10
-    @option F11
-    @option F12
-    @option BackSpace
-    @option Pause
-    @option 変換
-    @option 無変換
-    @option End
-    @option Home
-    @option Delete
-
-    @param ExportJsonKey
-    @parent CommandKey
-    @type combo
-    @text マップJSON出力(イベントあり)
-    @desc マップJSON出力のキー
-    @default E
-    @option A
-    @option B
-    @option C
-    @option D
-    @option E
-    @option F
-    @option G
-    @option H
-    @option I
-    @option J
-    @option K
-    @option L
-    @option M
-    @option N
-    @option O
-    @option P
-    @option Q
-    @option R
-    @option S
-    @option T
-    @option U
-    @option V
-    @option W
-    @option X
-    @option Y
-    @option Z
-    @option 0
-    @option 1
-    @option 2
-    @option 3
-    @option 4
-    @option 5
-    @option 6
-    @option 7
-    @option 8
-    @option 9
-    @option T0
-    @option T1
-    @option T2
-    @option T3
-    @option T4
-    @option T5
-    @option T6
-    @option T7
-    @option T8
-    @option T9
-    @option T*
-    @option T+
-    @option T-
-    @option T.
-    @option T/
-    @option :
-    @option ;
-    @option ,
-    @option -
-    @option .
-    @option /
-    @option @
-    @option [
-    @option \|
-    @option ]
-    @option ^
-    @option \_
-    @option F1
-    @option F2
-    @option F3
-    @option F4
-    @option F5
-    @option F6
-    @option F7
-    @option F8
-    @option F9
-    @option F10
-    @option F11
-    @option F12
-    @option BackSpace
-    @option Pause
-    @option 変換
-    @option 無変換
-    @option End
-    @option Home
-    @option Delete
-
-    @param OutputJsonKey
-    @parent CommandKey
-    @type string
-    @text マップJSON出力(イベントなし)
-    @desc マップJSON出力のキー
-    同一マップに出力する場合は、イベントも出力します
-    @default O
-    @option A
-    @option B
-    @option C
-    @option D
-    @option E
-    @option F
-    @option G
-    @option H
-    @option I
-    @option J
-    @option K
-    @option L
-    @option M
-    @option N
-    @option O
-    @option P
-    @option Q
-    @option R
-    @option S
-    @option T
-    @option U
-    @option V
-    @option W
-    @option X
-    @option Y
-    @option Z
-    @option 0
-    @option 1
-    @option 2
-    @option 3
-    @option 4
-    @option 5
-    @option 6
-    @option 7
-    @option 8
-    @option 9
-    @option T0
-    @option T1
-    @option T2
-    @option T3
-    @option T4
-    @option T5
-    @option T6
-    @option T7
-    @option T8
-    @option T9
-    @option T*
-    @option T+
-    @option T-
-    @option T.
-    @option T/
-    @option :
-    @option ;
-    @option ,
-    @option -
-    @option .
-    @option /
-    @option @
-    @option [
-    @option \|
-    @option ]
-    @option ^
-    @option \_
-    @option F1
-    @option F2
-    @option F3
-    @option F4
-    @option F5
-    @option F6
-    @option F7
-    @option F8
-    @option F9
-    @option F10
-    @option F11
-    @option F12
-    @option BackSpace
-    @option Pause
-    @option 変換
-    @option 無変換
-    @option End
-    @option Home
-    @option Delete
-
-    @param PlayTestKey
-    @parent CommandKey
-    @type boolean
-    @text テスト時のみ有効
-    @desc テスト時のみ有効にするか
-    @on 有効にする
-    @off 常に有効
-    @default true
+@desc マップごとに必要な設定。
+未実装。
 
 @param Vehicle
 @type boolean
@@ -492,34 +134,360 @@ https://github.com/pota-gon/GenerateWorld
 @off 使わない
 @default true
 
-@param BoatSwitch
-@parent Vehicle
-@type switch
-@text 小型船呼び出し許可スイッチ
-@desc ONのときに小型船呼び出しを許可するスイッチ
-0 のときは無条件で呼び出すことが出来ます
-@default 0
+    @param BoatSwitch
+    @parent Vehicle
+    @type switch
+    @text 小型船呼び出し許可スイッチ
+    @desc ONのときに小型船呼び出しを許可するスイッチ
+    0 のときは無条件で呼び出すことが出来ます
+    @default 0
 
-@param ShipSwitch
-@parent Vehicle
-@type switch
-@text 大型船呼び出し許可スイッチ
-@desc ONのときに大型船呼び出しを許可するスイッチ
-0 のときは無条件で呼び出すことが出来ます
-@default 0
+    @param ShipSwitch
+    @parent Vehicle
+    @type switch
+    @text 大型船呼び出し許可スイッチ
+    @desc ONのときに大型船呼び出しを許可するスイッチ
+    0 のときは無条件で呼び出すことが出来ます
+    @default 0
 
-@param AirshipSwitch
-@parent Vehicle
-@type switch
-@text 飛行船呼び出し許可スイッチ
-@desc ONのときに飛行船呼び出しを許可するスイッチ
-0 のときは無条件で呼び出すことが出来ます
-@default 0
+    @param AirshipSwitch
+    @parent Vehicle
+    @type switch
+    @text 飛行船呼び出し許可スイッチ
+    @desc ONのときに飛行船呼び出しを許可するスイッチ
+    0 のときは無条件で呼び出すことが出来ます
+    @default 0
 
-@param Biome
-@type struct<BiomeTileSets>[]
-@text バイオーム情報
-@default ["{\"tile_set_id\":\"1\",\"map_id\":\"0\",\"boat_tile_ids\":\"[\\\"2432\\\"]\",\"ship_tile_ids\":\"[\\\"2048\\\"]\",\"airship_tile_ids\":\"[\\\"2624\\\", \\\"2720\\\"]\"}"]
+@param Test
+@text テスト時のみ有効な設定
+@desc ※ 分類用のパラメータです。
+
+    @param RegenerateCommand
+    @parent Test
+    @type combo
+    @text ワールド再生成コマンド名
+    @desc メニューからワールド再生成が出来るコマンド
+    空文字でメニューに表示しません。テスト時のみ有効です
+    @default ワールド再生成
+    @option ワールド再生成
+
+    @param ExportJsonCommand
+    @parent Test
+    @type combo
+    @text マップJSON出力
+    @desc メニューからマップJSON出力が出来るコマンド
+    空文字でメニューに表示しません。テスト時のみ有効です
+    @default マップJSON出力
+    @option マップJSON出力
+
+        @param SameMapExportJson
+        @parent ExportJsonCommand
+        @type boolean
+        @text 同一マップJSON出力
+        @desc 同一マップにJSONを出力するか
+        出力しない場合、新規マップとして出力されます
+        @on 出力する
+        @off 出力しない
+        @default false
+
+        @param EventExport
+        @parent ExportJsonCommand
+        @type boolean
+        @text イベント出力
+        @desc イベントを出力するか
+        同一マップでは設定に関係なく出力します
+        @on 出力する
+        @off 出力しない
+        @default false
+
+        @param BackupJson
+        @parent ExportJsonCommand
+        @type boolean
+        @text JSONバックアップ
+        @desc バックアップするか
+        @on バックアップする
+        @off バックアップしない
+        @default true
+
+    @param CommandKey
+    @parent Test
+    @type boolean
+    @text コマンドキー対応
+    @desc コマンドをキーで実行できるようにするか
+    テスト時のみ有効です
+    @on キーで実行可能
+    @off キーで実行しない
+    @default true
+
+        @param RegenerateKey
+        @parent CommandKey
+        @type combo
+        @text ワールド再生成
+        @desc ワールド再生成のキー
+        @default R
+        @option A
+        @option B
+        @option C
+        @option D
+        @option E
+        @option F
+        @option G
+        @option H
+        @option I
+        @option J
+        @option K
+        @option L
+        @option M
+        @option N
+        @option O
+        @option P
+        @option Q
+        @option R
+        @option S
+        @option T
+        @option U
+        @option V
+        @option W
+        @option X
+        @option Y
+        @option Z
+        @option 0
+        @option 1
+        @option 2
+        @option 3
+        @option 4
+        @option 5
+        @option 6
+        @option 7
+        @option 8
+        @option 9
+        @option T0
+        @option T1
+        @option T2
+        @option T3
+        @option T4
+        @option T5
+        @option T6
+        @option T7
+        @option T8
+        @option T9
+        @option T*
+        @option T+
+        @option T-
+        @option T.
+        @option T/
+        @option :
+        @option ;
+        @option ,
+        @option -
+        @option .
+        @option /
+        @option @
+        @option [
+        @option \|
+        @option ]
+        @option ^
+        @option \_
+        @option F1
+        @option F2
+        @option F3
+        @option F4
+        @option F5
+        @option F6
+        @option F7
+        @option F8
+        @option F9
+        @option F10
+        @option F11
+        @option F12
+        @option BackSpace
+        @option Pause
+        @option 変換
+        @option 無変換
+        @option End
+        @option Home
+        @option Delete
+
+        @param ExportJsonKey
+        @parent CommandKey
+        @type combo
+        @text マップJSON出力(イベントあり)
+        @desc マップJSON出力のキー
+        @default E
+        @option A
+        @option B
+        @option C
+        @option D
+        @option E
+        @option F
+        @option G
+        @option H
+        @option I
+        @option J
+        @option K
+        @option L
+        @option M
+        @option N
+        @option O
+        @option P
+        @option Q
+        @option R
+        @option S
+        @option T
+        @option U
+        @option V
+        @option W
+        @option X
+        @option Y
+        @option Z
+        @option 0
+        @option 1
+        @option 2
+        @option 3
+        @option 4
+        @option 5
+        @option 6
+        @option 7
+        @option 8
+        @option 9
+        @option T0
+        @option T1
+        @option T2
+        @option T3
+        @option T4
+        @option T5
+        @option T6
+        @option T7
+        @option T8
+        @option T9
+        @option T*
+        @option T+
+        @option T-
+        @option T.
+        @option T/
+        @option :
+        @option ;
+        @option ,
+        @option -
+        @option .
+        @option /
+        @option @
+        @option [
+        @option \|
+        @option ]
+        @option ^
+        @option \_
+        @option F1
+        @option F2
+        @option F3
+        @option F4
+        @option F5
+        @option F6
+        @option F7
+        @option F8
+        @option F9
+        @option F10
+        @option F11
+        @option F12
+        @option BackSpace
+        @option Pause
+        @option 変換
+        @option 無変換
+        @option End
+        @option Home
+        @option Delete
+
+        @param OutputJsonKey
+        @parent CommandKey
+        @type string
+        @text マップJSON出力(イベントなし)
+        @desc マップJSON出力のキー
+        同一マップに出力する場合は、イベントも出力します
+        @default O
+        @option A
+        @option B
+        @option C
+        @option D
+        @option E
+        @option F
+        @option G
+        @option H
+        @option I
+        @option J
+        @option K
+        @option L
+        @option M
+        @option N
+        @option O
+        @option P
+        @option Q
+        @option R
+        @option S
+        @option T
+        @option U
+        @option V
+        @option W
+        @option X
+        @option Y
+        @option Z
+        @option 0
+        @option 1
+        @option 2
+        @option 3
+        @option 4
+        @option 5
+        @option 6
+        @option 7
+        @option 8
+        @option 9
+        @option T0
+        @option T1
+        @option T2
+        @option T3
+        @option T4
+        @option T5
+        @option T6
+        @option T7
+        @option T8
+        @option T9
+        @option T*
+        @option T+
+        @option T-
+        @option T.
+        @option T/
+        @option :
+        @option ;
+        @option ,
+        @option -
+        @option .
+        @option /
+        @option @
+        @option [
+        @option \|
+        @option ]
+        @option ^
+        @option \_
+        @option F1
+        @option F2
+        @option F3
+        @option F4
+        @option F5
+        @option F6
+        @option F7
+        @option F8
+        @option F9
+        @option F10
+        @option F11
+        @option F12
+        @option BackSpace
+        @option Pause
+        @option 変換
+        @option 無変換
+        @option End
+        @option Home
+        @option Delete
+
+
 
 @command GenerateWorld
 @text ワールド自動生成
@@ -618,6 +586,8 @@ https://github.com/pota-gon/GenerateWorld
     @default true
 */
 
+
+
 /*~struct~Tilesets:
 @param tile_set_id
 @type tileset
@@ -628,7 +598,7 @@ https://github.com/pota-gon/GenerateWorld
 @type number
 @text タイルセットマップID
 @desc タイルの設定を決めるマップID
-0 の場合は使用しません。
+0 の場合は使用しません。未実装。実装するか検討中。
 @default 0
 @min 0
 
@@ -666,407 +636,6 @@ https://github.com/pota-gon/GenerateWorld
 @desc 設定するマップ名(マップIDが 0 のとき有効)
 マップIDを指定した場合は、こちらの設定は不要です
 */
-
-/*~struct~BiomeTileSets:
-@param tile_set
-@type tileset
-@text タイルセット
-
-@param biome_tile_sets
-@type struct<Tile>[]
-@text タイルセット別バイオーム情報
-*/
-
-/*~struct~Tile:
-@param tile_id
-@type select
-@text タイルID
-@default 2816
-@option 2048 海
-@value 2048
-@option 2096 深い海
-@value 2096
-@option 2144 岩礁
-@value 2144
-@option 2192 氷山
-@value 2192
-@option 2240 毒の沼
-@value 2240
-@option 2288 枯れ木
-@value 2288
-@option 2336 溶岩
-@value 2336
-@option 2384 溶岩の泡
-@value 2384
-@option 2432 池
-@value 2432
-@option 2480 岩
-@value 2480
-@option 2528 凍った海
-@value 2528
-@option 2576 渦
-@value 2576
-@option 2624 大地の境界
-@value 2624
-@option 2672 下界に落ちる滝
-@value 2672
-@option 2720 雲（大地の境界）
-@value 2720
-@option 2768 雲
-@value 2768
-@option 2816 草原A
-@value 2816
-@option 2864 草原A（濃）
-@value 2864
-@option 2912 草原B
-@value 2912
-@option 2960 草原B（濃）
-@value 2960
-@option 3008 森
-@value 3008
-@option 3056 森（針葉樹）
-@value 3056
-@option 3104 山（草）
-@value 3104
-@option 3152 山（土）
-@value 3152
-@option 3200 荒れ地A
-@value 3200
-@option 3248 荒れ地B
-@value 3248
-@option 3296 土肌A
-@value 3296
-@option 3344 土肌B
-@value 3344
-@option 3392 森（枯れ木）
-@value 3392
-@option 3440 道（土）
-@value 3440
-@option 3488 丘（土）
-@value 3488
-@option 3536 山（砂岩）
-@value 3536
-@option 3584 砂漠A
-@value 3584
-@option 3632 砂漠B
-@value 3632
-@option 3680 岩地A
-@value 3680
-@option 3728 岩地B（溶岩）
-@value 3728
-@option 3776 森（ヤシの木）
-@value 3776
-@option 3824 道（舗装）
-@value 3824
-@option 3872 山（岩）
-@value 3872
-@option 3920 山（溶岩）
-@value 3920
-@option 3968 雪原
-@value 3968
-@option 4016 山（雪）
-@value 4016
-@option 4064 雲
-@value 4064
-@option 4112 大きな雲
-@value 4112
-@option 4160 森（雪）
-@value 4160
-@option 4208 穴
-@value 4208
-@option 4256 丘（砂岩）
-@value 4256
-@option 4304 丘（雪）
-@value 4304
-
-@param biome_tile_sets
-@type struct<Biome>[]
-@text タイルセット別バイオーム情報
-*/
-
-/*~struct~Biome:
-@param top_tiles
-@type struct<TopTiles>[]
-@text 上層タイル
-@desc 草原など高さが0を超えるタイル設定
-
-@param bottom_tiles
-@type struct<BottomTiles>[]
-@text 下層タイル
-@desc 海など高さが0以下のタイル設定
-*/
-
-/*~struct~TopTiles:
-@param tile_id
-@type select
-@text タイルID
-@default 2816
-@option 2048 海
-@value 2048
-@option 2096 深い海
-@value 2096
-@option 2144 岩礁
-@value 2144
-@option 2192 氷山
-@value 2192
-@option 2240 毒の沼
-@value 2240
-@option 2288 枯れ木
-@value 2288
-@option 2336 溶岩
-@value 2336
-@option 2384 溶岩の泡
-@value 2384
-@option 2432 池
-@value 2432
-@option 2480 岩
-@value 2480
-@option 2528 凍った海
-@value 2528
-@option 2576 渦
-@value 2576
-@option 2624 大地の境界
-@value 2624
-@option 2672 下界に落ちる滝
-@value 2672
-@option 2720 雲（大地の境界）
-@value 2720
-@option 2768 雲
-@value 2768
-@option 2816 草原A
-@value 2816
-@option 2864 草原A（濃）
-@value 2864
-@option 2912 草原B
-@value 2912
-@option 2960 草原B（濃）
-@value 2960
-@option 3008 森
-@value 3008
-@option 3056 森（針葉樹）
-@value 3056
-@option 3104 山（草）
-@value 3104
-@option 3152 山（土）
-@value 3152
-@option 3200 荒れ地A
-@value 3200
-@option 3248 荒れ地B
-@value 3248
-@option 3296 土肌A
-@value 3296
-@option 3344 土肌B
-@value 3344
-@option 3392 森（枯れ木）
-@value 3392
-@option 3440 道（土）
-@value 3440
-@option 3488 丘（土）
-@value 3488
-@option 3536 山（砂岩）
-@value 3536
-@option 3584 砂漠A
-@value 3584
-@option 3632 砂漠B
-@value 3632
-@option 3680 岩地A
-@value 3680
-@option 3728 岩地B（溶岩）
-@value 3728
-@option 3776 森（ヤシの木）
-@value 3776
-@option 3824 道（舗装）
-@value 3824
-@option 3872 山（岩）
-@value 3872
-@option 3920 山（溶岩）
-@value 3920
-@option 3968 雪原
-@value 3968
-@option 4016 山（雪）
-@value 4016
-@option 4064 雲
-@value 4064
-@option 4112 大きな雲
-@value 4112
-@option 4160 森（雪）
-@value 4160
-@option 4208 穴
-@value 4208
-@option 4256 丘（砂岩）
-@value 4256
-@option 4304 丘（雪）
-@value 4304
-
-@param lower
-@type number
-@text 下限
-@desc 0 ～ 1 で設定。小数点も可能
-0 は海に近く、1は山のように標高が高いイメージ
-@decimals 2
-@default 0
-@min 0
-@max 1
-
-@param upper
-@type number
-@text 上限
-@desc 0 ～ 1 で設定。小数点も可能
-0 は海に近く、1は山のように標高が高いイメージ
-@decimals 2
-@default 1
-@min 0
-@max 1
-
-@param z
-@type select
-@text レイヤー
-@option レイヤー1
-@value 0
-@option レイヤー2
-@value 1
-@option レイヤー3
-@value 2
-@option レイヤー4
-@value 3
-@default 0
-*/
-
-/*~struct~BottomTiles:
-@param tile_id
-@type select
-@text タイルID
-@default 2048
-@option 2048 海
-@value 2048
-@option 2096 深い海
-@value 2096
-@option 2144 岩礁
-@value 2144
-@option 2192 氷山
-@value 2192
-@option 2240 毒の沼
-@value 2240
-@option 2288 枯れ木
-@value 2288
-@option 2336 溶岩
-@value 2336
-@option 2384 溶岩の泡
-@value 2384
-@option 2432 池
-@value 2432
-@option 2480 岩
-@value 2480
-@option 2528 凍った海
-@value 2528
-@option 2576 渦
-@value 2576
-@option 2624 大地の境界
-@value 2624
-@option 2672 下界に落ちる滝
-@value 2672
-@option 2720 雲（大地の境界）
-@value 2720
-@option 2768 雲
-@value 2768
-@option 2816 草原A
-@value 2816
-@option 2864 草原A（濃）
-@value 2864
-@option 2912 草原B
-@value 2912
-@option 2960 草原B（濃）
-@value 2960
-@option 3008 森
-@value 3008
-@option 3056 森（針葉樹）
-@value 3056
-@option 3104 山（草）
-@value 3104
-@option 3152 山（土）
-@value 3152
-@option 3200 荒れ地A
-@value 3200
-@option 3248 荒れ地B
-@value 3248
-@option 3296 土肌A
-@value 3296
-@option 3344 土肌B
-@value 3344
-@option 3392 森（枯れ木）
-@value 3392
-@option 3440 道（土）
-@value 3440
-@option 3488 丘（土）
-@value 3488
-@option 3536 山（砂岩）
-@value 3536
-@option 3584 砂漠A
-@value 3584
-@option 3632 砂漠B
-@value 3632
-@option 3680 岩地A
-@value 3680
-@option 3728 岩地B（溶岩）
-@value 3728
-@option 3776 森（ヤシの木）
-@value 3776
-@option 3824 道（舗装）
-@value 3824
-@option 3872 山（岩）
-@value 3872
-@option 3920 山（溶岩）
-@value 3920
-@option 3968 雪原
-@value 3968
-@option 4016 山（雪）
-@value 4016
-@option 4064 雲
-@value 4064
-@option 4112 大きな雲
-@value 4112
-@option 4160 森（雪）
-@value 4160
-@option 4208 穴
-@value 4208
-@option 4256 丘（砂岩）
-@value 4256
-@option 4304 丘（雪）
-@value 4304
-
-@param lower
-@type number
-@text 下限
-@desc -1 ～ 0 で設定。小数点も可能
-0 は海に近く、-1は深海のように標高が低いイメージ
-@decimals 2
-@default 0
-@min -1
-@max 0
-
-@param upper
-@type number
-@text 上限
-@desc -1 ～ 0 で設定。小数点も可能
-0 は海に近く、-1は深海のように標高が低いイメージ
-@decimals 2
-@default 1
-@min -1
-@max 0
-
-@param z
-@type select
-@text レイヤー
-@option レイヤー1
-@value 0
-@option レイヤー2
-@value 1
-@option レイヤー3
-@value 2
-@option レイヤー4
-@value 3
-@default 0
-*/
 (() => {
     'use strict';
 
@@ -1086,8 +655,14 @@ https://github.com/pota-gon/GenerateWorld
             return min + (Math.abs(this.s) % (max + 1 - min));
         }
     }
-
     // ベースプラグインの処理
+    function Potadra_checkSwitch(switch_no, bool = true) {
+        if (switch_no === 0 || $gameSwitches.value(switch_no) === bool) {
+            return true;
+        } else {
+            return false;
+        }
+    }
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
@@ -1140,13 +715,6 @@ https://github.com/pota-gon/GenerateWorld
     }
     function Potadra_isTest(play_test = true) {
         return !play_test || Utils.isOptionValid("test");
-    }
-    function Potadra_checkSwitch(switch_no, bool = true) {
-        if (switch_no === 0 || $gameSwitches.value(switch_no) === bool) {
-            return true;
-        } else {
-            return false;
-        }
     }
     function Potadra_getDirPath(dir) {
         if (StorageManager.isLocalMode()) {
@@ -1387,9 +955,6 @@ https://github.com/pota-gon/GenerateWorld
         }
             return 33;
     }
-
-
-
     function PotadraDirection_UNDER() { return 2; }
     function PotadraDirection_LEFT()  { return 4; }
     function PotadraDirection_RIGHT() { return 6; }
@@ -1438,14 +1003,12 @@ https://github.com/pota-gon/GenerateWorld
         });
         return tmp_line + '\n';
     }
-
     function PotadraLoop_roundX(x, sum_x = 0) {
         return PotadraEdge_isEdgeX(x) && $gameMap.isLoopHorizontal() ? (x + sum_x).mod($dataMap.width) : (x + sum_x);
     }
     function PotadraLoop_roundY(y, sum_y = 0) {
         return PotadraEdge_isEdgeY(y) && $gameMap.isLoopVertical() ? (y + sum_y).mod($dataMap.height) : (y + sum_y);
     }
-
     function PotadraPerlinNoise_fade(t) {
         return t * t * t * (t * (t * 6 - 15) + 10);
     }
@@ -1654,30 +1217,23 @@ https://github.com/pota-gon/GenerateWorld
 
 
 
-
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用定数
-    const RetentionSaveData       = Potadra_convertBool(params.RetentionSaveData) && StorageManager.isLocalMode();
+    const RetentionSaveData       = Potadra_convertBool(params.RetentionSaveData);
     const SeedVariable            = Number(params.SeedVariable) || 0;
     const TileRegion              = Number(params.TileRegion) || 1;
     const RegenerateCommand       = String(params.RegenerateCommand);
-    const HideRegenerateSwitch    = Number(params.HideRegenerateSwitch || 0);
-    const DisableRegenerateSwitch = Number(params.DisableRegenerateSwitch || 0);
-    const PlayTestRegenerate      = Potadra_convertBool(params.PlayTestRegenerate);
     const ExportJsonCommand       = String(params.ExportJsonCommand);
     const SameMapExportJson       = Potadra_convertBool(params.SameMapExportJson);
     const BackupJson              = Potadra_convertBool(params.BackupJson);
-    const PlayTestExportJson      = Potadra_convertBool(params.PlayTestExportJson);
     const EventExport             = Potadra_convertBool(params.EventExport);
     const CommandKey              = Potadra_convertBool(params.CommandKey);
-    const PlayTestKey             = Potadra_convertBool(params.PlayTestKey);
     const RegenerateKey           = String(params.RegenerateKey) || 'M';
     const ExportJsonKey           = String(params.ExportJsonKey) || 'E';
     const OutputJsonKey           = String(params.OutputJsonKey) || 'O';
-
     const Vehicle                 = Potadra_convertBool(params.Vehicle);
     const BoatSwitch              = Number(params.BoatSwitch) || 0;
     const ShipSwitch              = Number(params.ShipSwitch) || 0;
@@ -1687,9 +1243,9 @@ https://github.com/pota-gon/GenerateWorld
     if (params.Tilesets) Tilesets = JSON.parse(params.Tilesets);
     if (params.Maps) Maps = JSON.parse(params.Maps);
 
-    const Biome = JSON.parse(params.Biome);
+    // const Biomes = JSON.parse(params.Biomes);
 
-    // プラグインの導入有無
+    // 他プラグイン連携(パラメータ取得)
     const backup_params  = Potadra_getPluginParams('BackUpDatabase');
     const backUpPathText = backup_params ? String(backup_params.backUpPathText) || '/backup' : '/backup';
 
@@ -1702,7 +1258,20 @@ https://github.com/pota-gon/GenerateWorld
     // 共通変数
     //==============================================================================
 
-    let seed;
+    let seed = [151,160,137,91,90,15,
+    131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
+    190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
+    88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
+    77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
+    102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
+    135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
+    5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
+    223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
+    129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
+    251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
+    49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
+    138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180];
+
     let tileIds        = [];
     let aroundTileIds  = [];
     let distantTileIds = [];
@@ -1894,33 +1463,18 @@ https://github.com/pota-gon/GenerateWorld
     function GenerateWorld(s = Math.floor( Math.random() * (99999999 - (-99999999)) ) - 99999999) {
         let firstTime = Date.now(); // 開始時間
 
-        // シード設定
-        seed = [151,160,137,91,90,15,
-        131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
-        190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
-        88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
-        77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
-        102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
-        135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
-        5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
-        223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
-        129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
-        251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
-        49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-        138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180];
-
         // シードを変数に記憶
         if (Potadra_checkVariable(SeedVariable)) {
-            $gameVariables.setValue(SeedVariable, s);   
+            $gameVariables.setValue(SeedVariable, s);
         }
 
+        // 乱数設定(Xorshift)
         const random = new PotadraXorShift($dataSystem.advanced.screenWidth, $dataSystem.advanced.screenHeight, $dataSystem.tileSize, s);
         let p = new Array(255);
         for(let i = 0; i < 256; i++) p[i] = seed.splice(random.xorshift(), 1)[0];
         seed = Array.from(new Set(p.filter(Boolean).concat(seed)));
 
-        let endTime = Date.now(); // 終了時間
-        console.debug('シード設定時間: ' + (endTime - firstTime) + 'ms'); // 何ミリ秒かかったかを表示する
+        showTime(firstTime, 'シード設定');
 
         let startTime = Date.now(); // 開始時間
 
@@ -1928,8 +1482,7 @@ https://github.com/pota-gon/GenerateWorld
         if (_Game_Map_tileId.call(this, 0, 0, 0) !== 0) {
             CustomBiome();
 
-            endTime = Date.now(); // 終了時間
-            console.debug('カスタムバイオーム判定時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
+            showTime(startTime, 'カスタムバイオーム判定');
         } else {
             // マップ初期化
             resetMap();
@@ -1937,8 +1490,7 @@ https://github.com/pota-gon/GenerateWorld
             // バイオーム設定
             setBiome(SEED_LENGTH, seed);
 
-            endTime = Date.now(); // 終了時間
-            console.debug('バイオーム設定時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
+            showTime(startTime, 'バイオーム設定');
         }
 
         // ワールド自動生成マップかどうかの判定
@@ -1948,32 +1500,22 @@ https://github.com/pota-gon/GenerateWorld
             $gameTemp._potadra_auto = $gameMap.mapId();
         }
 
-        startTime = Date.now(); // 開始時間
-
         // 地形の整形
-        fixWorld();
-
-        endTime = Date.now(); // 終了時間
-        console.debug('地形の整形時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
-
         startTime = Date.now(); // 開始時間
+        fixWorld();
+        showTime(startTime, '地形の整形');
 
         // オートタイル配置
-        setAutoTile();
-
-        endTime = Date.now(); // 終了時間
-        console.debug('オートタイル配置時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
-
         startTime = Date.now(); // 開始時間
+        setAutoTile();
+        showTime(startTime, 'オートタイル配置');
 
         // イベント設定
-        setEvents();
-    
-        endTime = Date.now(); // 終了時間
-        console.debug('イベント設定配置時間: ' + (endTime - startTime) + 'ms'); // 何ミリ秒かかったかを表示する
+        startTime = Date.now(); // 開始時間
+        setEvents();    
+        showTime(startTime, 'イベント設定配置');
 
-        endTime = Date.now(); // 終了時間
-        console.debug('マップ作成時間: ' + (endTime - firstTime) + 'ms'); // 何ミリ秒かかったかを表示する
+        showTime(firstTime, 'マップ作成');
     }
 
     //==============================================================================
@@ -2186,7 +1728,7 @@ https://github.com/pota-gon/GenerateWorld
                             if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, layer4[i][j]);
                             if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, layer5[i][j]);
                         } else if (BIOME[tile]) {
-                            createBiome(x, y, BIOME[tile], SEED_LENGTH, seed);
+                            createBiome(x, y, BIOME[tile], SEED_LENGTH);
                         } else {
                             // console.debug(tile);
                         }
@@ -2274,6 +1816,12 @@ https://github.com/pota-gon/GenerateWorld
     // 関数
     //==============================================================================
 
+    // 計測時間表示
+    function showTime(time, message) {
+        let endTime = Date.now(); // 終了時間
+        console.debug(message + '時間: ' + (endTime - time) + 'ms'); // 何ミリ秒かかったかを表示する
+    }
+
     // ワールド自動生成マップかどうかの判定
     function isGenerateWorld() {
         return Potadra_meta($dataMap.meta, 'ワールド自動生成');
@@ -2292,20 +1840,6 @@ https://github.com/pota-gon/GenerateWorld
             return $gameMap._potadra_worlds[PotadraGenerate_index(x, y, z)];
         } else {
             return $gameTemp._potadra_worlds[PotadraGenerate_index(x, y, z)];
-        }
-    }
-
-    /**
-     * マップデータの設定
-     *
-     * @param index - インデックス
-     * @param tileId - タイルID
-     */
-    function setMapData(index, tileId) {
-        if (RetentionSaveData) {
-           $gameMap._potadra_worlds[index] = tileId;
-        } else {
-           $gameTemp._potadra_worlds[index] = tileId;
         }
     }
 
@@ -2333,7 +1867,12 @@ https://github.com/pota-gon/GenerateWorld
      * @param {number} tileId - タイル ID
      */
     function setTileId(x, y, z, tileId) {
-        setMapData(PotadraGenerate_index(x, y, z), tileId);
+        const index = PotadraGenerate_index(x, y, z);
+        if (RetentionSaveData) {
+            $gameMap._potadra_worlds[index] = tileId;
+        } else {
+            $gameTemp._potadra_worlds[index] = tileId;
+        }
     }
 
     /**
@@ -2470,7 +2009,7 @@ https://github.com/pota-gon/GenerateWorld
             }
         });
     }
-    function setBiome(seed_length, seed) {
+    function setBiome(seed_length) {
         const BaseBiome = 2816;
         const BiomeSize = 1;
         const max_i = Math.ceil($dataMap.width / BiomeSize);
@@ -2485,13 +2024,13 @@ https://github.com/pota-gon/GenerateWorld
                 if (end_y > $dataMap.height) end_y = $dataMap.height;
                 for (let x = start_x; x < end_x; x++) {
                     for (let y = start_y; y < end_y; y++) {
-                        createBiome(x, y, BIOME[BaseBiome], seed_length, seed);
+                        createBiome(x, y, BIOME[BaseBiome], seed_length);
                     }
                 }
             }
         }
     }
-    function createBiome(x, y, biome, seed_length, seed) {
+    function createBiome(x, y, biome, seed_length) {
         // const tilesetId       = $gameMap.tilesetId();
         // const BiomeTileSets   = Biome; // JSON.parse(Biome);
         // const tile_set        = BiomeTileSets.tile_set;
@@ -2971,7 +2510,7 @@ https://github.com/pota-gon/GenerateWorld
     //--------------------------------------------------------------------------
     // メニューコマンド(ワールド再生成)
     //--------------------------------------------------------------------------
-    if (RegenerateCommand && Potadra_isTest(PlayTestRegenerate)) {
+    if (RegenerateCommand && Potadra_isTest()) {
         /**
          * メニュー画面で表示するコマンドウィンドウです。
          *
@@ -2983,9 +2522,7 @@ https://github.com/pota-gon/GenerateWorld
          */
         const _Window_MenuCommand_addMainCommands = Window_MenuCommand.prototype.addMainCommands;
         Window_MenuCommand.prototype.addMainCommands = function() {
-            if (Potadra_checkSwitch(HideRegenerateSwitch, false)) {
-                this.addCommand(RegenerateCommand, "regenerate_world", Potadra_checkSwitch(DisableRegenerateSwitch, false));
-            }
+            this.addCommand(RegenerateCommand, "regenerate_world");
             _Window_MenuCommand_addMainCommands.apply(this, arguments);
         };
 
@@ -3016,7 +2553,7 @@ https://github.com/pota-gon/GenerateWorld
     //--------------------------------------------------------------------------
     // メニューコマンド(マップJSON出力)
     //--------------------------------------------------------------------------
-    if (ExportJsonCommand && Potadra_isTest(PlayTestExportJson) && StorageManager.isLocalMode()) {
+    if (ExportJsonCommand && Potadra_isTest() && StorageManager.isLocalMode()) {
         /**
          * メニュー画面で表示するコマンドウィンドウです。
          *
@@ -3164,7 +2701,7 @@ https://github.com/pota-gon/GenerateWorld
     //==============================================================================
     // コマンドキー
     //==============================================================================
-    if (CommandKey && Potadra_isTest(PlayTestKey)) {
+    if (CommandKey && Potadra_isTest()) {
         let regenerate_code, export_json_code, output_json_code;
         if (RegenerateKey) {
             regenerate_code = Potadra_keyCode(RegenerateKey);
