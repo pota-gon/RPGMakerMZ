@@ -1,14 +1,14 @@
 /*:
 @plugindesc
-通貨単位切り替え Ver1.3.6(2022/4/1)
+通貨単位切り替え Ver1.3.7(2023/9/11)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/CurrencyUnit.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 戦闘画面等でエラーが発生することがあるので対策実施
-- コピーライト更新
+- MaxPrice.js と ShopRate.js の競合を解消
+- レート系のプラグインパラメータの桁数を変更
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -84,32 +84,32 @@ https://opensource.org/licenses/mit-license.php
 @text 購入レート
 @desc 購入倍率
 @min 0
-@decimals 5
-@default 1
+@decimals 2
+@default 1.00
 
 @param SecondBuyRate
 @type number
 @text 2つ目の通貨購入レート
 @desc 2つ目の通貨購入倍率
 @min 0
-@decimals 5
-@default 1
+@decimals 2
+@default 1.00
 
 @param SellRate
 @type number
 @text 売却レート
 @desc 売却倍率
 @min 0
-@decimals 5
-@default 0.5
+@decimals 2
+@default 0.50
 
 @param SecondSellRate
 @type number
 @text 2つ目の通貨売却レート
 @desc 2つ目の通貨売却倍率
 @min 0
-@decimals 5
-@default 0.5
+@decimals 2
+@default 0.50
 
 @command change_currency_unit
 @text 通貨切り替え
@@ -119,10 +119,80 @@ https://opensource.org/licenses/mit-license.php
     'use strict';
 
     // ベースプラグインの処理
+    const common_max_price_params = Potadra_getPluginParams('MaxPrice');
+    const CommonPriceMetaName = common_max_price_params ? String(common_max_price_params.PriceMetaName) || '価格' : false;
+    const common_shop_rate_params = Potadra_getPluginParams('ShopRate');
+    let CommonBuyRate  = common_shop_rate_params ? Number(common_shop_rate_params.BuyRate || 1) : 1;
+    let CommonSellRate = common_shop_rate_params ? Number(common_shop_rate_params.SellRate || 0.5) : 0.5;
+    const common_currency_unit_params = Potadra_getPluginParams('CurrencyUnit');
+    const CommonCurrencyUnitSwitch = Number(common_currency_unit_params.CurrencyUnitSwitch || 25);
+    const CommonSecondBuyRate  = Number(common_currency_unit_params.SecondBuyRate || 1);
+    const CommonSecondSellRate = Number(common_currency_unit_params.SecondSellRate || 0.5);
+    if (common_currency_unit_params) {
+        CommonBuyRate  = Number(common_currency_unit_params.BuyRate || 1);
+        CommonSellRate = Number(common_currency_unit_params.SellRate || 0.5);
+    }
+    Window_ShopBuy.prototype.makeItemList = function() {
+        this._data = [];
+        this._price = [];
+        for (const goods of this._shopGoods) {
+            const item = this.goodsToItem(goods);
+            if (item) {
+                this._data.push(item);
+                if (common_currency_unit_params && Potadra_isSecound(CommonCurrencyUnitSwitch)) {
+                    this._price.push(goods[2] === 0 ? Potadra_MetaPrice(item, CommonPriceMetaName, CommonSecondBuyRate) : goods[3]);
+                } else {
+                    this._price.push(goods[2] === 0 ? Potadra_MetaPrice(item, CommonPriceMetaName, CommonBuyRate) : goods[3]);
+                }
+            }
+        }
+    };
+    Scene_Shop.prototype.sellingPrice = function() {
+        if (common_currency_unit_params && Potadra_isSecound(CommonCurrencyUnitSwitch)) {
+            return Math.floor(Potadra_MetaPrice(this._item, CommonPriceMetaName, CommonSecondSellRate));
+        } else {
+            return Math.floor(Potadra_MetaPrice(this._item, CommonPriceMetaName, CommonSellRate));
+        }
+    };
+    function Potadra_meta(meta, tag) {
+        if (meta) {
+            const data = meta[tag];
+            if (data) {
+                if (data !== true) {
+                    return data.trim();
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    function Potadra_MetaPrice(item, price_meta_name, rate = 1) {
+        const meta_price = Potadra_meta(item.meta, price_meta_name);
+        if (meta_price) {
+            return Number(meta_price) * rate;
+        } else {
+            return item.price * rate;
+        }
+    }
+    function Potadra_isPlugin(plugin_name) {
+        return PluginManager._scripts.includes(plugin_name);
+    }
+    function Potadra_getPluginParams(plugin_name) {
+        let params = false;
+        if (Potadra_isPlugin(plugin_name)) {
+            params = PluginManager.parameters(plugin_name);
+        }
+        return params;
+    }
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
+    function Potadra_isSecound(switch_no) {
+        return $gameSwitches && $gameSwitches.value(switch_no) === true;
+    }
+
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
@@ -133,14 +203,6 @@ https://opensource.org/licenses/mit-license.php
     const CurrencyVariable       = Number(params.CurrencyVariable || 30);
     const BuyName                = String(params.BuyName) || '交換する';
     const SecondCurrencyUnitName = String(params.SecondCurrencyUnitName) || '枚';
-    const BuyRate                = Number(params.BuyRate || 1);
-    const SecondBuyRate          = Number(params.SecondBuyRate || 1);
-    const SellRate               = Number(params.SellRate || 0.5);
-    const SecondSellRate         = Number(params.SecondSellRate || 0.5);
-
-    function isSecound() {
-        return $gameSwitches && $gameSwitches.value(CurrencyUnitSwitch) === true;
-    }
 
     /**
      * 所持金の設定
@@ -156,7 +218,7 @@ https://opensource.org/licenses/mit-license.php
         $gameVariables.setValue(CurrencyVariable, $gameParty.gold());
         setGold($gameVariables.value(CurrencyVariable));
 
-        if(isSecound()) {
+        if (Potadra_isSecound(CurrencyUnitSwitch)) {
             $gameSwitches.setValue(CurrencyUnitSwitch, false);
         } else {
             $gameSwitches.setValue(CurrencyUnitSwitch, true);
@@ -166,7 +228,7 @@ https://opensource.org/licenses/mit-license.php
     // 通貨の表示切り替え
     Object.defineProperty(TextManager, 'currencyUnit', {
         get: function() {
-            if (isSecound()) {
+            if (Potadra_isSecound(CurrencyUnitSwitch)) {
                 return SecondCurrencyUnitName;
             } else {
                 return $dataSystem.currencyUnit;
@@ -187,51 +249,12 @@ https://opensource.org/licenses/mit-license.php
      */
     const _Window_ShopCommand_makeCommandList = Window_ShopCommand.prototype.makeCommandList;
     Window_ShopCommand.prototype.makeCommandList = function() {
-        if($gameSwitches.value(CurrencyUnitSwitch) === true) {
+        if ($gameSwitches.value(CurrencyUnitSwitch) === true) {
             this.addCommand(BuyName, "buy");
             this.addCommand(TextManager.sell, "sell", !this._purchaseOnly);
             this.addCommand(TextManager.cancel, "cancel");
         } else {
             _Window_ShopCommand_makeCommandList.apply(this, arguments);
-        }
-    };
-
-
-    /**
-     * ショップ画面の処理を行うクラスです。
-     *
-     * @class
-     */
-
-    /**
-     * 売値の取得
-     *
-     * @returns {}
-     */
-    Scene_Shop.prototype.sellingPrice = function() {
-        if(isSecound()) {
-            return Math.floor(this._item.price * SecondSellRate);
-        } else {
-            return Math.floor(this._item.price * SellRate);
-        }
-    };
-
-    /**
-     * アイテムリストの作成
-     */
-    Window_ShopBuy.prototype.makeItemList = function() {
-        this._data = [];
-        this._price = [];
-        for (const goods of this._shopGoods) {
-            const item = this.goodsToItem(goods);
-            if (item) {
-                this._data.push(item);
-                if(isSecound()) {
-                    this._price.push(goods[2] === 0 ? item.price * SecondBuyRate : goods[3]);
-                } else {
-                    this._price.push(goods[2] === 0 ? item.price * BuyRate : goods[3]);
-                }
-            }
         }
     };
 })();

@@ -1,16 +1,14 @@
 /*:
 @plugindesc
-ショップレート Ver1.3.4(2022/9/10)
+ショップレート Ver1.3.5(2023/9/11)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Shop/ShopRate.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- TODO追加
-
-・TODO
-- ヘルプ更新
+- ヘルプ追加
+- MaxPrice.js と CurrencyUnit.js の競合を解消
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -21,7 +19,20 @@ https://opensource.org/licenses/mit-license.php
 ショップの購入時と売却時のレートを設定します。
 
 ## 使い方
+プラグインパラメータの購入レートもしくは、売却レートを変更します。  
+デフォルトはプラグイン導入前と同じになっています。
 
+・設定例: 購入レートも売却レートも設定方法は一緒です。
+- 10倍に設定したい場合: 10
+- 5倍に設定したい場合 : 5
+- 2倍に設定したい場合 : 2
+- 価格と同じ          : 1
+- 半額にしたい場合    : 0.5
+- 1/4にしたい場合     : 0.25
+- 1/10にしたい場合    : 0.1
+
+CurrencyUnit.js 導入時は、このプラグインの設定は無効となるため、  
+CurrencyUnit.js のプラグインパラメータで、レート設定を行ってください。
 
 @param BuyRate
 @type number
@@ -43,37 +54,19 @@ https://opensource.org/licenses/mit-license.php
     'use strict';
 
     // ベースプラグインの処理
-    function Potadra_getPluginName(extension = 'js') {
-        const reg = new RegExp(".+\/(.+)\." + extension);
-        return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
+    const common_max_price_params = Potadra_getPluginParams('MaxPrice');
+    const CommonPriceMetaName = common_max_price_params ? String(common_max_price_params.PriceMetaName) || '価格' : false;
+    const common_shop_rate_params = Potadra_getPluginParams('ShopRate');
+    let CommonBuyRate  = common_shop_rate_params ? Number(common_shop_rate_params.BuyRate || 1) : 1;
+    let CommonSellRate = common_shop_rate_params ? Number(common_shop_rate_params.SellRate || 0.5) : 0.5;
+    const common_currency_unit_params = Potadra_getPluginParams('CurrencyUnit');
+    const CommonCurrencyUnitSwitch = Number(common_currency_unit_params.CurrencyUnitSwitch || 25);
+    const CommonSecondBuyRate  = Number(common_currency_unit_params.SecondBuyRate || 1);
+    const CommonSecondSellRate = Number(common_currency_unit_params.SecondSellRate || 0.5);
+    if (common_currency_unit_params) {
+        CommonBuyRate  = Number(common_currency_unit_params.BuyRate || 1);
+        CommonSellRate = Number(common_currency_unit_params.SellRate || 0.5);
     }
-
-    // パラメータ用変数
-    const plugin_name = Potadra_getPluginName();
-    const params      = PluginManager.parameters(plugin_name);
-
-    // 各パラメータ用変数
-    const BuyRate  = Number(params.BuyRate || 1);
-    const SellRate = Number(params.SellRate || 0.5);
-
-    /**
-     * ショップ画面の処理を行うクラスです。
-     *
-     * @class
-     */
-
-    /**
-     * 売値の取得
-     *
-     * @returns {}
-     */
-    Scene_Shop.prototype.sellingPrice = function() {
-        return Math.floor(this._item.price * SellRate);
-    };
-
-    /**
-     * アイテムリストの作成
-     */
     Window_ShopBuy.prototype.makeItemList = function() {
         this._data = [];
         this._price = [];
@@ -81,8 +74,54 @@ https://opensource.org/licenses/mit-license.php
             const item = this.goodsToItem(goods);
             if (item) {
                 this._data.push(item);
-                this._price.push(goods[2] === 0 ? item.price * BuyRate : goods[3]);
+                if (common_currency_unit_params && Potadra_isSecound(CommonCurrencyUnitSwitch)) {
+                    this._price.push(goods[2] === 0 ? Potadra_MetaPrice(item, CommonPriceMetaName, CommonSecondBuyRate) : goods[3]);
+                } else {
+                    this._price.push(goods[2] === 0 ? Potadra_MetaPrice(item, CommonPriceMetaName, CommonBuyRate) : goods[3]);
+                }
             }
         }
     };
+    Scene_Shop.prototype.sellingPrice = function() {
+        if (common_currency_unit_params && Potadra_isSecound(CommonCurrencyUnitSwitch)) {
+            return Math.floor(Potadra_MetaPrice(this._item, CommonPriceMetaName, CommonSecondSellRate));
+        } else {
+            return Math.floor(Potadra_MetaPrice(this._item, CommonPriceMetaName, CommonSellRate));
+        }
+    };
+    function Potadra_meta(meta, tag) {
+        if (meta) {
+            const data = meta[tag];
+            if (data) {
+                if (data !== true) {
+                    return data.trim();
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    function Potadra_MetaPrice(item, price_meta_name, rate = 1) {
+        const meta_price = Potadra_meta(item.meta, price_meta_name);
+        if (meta_price) {
+            return Number(meta_price) * rate;
+        } else {
+            return item.price * rate;
+        }
+    }
+    function Potadra_isSecound(switch_no) {
+        return $gameSwitches && $gameSwitches.value(switch_no) === true;
+    }
+    function Potadra_isPlugin(plugin_name) {
+        return PluginManager._scripts.includes(plugin_name);
+    }
+    function Potadra_getPluginParams(plugin_name) {
+        let params = false;
+        if (Potadra_isPlugin(plugin_name)) {
+            params = PluginManager.parameters(plugin_name);
+        }
+        return params;
+    }
+
 })();
