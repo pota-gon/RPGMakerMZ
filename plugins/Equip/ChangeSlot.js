@@ -1,14 +1,14 @@
 /*:
 @plugindesc
-装備スロット変更 Ver1.4.4(2023/7/30)
+装備スロット変更 Ver1.4.5(2023/11/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Equip/ChangeSlot.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 同じ種別の装備は1つしか装備できなくなる種別タグを追加
-- 強力な装備など一定数しか装備できない装備制限タグを追加
+- 装備タイプ名を指定出来る機能追加
+- エラーが発生するバグ修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -46,11 +46,11 @@ https://opensource.org/licenses/mit-license.php
 例: <装備制限:1> で1つしか装備できない装備にできます。
 
 @param Slots
-@type number[]
+@type string[]
 @text 装備スロット
-@desc 装備スロット(装備タイプ)の番号を指定
+@desc 装備スロット()の番号か装備タイプ名を指定
 装備タイプがデフォルトの場合は、1: 武器 5: 装飾品
-@default ["1", "2", "3", "4", "5", "5"]
+@default ["武器", "盾", "頭", "身体", "装飾品", "装飾品"]
 
 @param FixStatusEquipOver
 @type boolean
@@ -92,11 +92,11 @@ https://opensource.org/licenses/mit-license.php
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
-    function Potadra_numberArray(data) {
+    function Potadra_stringArray(data) {
         const arr = [];
         if (data) {
             for (const value of JSON.parse(data)) {
-                arr.push(Number(value));
+                arr.push(String(value));
             }
         }
         return arr;
@@ -127,7 +127,7 @@ https://opensource.org/licenses/mit-license.php
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
-    const Slots              = Potadra_numberArray(params.Slots);
+    const Slots              = Potadra_stringArray(params.Slots);
     const FixStatusEquipOver = Potadra_convertBool(params.FixStatusEquipOver);
     const Slot               = Number(params.Slot) || 0;
     const Type               = String(params.Type) || '種別';
@@ -147,10 +147,28 @@ https://opensource.org/licenses/mit-license.php
      * @returns {array} 装備スロットの配列
      */
     Game_Actor.prototype.equipSlots = function() {
-        if (Slots.length >= 2 && this.isDualWield()) {
-            Slots[1] = 1;
+        const slots = [];
+        for (let i = 0; i < Slots.length; i++) {
+            slots.push(Slots[i]);
         }
-        return Slots;
+
+        // 装備タイプに文字を指定した場合の設定
+        for (let i = 0; i < slots.length; i++) {
+            const etype = slots[i];
+            if (isNaN(etype)) { // 文字列
+                for (let j = 1; j < $dataSystem.equipTypes.length; j++) {
+                    if (etype === $dataSystem.equipTypes[j]) {
+                        slots[i] = j;
+                    }
+                }
+            }
+        }
+
+        if (slots.length >= 2 && this.isDualWield()) {
+            slots[1] = 1;
+        }
+
+        return slots;
     };
 
     // 装備タイプバグ修正
@@ -275,7 +293,7 @@ https://opensource.org/licenses/mit-license.php
     }
     const _Game_Actor_PotadraEquipItems = Game_Actor.prototype.PotadraEquipItems;
     Game_Actor.prototype.PotadraEquipItems = function(slotId, etypeId) {
-        const items = _Game_Actor_PotadraEquipItems_apply(this, arguments);
+        const items = _Game_Actor_PotadraEquipItems.apply(this, arguments);
         return items.filter(item => canEquipType(this, item, slotId) && catEquipLimit(this, item));
     };
 })();

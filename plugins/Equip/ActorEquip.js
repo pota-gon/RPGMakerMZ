@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-アクター装備 Ver1.0.2(2023/7/30)
+アクター装備 Ver1.0.3(2023/11/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Equip/ActorEquip.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 装備スロット変更(ChangeSlot.js)の種別タグ追加による競合を修正
+- エラーが発生するバグ修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -234,7 +234,7 @@ https://opensource.org/licenses/mit-license.php
     }
     const _Game_Actor_PotadraEquipItems = Game_Actor.prototype.PotadraEquipItems;
     Game_Actor.prototype.PotadraEquipItems = function(slotId, etypeId) {
-        const items = _Game_Actor_PotadraEquipItems_apply(this, arguments);
+        const items = _Game_Actor_PotadraEquipItems.apply(this, arguments);
         return items.filter(item => checkActor(this.actorId(), etypeId, item) && onlyEquip(this, item));
     };
 })();

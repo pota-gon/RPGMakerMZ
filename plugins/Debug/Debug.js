@@ -1,13 +1,14 @@
 /*:
 @plugindesc
-デバッグ用のプラグイン Ver1.4.5(2022/12/2)
+デバッグ用のプラグイン Ver1.4.6(2023/11/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Debug/Debug.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- URLを修正
+- 競合対策を追加
+- アイテムの初期個数を指定出来るプラグインパラメータを追加
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -114,6 +115,16 @@ ONのプラグインがない状態で、ゲームを起動可能になります
     @off 入手しない
     @default true
 
+        @param GetItemCount
+        @parent GetItem
+        @type number
+        @text 入手アイテム数
+        @desc 入手するアイテム数
+              0 で最大数まで入手
+        @default 0
+        @min 0
+        @max 999999999999999
+
     @param GetWeapon
     @parent AllItem
     @type boolean
@@ -123,6 +134,16 @@ ONのプラグインがない状態で、ゲームを起動可能になります
     @off 入手しない
     @default true
 
+        @param GetWeaponCount
+        @parent GetWeapon
+        @type number
+        @text 入手武器数
+        @desc 入手する武器数
+              0 で最大数まで入手
+        @default 0
+        @min 0
+        @max 999999999999999
+
     @param GetArmor
     @parent AllItem
     @type boolean
@@ -131,6 +152,16 @@ ONのプラグインがない状態で、ゲームを起動可能になります
     @on 入手する
     @off 入手しない
     @default true
+
+        @param GetArmorCount
+        @parent GetArmor
+        @type number
+        @text 入手防具数
+        @desc 入手する防具数
+              0 で最大数まで入手
+        @default 0
+        @min 0
+        @max 999999999999999
 
 @param AlwaysCanEscape
 @type boolean
@@ -180,6 +211,9 @@ ONのプラグインがない状態で、ゲームを起動可能になります
     const GetItem             = Potadra_convertBool(params.GetItem);
     const GetWeapon           = Potadra_convertBool(params.GetWeapon);
     const GetArmor            = Potadra_convertBool(params.GetArmor);
+    const GetItemCount        = Number(params.GetItemCount) || 0;
+    const GetWeaponCount      = Number(params.GetWeaponCount) || 0;
+    const GetArmorCount       = Number(params.GetArmorCount) || 0;
     const AlwaysCanEscape     = Potadra_convertBool(params.AlwaysCanEscape);
 
     // 他プラグイン連携(プラグインの導入有無)
@@ -262,18 +296,22 @@ ONのプラグインがない状態で、ゲームを起動可能になります
             const _Game_Party_initialize = Game_Party.prototype.initialize;
             Game_Party.prototype.initialize = function() {
                 _Game_Party_initialize.apply(this, arguments);            
-                if (GetItem) this.setupAllItems($dataItems);
-                if (GetWeapon) this.setupAllItems($dataWeapons);
-                if (GetArmor) this.setupAllItems($dataArmors);
+                if (GetItem) this.potadraSetupGetItems($dataItems, GetItemCount);
+                if (GetWeapon) this.potadraSetupGetItems($dataWeapons, GetWeaponCount);
+                if (GetArmor) this.potadraSetupGetItems($dataArmors, GetArmorCount);
             };
 
             /**
              * テスト用に全アイテム取得
              */
-            Game_Party.prototype.setupAllItems = function(data) {
+            Game_Party.prototype.potadraSetupGetItems = function(data, count = 0) {
                 for (const item of data) {
                     if (item && item.name.length > 0 && (!ExceptItemName || !item.name.includes(ExceptItemName))) {
-                        this.gainItem(item, this.maxItems(item));
+                        if (count === 0) {
+                            this.gainItem(item, this.maxItems(item));
+                        } else {
+                            this.gainItem(item, count);
+                        }
                     }
                 }
             };

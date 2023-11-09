@@ -34,5 +34,6 @@ plugins/Other/HtmlSupport.js
 plugins/Other/Shield.js
 plugins/Save/FixJson.js
 plugins/Save/LieTexture.js
+plugins/Skill/CriticalSkill.js
 plugins/System/LearningDevice.js
 plugins/System/MoveSpeed.js
