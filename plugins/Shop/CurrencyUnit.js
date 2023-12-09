@@ -2,7 +2,7 @@
 @plugindesc
 通貨単位切り替え Ver1.3.7(2023/9/11)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/CurrencyUnit.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Shop/CurrencyUnit.js
 @target MZ
 @author ポテトードラゴン
 

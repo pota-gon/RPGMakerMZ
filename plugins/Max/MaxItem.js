@@ -1,15 +1,13 @@
 /*:
 @plugindesc
-アイテムの最大所持数変更 Ver1.6.7(2022/9/10)
+アイテムの最大所持数変更 Ver1.6.8(2023/12/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Max/MaxItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- Debug.js のアイテム全入手時にエラーになるバグ修正
-- meta データの取得処理を修正
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+- 競合対策のため、共通処理を整理
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -82,9 +80,41 @@ https://opensource.org/licenses/mit-license.php
     'use strict';
 
     // ベースプラグインの処理
-    function Potadra_getPluginName(extension = 'js') {
-        const reg = new RegExp(".+\/(.+)\." + extension);
-        return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
+    const gain_item_debug_params = Potadra_getPluginParams('Debug');
+    const gain_item_max_item_params = Potadra_getPluginParams('MaxItem');
+    const GainItemAutoSell          = Potadra_convertBool(gain_item_max_item_params.AutoSell);
+    const GainItemSellRate          = Number(gain_item_max_item_params.SellRate || 0.5);
+    const gain_item_name_item_params = Potadra_getPluginParams('NameItem');
+    if (gain_item_debug_params || gain_item_max_item_params || gain_item_name_item_params) {
+        Game_Party.prototype.gainItem = function(item, amount, includeEquip) {
+            const container = this.itemContainer(item);
+            if (container) {
+                const lastNumber = this.numItems(item); // 現在のアイテム所持数
+                const newNumber  = lastNumber + amount; // 増減後のアイテム所持数
+                const maxNumber  = this.maxItems(item); // アイテムの最大数
+                if (GainItemAutoSell) {
+                    if (newNumber > maxNumber) { // 増減後のアイテム所持数がアイテムの最大数を超えたら
+                        const sellNumber = newNumber - maxNumber; // 売却個数
+                        if ($gameParty) $gameParty.gainGold(sellNumber * Math.floor(item.price * GainItemSellRate));
+                    }
+                }
+                if (gain_item_name_item_params) {
+                    container[item.name] = newNumber.clamp(0, this.maxItems(item));
+                    if (container[item.name] === 0) {
+                        delete container[item.name];
+                    }
+                } else {
+                    container[item.id] = newNumber.clamp(0, maxNumber);
+                    if (container[item.id] === 0) {
+                        delete container[item.id];
+                    }
+                }
+                if (includeEquip && newNumber < 0) {
+                    this.discardMembersEquip(item, -newNumber);
+                }
+                if ($gameMap) $gameMap.requestRefresh();
+            }
+        };
     }
     function Potadra_convertBool(bool) {
         if (bool === "false" || bool === '' || bool === undefined) {
@@ -95,6 +125,17 @@ https://opensource.org/licenses/mit-license.php
     }
     function Potadra_isPlugin(plugin_name) {
         return PluginManager._scripts.includes(plugin_name);
+    }
+    function Potadra_getPluginParams(plugin_name) {
+        let params = false;
+        if (Potadra_isPlugin(plugin_name)) {
+            params = PluginManager.parameters(plugin_name);
+        }
+        return params;
+    }
+    function Potadra_getPluginName(extension = 'js') {
+        const reg = new RegExp(".+\/(.+)\." + extension);
+        return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
     function Potadra_meta(meta, tag) {
         if (meta) {
@@ -117,6 +158,7 @@ https://opensource.org/licenses/mit-license.php
         return max_digit_str ? String(max_digit_str) : max_digits;
     }
 
+
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
     const params      = PluginManager.parameters(plugin_name);
@@ -125,13 +167,8 @@ https://opensource.org/licenses/mit-license.php
     const MaxItem           = Number(params.MaxItem || 9999);
     const MaxDigits         = String(params.MaxDigits) || '00';
     const MaxCol            = Number(params.MaxCol || 2);
-    const AutoSell          = Potadra_convertBool(params.AutoSell);
-    const SellRate          = Number(params.SellRate || 0.5);
     const MaxItemMetaName   = String(params.MaxItemMetaName) || '最大所持数';
     const MaxDigitsMetaName = String(params.MaxDigitsMetaName) || '最大桁数';
-
-    // 他プラグイン連携(プラグインの導入有無)
-    const NameItem = Potadra_isPlugin('NameItem');
 
     /**
      * アイテムの最大所持数
@@ -154,9 +191,6 @@ https://opensource.org/licenses/mit-license.php
      *
      * @class
      */
-    function sellingPrice(item) {
-        return Math.floor(item.price * SellRate);
-    }
 
     /**
      * アイテムの最大所持数取得
@@ -165,50 +199,6 @@ https://opensource.org/licenses/mit-license.php
      */
     Game_Party.prototype.maxItems = function(item) {
         return maxItem(item);
-    };
-
-    /**
-     * アイテムの増加（減少）
-     *     include_equip : 装備品も含める
-     *
-     * @param {} item - 
-     * @param {} amount - 
-     * @param {} includeEquip - 
-     */
-    Game_Party.prototype.gainItem = function(item, amount, includeEquip) {
-        const container = this.itemContainer(item);
-        if (container) {
-            const lastNumber = this.numItems(item); // 現在のアイテム所持数
-            const newNumber  = lastNumber + amount; // 増減後のアイテム所持数
-            const maxNumber  = this.maxItems(item); // アイテムの最大数
-
-            // 自動売却
-            if (AutoSell) {
-                 // アイテムの最大数
-                if (newNumber > maxNumber) { // 増減後のアイテム所持数がアイテムの最大数を超えたら
-                    const sellNumber = newNumber - maxNumber; // 売却個数
-                    if ($gameParty) $gameParty.gainGold(sellNumber * sellingPrice(item));
-                }
-            }
-
-            // アイテム名前保存
-            if (NameItem) {
-                container[item.name] = newNumber.clamp(0, this.maxItems(item));
-                if (container[item.name] === 0) {
-                    delete container[item.name];
-                }
-            } else {
-                container[item.id] = newNumber.clamp(0, maxNumber);
-                if (container[item.id] === 0) {
-                    delete container[item.id];
-                }
-            }
-
-            if (includeEquip && newNumber < 0) {
-                this.discardMembersEquip(item, -newNumber);
-            }
-            if ($gameMap) $gameMap.requestRefresh();
-        }
     };
 
     /**

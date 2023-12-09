@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-TP Ver1.0.1(2022/9/10)
+TP Ver1.0.2(2023/12/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/Tp.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+- TP最大値 を設定する機能追加
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -20,6 +20,12 @@ TPの設定を変更します。
 ## 使い方
 TP関連のパラメータを必要に応じて変更してください。
 
+@param MaxTp
+@type number
+@text TP最大値
+@desc TPの最大値
+@default 100
+
 @param FixedTp
 @type boolean
 @text TP初期化固定
@@ -28,12 +34,12 @@ TP関連のパラメータを必要に応じて変更してください。
 @off 固定にしない
 @default true
 
-@param InitTp
-@parent FixedTp
-@type number
-@text 戦闘開始TP初期値
-@desc 戦闘開始時のTP初期値
-@default 0
+    @param InitTp
+    @parent FixedTp
+    @type number
+    @text 戦闘開始TP初期値
+    @desc 戦闘開始時のTP初期値
+    @default 0
 
 @param NoChargeTpDamage
 @type boolean
@@ -51,6 +57,9 @@ TP関連のパラメータを必要に応じて変更してください。
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
+    function Potadra_convertNum(value, default_value) {
+        return Number(value) || default_value;
+    }
     function Potadra_convertBool(bool) {
         if (bool === "false" || bool === '' || bool === undefined) {
             return false;
@@ -58,18 +67,25 @@ TP関連のパラメータを必要に応じて変更してください。
             return true;
         }
     }
-    function Potadra_convertNum(value, default_value) {
-        return Number(value) || default_value;
-    }
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
+    const MaxTp            = Potadra_convertNum(params.MaxTp, 100);
     const FixedTp          = Potadra_convertBool(params.FixedTp);
     const InitTp           = Potadra_convertNum(params.InitTp, 0);
     const NoChargeTpDamage = Potadra_convertBool(params.NoChargeTpDamage);
+
+    /**
+     * TP の最大値を取得
+     *
+     * @returns {number} 
+     */
+    Game_BattlerBase.prototype.maxTp = function() {
+        return MaxTp;
+    };
 
     /**
      * TP の初期化

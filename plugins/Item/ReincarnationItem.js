@@ -1,15 +1,14 @@
 /*:
 @plugindesc
-転生アイテム Ver1.2.0(2023/7/30)
+転生アイテム Ver1.2.1(2023/12/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Item/ReincarnationItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 転生後のレベルを指定できるように修正
-- 転生後のパラメータをメモ欄で設定できるように変更
-- 競合対策追加
+- リファクタリング
+- ヘルプ修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -22,6 +21,7 @@ https://opensource.org/licenses/mit-license.php
 ## 使い方
 1. 転生用アイテムを作成します。  
 2. アイテムのメモ欄に以下のメモを記載します。  
+※ スキルに設定すると転生用スキルを作成することができます。
 
 <転生:99,1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1>
 => 転生の設定を
@@ -71,8 +71,8 @@ https://opensource.org/licenses/mit-license.php
 
 @param ReincarnationMetaName
 @text 転生タグ
-@desc メモ欄のタグ名
-空文字の場合は、 "転生" になります
+@desc 転生に使うメモ欄タグの名称
+デフォルトは 転生
 @default 転生
 */
 (() => {
@@ -112,15 +112,15 @@ https://opensource.org/licenses/mit-license.php
     };
 
     /**
-     * 転生 
+     * 転生
      *
      * @param {} item - 
      * @param {} target - 
      */
     function applyReincarnation(action, target) {
         const item = action.item();
-        if (testApplyReincarnation(target, item)) {
-            const data = Potadra_metaData(item.meta[ReincarnationMetaName], ',');
+        const data = Potadra_metaData(item.meta[ReincarnationMetaName], ',');
+        if (testApplyReincarnation(target, data)) {
             const LV  = Number(data[1]) || 1;
             const MHP = Number(data[2]) || 0.1;
             const MMP = Number(data[3]) || 0.1;
@@ -161,10 +161,9 @@ https://opensource.org/licenses/mit-license.php
      * @param {} target - 
      * @param {} item - 
      */
-    function testApplyReincarnation(target, item) {
-        const reincarnation_level = Potadra_metaData(item.meta[ReincarnationMetaName], ',');
-        if (reincarnation_level) {
-            return target.level >= Number(reincarnation_level[0]);
+    function testApplyReincarnation(target, data) {
+        if (data) {
+            return target.level >= Number(data[0]);
         } else {
             return false;
         }

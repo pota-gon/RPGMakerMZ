@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-全回復 Ver1.0.5(2023/4/3)
+全回復 Ver1.0.6(2023/12/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Recover.js
 @orderAfter dsJobChangeMZ
@@ -8,8 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- ステート解除から除外する設定追加
-- 競合対策を実施
+- 戦闘終了後の回復処理をマップに移動してから実施するように修正
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -386,22 +385,19 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
     }
 
     /**
-     * 戦闘終了
-     *
-     * @param {} result - 結果（0:勝利 1:逃走 2:敗北）
+     * 戦闘終了: シーン移動
      */
     if (BattleEndRecover) {
         if (Potadra_checkSwitch(EndRecoverSwitch)) {
-            const _BattleManager_endBattle = BattleManager.endBattle;
-            BattleManager.endBattle = function(result) {
+            const _BattleManager_updateBattleEnd = BattleManager.updateBattleEnd;
+            BattleManager.updateBattleEnd = function() {
+                _BattleManager_updateBattleEnd.apply(this, arguments);
                 $gameParty.battleMembers().forEach(function(actor) {
                     recoverAllTp(actor, EndClearStates, EndHpRecover, EndMpRecover, EndTpRecover);
                 }, this);
-                _BattleManager_endBattle.apply(this, arguments);
             };
         }
     }
-
 
     if (LevelUpRecover) {
         if (Potadra_checkSwitch(LevelRecoverSwitch)) {

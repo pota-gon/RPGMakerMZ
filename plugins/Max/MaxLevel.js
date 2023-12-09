@@ -1,14 +1,16 @@
 /*:
 @plugindesc
-レベル上限突破 Ver0.14.2(2023/7/12)
+レベル上限突破 Ver0.14.3(2023/12/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Max/MaxLevel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- アクター初期値メモ設定追加
-- ヘルプ更新
+- 初期値と成長率をプラグインパラメータで設定出来るように修正
+- 初期レベルをデータベースで設定したとき正しく反映されないバグ修正
+- 成長率を設定できる機能追加
+- ヘルプ追記
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -38,7 +40,16 @@ https://opensource.org/licenses/mit-license.php
 
 <初期値:120,120,15,15,15,15,15,15>
 => アクターの初期値を HP,MP,攻撃力,防御力,魔法力,魔法防御,敏捷性,運 
-   で指定します。レベルごとの成長率は、HP・MPが10、他の能力値は1
+   で指定します。
+
+<成長率:120,120,15,15,15,15,15,15>
+=> アクターの成長率を HP,MP,攻撃力,防御力,魔法力,魔法防御,敏捷性,運 
+   で指定します。
+
+<パラメータ名:初期値,成長率>
+=> パラメータごとに個別に設定することが出来ます。 
+   パラメータ名は、用語で指定した名称と同じです。 
+   最大MPの設定例: <最大MP:120,15>
 
 ※ メモ欄未記載の場合
 => アクターの初期値を HP・MP: 100 他の能力値は 10 で指定します。
@@ -90,15 +101,13 @@ https://opensource.org/licenses/mit-license.php
 @type string
 @text 初期値名称
 @desc アクターのメモに記載するメタデータ(<初期値>)の名称
-      レベルごとの成長率は、HP・MPが10、他の能力値は1
 @default 初期値
 
-@param SmallFishName
+@param GrowName
 @type string
-@text ザコ名称
-@desc アクターのメモに記載するメタデータ(<ザコ>)の名称
-      ザコは初期能力が低くなる
-@default ザコ
+@text 成長率名称
+@desc アクターのメモに記載するメタデータ(<成長率>)の名称
+@default 成長率
 
 @param MobName
 @type string
@@ -107,6 +116,13 @@ https://opensource.org/licenses/mit-license.php
 モブは初期能力が低くなる
 @default モブ
 
+@param SmallFishName
+@type string
+@text ザコ名称
+@desc アクターのメモに記載するメタデータ(<ザコ>)の名称
+      ザコは初期能力が低くなる
+@default ザコ
+
 @param MaxLevelMenu
 @type boolean
 @text レベル上限突破メニュー
@@ -114,6 +130,122 @@ https://opensource.org/licenses/mit-license.php
 @on レベル上限突破メニュー
 @off 通常メニュー
 @default false
+
+@param Init
+@text 初期値
+@desc ※ 分類用のパラメータです。
+
+    @param NormalInitHp
+    @parent Init
+    @type number
+    @text HP初期値(通常)
+    @desc タグを指定しない場合の初期値
+    @default 100
+    @min 0
+    @max 999999999999999
+
+    @param NormalInitMp
+    @parent Init
+    @type number
+    @text MP初期値(通常)
+    @desc タグを指定しない場合の初期値
+    @default 100
+    @min 0
+    @max 999999999999999
+
+    @param NormalInitParam
+    @parent Init
+    @type number
+    @text 能力初期値(通常)
+    @desc タグを指定しない場合の初期値
+    @default 10
+    @min 0
+    @max 999999999999999
+
+    @param MobInitHp
+    @parent Init
+    @type number
+    @text HP初期値(モブ)
+    @desc タグを指定しない場合の初期値
+    @default 50
+    @min 0
+    @max 999999999999999
+
+    @param MobInitMp
+    @parent Init
+    @type number
+    @text MP初期値(モブ)
+    @desc タグを指定しない場合の初期値
+    @default 50
+    @min 0
+    @max 999999999999999
+
+    @param MobInitParam
+    @parent Init
+    @type number
+    @text 能力初期値(モブ)
+    @desc タグを指定しない場合の初期値
+    @default 5
+    @min 0
+    @max 999999999999999
+
+    @param SmallFishInitHp
+    @parent Init
+    @type number
+    @text HP初期値(ザコ)
+    @desc タグを指定しない場合の初期値
+    @default 10
+    @min 0
+    @max 999999999999999
+
+    @param SmallFishInitMp
+    @parent Init
+    @type number
+    @text MP初期値(ザコ)
+    @desc タグを指定しない場合の初期値
+    @default 10
+    @min 0
+    @max 999999999999999
+
+    @param SmallFishInitParam
+    @parent Init
+    @type number
+    @text 能力初期値(ザコ)
+    @desc タグを指定しない場合の初期値
+    @default 1
+    @min 0
+    @max 999999999999999
+
+@param Increase
+@text 成長率
+@desc ※ 分類用のパラメータです。
+
+    @param NormalIncreaseHp
+    @parent Increase
+    @type number
+    @text HP成長率
+    @desc タグを指定しない場合の成長率
+    @default 10
+    @min 0
+    @max 999999999999999
+
+    @param NormalIncreaseMp
+    @parent Increase
+    @type number
+    @text MP成長率
+    @desc タグを指定しない場合の成長率
+    @default 10
+    @min 0
+    @max 999999999999999
+
+    @param NormalIncreaseParam
+    @parent Increase
+    @type number
+    @text 能力成長率
+    @desc タグを指定しない場合の成長率
+    @default 1
+    @min 0
+    @max 999999999999999
 
 @command change_level
 @text レベルの変更
@@ -234,14 +366,27 @@ https://opensource.org/licenses/mit-license.php
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
-    const MinLevel       = Number(params.MinLevel || 1);
-    const MaxLevel       = Number(params.MaxLevel || 9999);
-    const MinLevelName   = String(params.MinLevelName || '初期レベル');
-    const MaxLevelName   = String(params.MaxLevelName || '最大レベル');
-    const InitName       = String(params.InitName || '初期値');
-    const SmallFishName  = String(params.SmallFishName || 'ザコ');
-    const MobName        = String(params.MobName || 'モブ');
-    const MaxLevelMenu   = Potadra_convertBool(params.MaxLevelMenu);
+    const MinLevel            = Number(params.MinLevel || 1);
+    const MaxLevel            = Number(params.MaxLevel || 9999);
+    const MinLevelName        = String(params.MinLevelName || '初期レベル');
+    const MaxLevelName        = String(params.MaxLevelName || '最大レベル');
+    const InitName            = String(params.InitName || '初期値');
+    const GrowName            = String(params.GrowName || '成長率');
+    const MobName             = String(params.MobName || 'モブ');
+    const SmallFishName       = String(params.SmallFishName || 'ザコ');
+    const MaxLevelMenu        = Potadra_convertBool(params.MaxLevelMenu);
+    const NormalInitHp        = Number(params.NormalInitHp) || 0;
+    const NormalInitMp        = Number(params.NormalInitMp) || 0;
+    const NormalInitParam     = Number(params.NormalInitParam) || 0;
+    const MobInitHp           = Number(params.MobInitHp) || 0;
+    const MobInitMp           = Number(params.MobInitMp) || 0;
+    const MobInitParam        = Number(params.MobInitParam) || 0;
+    const SmallFishInitHp     = Number(params.SmallFishInitHp) || 0;
+    const SmallFishInitMp     = Number(params.SmallFishInitMp) || 0;
+    const SmallFishInitParam  = Number(params.SmallFishInitParam) || 0;
+    const NormalIncreaseHp    = Number(params.NormalIncreaseHp) || 0;
+    const NormalIncreaseMp    = Number(params.NormalIncreaseMp) || 0;
+    const NormalIncreaseParam = Number(params.NormalIncreaseParam) || 0;
 
     // 他プラグイン連携(プラグインの導入有無)
     const NameDatabase = Potadra_isPlugin('NameDatabase');
@@ -284,7 +429,7 @@ https://opensource.org/licenses/mit-license.php
         let min_level = min_level_str ? Number(min_level_str) : MinLevel;
         let max_level = max_level_str ? Number(max_level_str) : MaxLevel;
         if (min_level > max_level) min_level = max_level;
-        this._level = min_level;
+        this._level = min_level > actor.initialLevel ? min_level : actor.initialLevel;
         this.initImages();
         this.initExp();
         this.initSkills();
@@ -330,36 +475,47 @@ https://opensource.org/licenses/mit-license.php
     Game_Actor.prototype.paramBase = function(paramId) {
         const actor = this.actor();
         const data = Potadra_metaData(actor.meta[TextManager.param(paramId)], ',');
-        let init_param, param; // 初期値, 増加値
+        let init_param, param; // 初期値, 成長率
 
         if (data) {
             init_param = Number(data[0]);
             param      = Number(data[1]);
         } else {
             const init_params = Potadra_metaData(actor.meta[InitName], ',');
+            const params      = Potadra_metaData(actor.meta[GrowName], ',');
             const small_fish  = Potadra_meta(actor.meta, SmallFishName);
             const mob         = Potadra_meta(actor.meta, MobName);
-            if (paramId == 0 || paramId == 1) {
-                param = 10;
+            if (paramId === 0) {
+                param = NormalIncreaseHp;
                 if (small_fish) {
-                    init_param = 10;
+                    init_param = SmallFishInitHp;
                 } else if (mob) {
-                    init_param = 50;
+                    init_param = MobInitHp;
                 } else {
-                    init_param = 100;
+                    init_param = NormalInitHp;
+                }
+            } else if (paramId == 1) {
+                param = NormalIncreaseMp;
+                if (small_fish) {
+                    init_param = SmallFishInitMp;
+                } else if (mob) {
+                    init_param = MobInitMp;
+                } else {
+                    init_param = NormalInitMp;
                 }
             } else {
-                param = 1;
+                param = NormalIncreaseParam;
                 if (small_fish) {
-                    init_param = 1;
+                    init_param = MobInitParam;
                 } else if (mob) {
-                    init_param = 5;
+                    init_param = SmallFishInitParam;
                 } else {
-                    init_param = 10;
+                    init_param = NormalInitParam;
                 }
             }
 
             if (init_params) init_param = Number(init_params[paramId]);
+            if (params) param = Number(params[paramId]);
         }
 
         return init_param + (param * (this._level - 1));

@@ -1,14 +1,15 @@
 /*:
 @plugindesc
-バトルメンバーの最大数変更 Ver1.3.4(2022/9/10)
+バトルメンバーの最大数変更 Ver1.3.5(2023/12/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Max/BattleMembers.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 戦闘中のバトルメンバーの最大数を指定できる機能追加
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+- メニュー時の表示を制御するプラグインパラメータ追加
+- 戦闘時バトルメンバー最大数変更時に戦闘画面が崩れる問題を修正
+- 戦闘時バトルメンバー最大数変更時に戦闘に参加しないメンバーも参加してしまう問題修正
 
 ・TODO
 - ヘルプ更新
@@ -55,6 +56,13 @@ https://opensource.org/licenses/mit-license.php
 @text 5人用メニュー
 @desc メニューの表示を5人用に変更する
 @default false
+
+    @param EnableMenu
+    @parent FiveParty
+    @type boolean
+    @text メニュー時有効
+    @desc メニューの表示を変更するかどうか
+    @default true
 */
 (() => {
     'use strict';
@@ -81,13 +89,7 @@ https://opensource.org/licenses/mit-license.php
     const InBattleMaxBattleMember  = Potadra_convertBool(params.InBattleMaxBattleMember);
     const InBattleMaxBattleMembers = Number(params.InBattleMaxBattleMembers || 5);
     const FiveParty                = Potadra_convertBool(params.FiveParty);
-
-    /**
-     * パーティを扱うクラスです。所持金やアイテムなどの情報が含まれます。
-     * このクラスのインスタンスは $gameParty で参照されます。
-     *
-     * @class
-     */
+    const EnableMenu               = Potadra_convertBool(params.EnableMenu);
 
     /**
      * バトルメンバーの最大数を取得
@@ -102,55 +104,94 @@ https://opensource.org/licenses/mit-license.php
         }
     };
 
+    // 戦闘時のメンバーが違うときは、一時的にアクターを追加・削除する。
+    if (InBattleMaxBattleMember) {
+        /**
+        * 戦闘開始
+        */
+        const _BattleManager_startBattle = BattleManager.startBattle;
+        BattleManager.startBattle = function() {
+            _BattleManager_startBattle.apply(this, arguments);
+
+            let i = 1;
+            $gameTemp._potadra_actorIds = [];
+            for (const actor of $gameParty.battleMembers()) {
+                if (i > MaxBattleMembers) {
+                    $gameTemp._potadra_actorIds.push(actor.actorId());
+                    $gameParty.removeActor(actor.actorId());
+                }
+                i++;
+            }
+        };
+    
+        /**
+         * 戦闘終了: シーン移動
+         */
+        const _BattleManager_updateBattleEnd = BattleManager.updateBattleEnd;
+        BattleManager.updateBattleEnd = function() {
+            _BattleManager_updateBattleEnd.apply(this, arguments);
+
+            for (const actorId of $gameTemp._potadra_actorIds) {
+                $gameParty.addActor(actorId);
+            }
+        };
+    }
+
     // 5人用パーティー表示
     if (FiveParty) {
-        /**
-         *
-         *
-         * @returns {number}
-         */
-        Window_MenuStatus.prototype.numVisibleRows = function() {
-            return MaxBattleMembers;
-        };
+        if (EnableMenu) {
+            /**
+             *
+             *
+             * @returns {number}
+             */
+            Window_MenuStatus.prototype.numVisibleRows = function() {
+                return MaxBattleMembers;
+            };
 
-        /**
-         * 顔グラフィックの描画
-         */
-        Window_MenuStatus.prototype.drawFace = function(
-            faceName, faceIndex, x, y, width, height
-        ) {
-            width = width || ImageManager.faceWidth;
-            height = height || ImageManager.faceHeight;
-            const bitmap = ImageManager.loadFace(faceName);
-            const pw = ImageManager.faceWidth;
-            const ph = ImageManager.faceHeight;
-            const sw = Math.min(width, pw);
-            const sh = Math.min(height, ph);
-            const dx = Math.floor(x + Math.max(width - pw, 0) / 4); // ここ変更
-            const dy = Math.floor(y + Math.max(height - ph, 0) / 4); // ここ変更
-            const sx = (faceIndex % 4) * pw + (pw - sw) / 2;
-            const sy = Math.floor(faceIndex / 4) * ph + (ph - sh) / 2;
-            this.contents.blt(bitmap, sx, sy, sw, sh, dx, dy);
-        };
+            /**
+             * 顔グラフィックの描画
+             */
+            Window_MenuStatus.prototype.drawFace = function(
+                faceName, faceIndex, x, y, width, height
+            ) {
+                width = width || ImageManager.faceWidth;
+                height = height || ImageManager.faceHeight;
+                const bitmap = ImageManager.loadFace(faceName);
+                const pw = ImageManager.faceWidth;
+                const ph = ImageManager.faceHeight;
+                const sw = Math.min(width, pw);
+                const sh = Math.min(height, ph);
+                const dx = Math.floor(x + Math.max(width - pw, 0) / 4); // ここ変更
+                const dy = Math.floor(y + Math.max(height - ph, 0) / 4); // ここ変更
+                const sx = (faceIndex % 4) * pw + (pw - sw) / 2;
+                const sy = Math.floor(faceIndex / 4) * ph + (ph - sh) / 2;
+                this.contents.blt(bitmap, sx, sy, sw, sh, dx, dy);
+            };
 
-        /**
-         *
-         *
-         * @param {} actor -
-         * @param {number} x - X座標
-         * @param {number} y - Y座標
-         */
-        Window_MenuStatus.prototype.drawActorSimpleStatus = function(actor, x, y) {
-            const lineHeight = this.lineHeight() - 6;
-            const x2 = x + 140;
-            this.contents.fontSize = 20;
-            this.drawActorName(actor, x, y);
-            this.drawActorLevel(actor, x, y + lineHeight * 1);
-            this.drawActorIcons(actor, x, y + lineHeight * 2);
-            this.drawActorClass(actor, x2, y);
-            this.placeBasicGauges(actor, x2, y + lineHeight);
-            this.resetFontSettings();
-        };
+            /**
+             *
+             *
+             * @param {} actor -
+             * @param {number} x - X座標
+             * @param {number} y - Y座標
+             */
+            Window_MenuStatus.prototype.drawActorSimpleStatus = function(actor, x, y) {
+                const lineHeight = this.lineHeight() - 6;
+                const x2 = x + 140;
+                this.contents.fontSize = 20;
+                this.drawActorName(actor, x, y);
+                this.drawActorLevel(actor, x, y + lineHeight * 1);
+                this.drawActorIcons(actor, x, y + lineHeight * 2);
+                this.drawActorClass(actor, x2, y);
+                this.placeBasicGauges(actor, x2, y + lineHeight);
+                this.resetFontSettings();
+            };
+        }
+
+        function battleMembers() {
+            return InBattleMaxBattleMember ? InBattleMaxBattleMembers : MaxBattleMembers;
+        }
 
         /**
          * 
@@ -158,7 +199,7 @@ https://opensource.org/licenses/mit-license.php
          * @returns {number} 
          */
         Window_BattleStatus.prototype.maxCols = function() {
-            return MaxBattleMembers;
+            return battleMembers();
         };
 
         /**
@@ -181,7 +222,7 @@ https://opensource.org/licenses/mit-license.php
          * @returns {} 
          */
         Sprite_Name.prototype.bitmapWidth = function() {
-            return 128 - (32 * (MaxBattleMembers- 4));
+            return 128 - (32 * (battleMembers()- 4));
         };
 
         /**
@@ -190,7 +231,7 @@ https://opensource.org/licenses/mit-license.php
          * @returns {number} 
          */
         Sprite_Gauge.prototype.bitmapWidth = function() {
-            return 128 - (32 * (MaxBattleMembers- 4));
+            return 128 - (32 * (battleMembers()- 4));
         };
     }
 })();

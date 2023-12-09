@@ -1,14 +1,13 @@
 /*:
 @plugindesc
-デバッグ用のプラグイン Ver1.4.6(2023/11/9)
+デバッグ用のプラグイン Ver1.4.7(2023/12/9)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Debug/Debug.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 競合対策を追加
-- アイテムの初期個数を指定出来るプラグインパラメータを追加
+- 競合対策のため、共通処理を整理
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -175,6 +174,52 @@ ONのプラグインがない状態で、ゲームを起動可能になります
     'use strict';
 
     // ベースプラグインの処理
+    const gain_item_debug_params = Potadra_getPluginParams('Debug');
+    const gain_item_max_item_params = Potadra_getPluginParams('MaxItem');
+    const GainItemAutoSell          = Potadra_convertBool(gain_item_max_item_params.AutoSell);
+    const GainItemSellRate          = Number(gain_item_max_item_params.SellRate || 0.5);
+    const gain_item_name_item_params = Potadra_getPluginParams('NameItem');
+    if (gain_item_debug_params || gain_item_max_item_params || gain_item_name_item_params) {
+        Game_Party.prototype.gainItem = function(item, amount, includeEquip) {
+            const container = this.itemContainer(item);
+            if (container) {
+                const lastNumber = this.numItems(item); // 現在のアイテム所持数
+                const newNumber  = lastNumber + amount; // 増減後のアイテム所持数
+                const maxNumber  = this.maxItems(item); // アイテムの最大数
+                if (GainItemAutoSell) {
+                    if (newNumber > maxNumber) { // 増減後のアイテム所持数がアイテムの最大数を超えたら
+                        const sellNumber = newNumber - maxNumber; // 売却個数
+                        if ($gameParty) $gameParty.gainGold(sellNumber * Math.floor(item.price * GainItemSellRate));
+                    }
+                }
+                if (gain_item_name_item_params) {
+                    container[item.name] = newNumber.clamp(0, this.maxItems(item));
+                    if (container[item.name] === 0) {
+                        delete container[item.name];
+                    }
+                } else {
+                    container[item.id] = newNumber.clamp(0, maxNumber);
+                    if (container[item.id] === 0) {
+                        delete container[item.id];
+                    }
+                }
+                if (includeEquip && newNumber < 0) {
+                    this.discardMembersEquip(item, -newNumber);
+                }
+                if ($gameMap) $gameMap.requestRefresh();
+            }
+        };
+    }
+    function Potadra_isPlugin(plugin_name) {
+        return PluginManager._scripts.includes(plugin_name);
+    }
+    function Potadra_getPluginParams(plugin_name) {
+        let params = false;
+        if (Potadra_isPlugin(plugin_name)) {
+            params = PluginManager.parameters(plugin_name);
+        }
+        return params;
+    }
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
@@ -186,12 +231,10 @@ ONのプラグインがない状態で、ゲームを起動可能になります
             return true;
         }
     }
-    function Potadra_isPlugin(plugin_name) {
-        return PluginManager._scripts.includes(plugin_name);
-    }
     function Potadra_isTest(play_test = true) {
         return !play_test || Utils.isOptionValid("test");
     }
+
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
@@ -216,40 +259,7 @@ ONのプラグインがない状態で、ゲームを起動可能になります
     const GetArmorCount       = Number(params.GetArmorCount) || 0;
     const AlwaysCanEscape     = Potadra_convertBool(params.AlwaysCanEscape);
 
-    // 他プラグイン連携(プラグインの導入有無)
-    const MaxItem = Potadra_isPlugin('MaxItem');
-    const NameItem = Potadra_isPlugin('NameItem');
-
     if (Potadra_isTest(PlayTest)) {
-        // マップ読み込み前アイテム入手バグ修正
-
-        // アイテムの最大所持数変更が有効なときは自動売却があるので、こちらの設定は無効
-        if (!MaxItem && !NameItem) {
-            /**
-             * アイテムの増加（減少）
-             *     include_equip : 装備品も含める
-             *
-             * @param {} item - 
-             * @param {} amount - 
-             * @param {} includeEquip - 
-             */
-            Game_Party.prototype.gainItem = function(item, amount, includeEquip) {
-                const container = this.itemContainer(item);
-                if (container) {
-                    const lastNumber = this.numItems(item);
-                    const newNumber = lastNumber + amount;
-                    container[item.id] = newNumber.clamp(0, this.maxItems(item));
-                    if (container[item.id] === 0) {
-                        delete container[item.id];
-                    }
-                    if (includeEquip && newNumber < 0) {
-                        this.discardMembersEquip(item, -newNumber);
-                    }
-                    if ($gameMap) $gameMap.requestRefresh();
-                }
-            };
-        }
-
         // プラグインロードエラースキップ
         if (SkipPluginLoadError) {
             PluginManager.checkErrors = function() {};
