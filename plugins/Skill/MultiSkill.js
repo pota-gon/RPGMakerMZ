@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-スキル複数追加 Ver1.3.7(2022/9/10)
+スキル複数追加 Ver1.3.8(2023/12/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Skill/MultiSkill.js
 @orderAfter NameSkill
@@ -8,7 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- 検索時のバグ修正
+- プラグインパラメータのスキルタイプIDに0を指定したときに、スキルタイプ制御を無効にするように修正
 
 ・TODO
 - ヘルプ更新
@@ -29,7 +29,8 @@ https://opensource.org/licenses/mit-license.php
 @type number
 @text スキルタイプID
 @desc 複数覚えることが出来るスキルタイプID
-@default 3
+0 の場合は、全てのスキルタイプで有効になります
+@default 0
 
 @param ExcludeSkills
 @type string[]
@@ -128,7 +129,7 @@ https://opensource.org/licenses/mit-license.php
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
-    const SkillTypeId   = Number(params.SkillTypeId || 3);
+    const SkillTypeId   = Number(params.SkillTypeId || 0);
     const ExcludeSkills = Potadra_stringArray(params.ExcludeSkills);
     let CompositeSkills = [];
     let HideSkills      = [];
@@ -165,7 +166,6 @@ https://opensource.org/licenses/mit-license.php
         }
     };
 
-
     /**
      * アクターを扱うクラスです。
      * このクラスは Game_Actors クラス（$gameActors）の内部で使用され、
@@ -182,7 +182,7 @@ https://opensource.org/licenses/mit-license.php
      */
     Game_Actor.prototype.isLearnedSkill = function(skillId) {
         const skill = $dataSkills[skillId];
-        if (skill.stypeId !== SkillTypeId || ExcludeSkills.includes(skill.name)) {
+        if ((SkillTypeId !== 0 && skill.stypeId !== SkillTypeId) || ExcludeSkills.includes(skill.name)) {
             if (NameSkill) {
                 const name = Potadra_search($dataSkills, skillId, 'name');
                 return this._skills.includes(name);
@@ -302,7 +302,7 @@ https://opensource.org/licenses/mit-license.php
                 if (!list.includes(skill)) {
                     list.push(skill);
                 }
-            } else if (skill.stypeId == SkillTypeId || !list.includes(skill)) {
+            } else if (SkillTypeId === 0 || skill.stypeId === SkillTypeId || !list.includes(skill)) {
                 list.push(skill);
             }
         }

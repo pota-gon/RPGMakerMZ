@@ -1,15 +1,14 @@
 /*:
 @plugindesc
-バトルメンバーの最大数変更 Ver1.3.5(2023/12/9)
+バトルメンバーの最大数変更 Ver1.3.6(2023/12/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Max/BattleMembers.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- メニュー時の表示を制御するプラグインパラメータ追加
-- 戦闘時バトルメンバー最大数変更時に戦闘画面が崩れる問題を修正
-- 戦闘時バトルメンバー最大数変更時に戦闘に参加しないメンバーも参加してしまう問題修正
+- 戦闘時バトルメンバー最大数変更時に戦闘に参加しないメンバーも参加してしまう問題修正(前回の修正とは別条件)
+- バグの元になるため、バトルメンバー最大数の最小値を 0 => 1 に変更
 
 ・TODO
 - ヘルプ更新
@@ -31,7 +30,7 @@ https://opensource.org/licenses/mit-license.php
 @desc バトルメンバーの最大数
 @default 5
 @max 999999999999999
-@min 0
+@min 1
 
 @param InBattleMaxBattleMember
 @type boolean
@@ -49,7 +48,7 @@ https://opensource.org/licenses/mit-license.php
 @desc 戦闘中のバトルメンバーの最大数
 @default 5
 @max 999999999999999
-@min 0
+@min 1
 
 @param FiveParty
 @type boolean
@@ -115,7 +114,7 @@ https://opensource.org/licenses/mit-license.php
 
             let i = 1;
             $gameTemp._potadra_actorIds = [];
-            for (const actor of $gameParty.battleMembers()) {
+            for (const actor of $gameParty.allMembers()) {
                 if (i > MaxBattleMembers) {
                     $gameTemp._potadra_actorIds.push(actor.actorId());
                     $gameParty.removeActor(actor.actorId());

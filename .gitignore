@@ -25,6 +25,7 @@ plugins/*
 !plugins/Window
 plugins/Base/テンプレート.js
 plugins/Battle/IncreasePointBattle.js
+plugins/Battle/LoseExp.js
 plugins/Battle/PlusAction.js
 plugins/Battle/Simulation.js
 plugins/Debug/Test.js
@@ -43,8 +44,8 @@ plugins/Shop/NoSale.js
 plugins/Shop/SimpleSale.js
 plugins/Skill/CriticalSkill.js
 plugins/Skill/GuardSkill.js
-plugins/Skill/SummonActor.js
-plugins/Skill/SummonEnemy.js
+plugins/Skill/RepeatSkill.js
+plugins/Skill/SummonBattler.js
 plugins/Skill/TpRecover.js
 plugins/State/AngryState.js
 plugins/State/ImmunityState.js
@@ -52,8 +53,10 @@ plugins/State/MemberState.js
 plugins/State/Shield.js
 plugins/System/KeyChest.js
 plugins/System/MoveSpeed.js
+plugins/Trait/ChangeProtection.js
 plugins/Trait/CounterAttack.js
 plugins/Trait/RepeatCounter.js
 plugins/Troop/TroopExp.js
+plugins/Troop/TroopGold.js
 plugins/Window/ChangeChara.js
 plugins/Window/Story.js

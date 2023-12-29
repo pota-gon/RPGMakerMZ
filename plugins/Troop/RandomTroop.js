@@ -1,14 +1,13 @@
 /*:
 @plugindesc
-敵グループランダム決定 Ver1.4.0(2023/7/30)
+敵グループランダム決定 Ver1.4.1(2023/12/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Troop/RandomTroop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 設定がおかしい場合にエラー落ちしてしまうバグ修正
-- ヘルプ更新
+- 自動整列を無効にする機能を追加
 
 Copyright (c) 2023 ポテトードラゴン
 Released under the MIT License.
@@ -72,6 +71,12 @@ https://newrpg.seesaa.net/article/475049887.html
 @desc 敵キャラのメモに記載するメタデータ(<空中>)の名称
 こうもりなどの空中に飛んでいる敵を上部に表示します
 @default 空中
+
+@param DisableAlignmentMetaName
+@text 自動整列OFFタグ
+@desc 自動整列OFFに使うメモ欄タグの名称
+デフォルトは 自動整列OFF
+@default 自動整列OFF
 */
 (() => {
     'use strict';
@@ -117,7 +122,8 @@ https://newrpg.seesaa.net/article/475049887.html
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
-    const SkyName = String(params.SkyName || '空中');
+    const SkyName                  = String(params.SkyName || '空中');
+    const DisableAlignmentMetaName = String(params.DisableAlignmentMetaName || '自動整列OFF');
 
     // 他プラグイン連携(パラメータ取得)
     const debug_params     = Potadra_getPluginParams('Debug');
@@ -205,7 +211,7 @@ https://newrpg.seesaa.net/article/475049887.html
                     enemyId = ary[Math.floor(Math.random() * ary.length)];
                 }
                 let x = first + (first * i) * 2;
-                if ($gameSystem.isSideView()) {
+                if ($gameSystem.isSideView() || name.includes(DisableAlignmentMetaName)) {
                     if (ary_x[i]) x = ary_x[i];
                     if (ary_y[i]) y = ary_y[i];
                 }
