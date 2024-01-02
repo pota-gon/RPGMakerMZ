@@ -9,7 +9,7 @@
 ・アップデート情報
 - URLを修正
 
-Copyright (c) 2023 ポテトードラゴン
+Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
 https://opensource.org/licenses/mit-license.php
 

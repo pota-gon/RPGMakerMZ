@@ -12,7 +12,7 @@
 ・TODO
 - MoveSpeed.js に統合 => 複数の装備を作成できるように、武器や下駄などの遅くなる装備も可能にすること
 
-Copyright (c) 2023 ポテトードラゴン
+Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
 https://opensource.org/licenses/mit-license.php
 

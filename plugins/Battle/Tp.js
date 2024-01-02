@@ -9,7 +9,7 @@ TP Ver1.0.2(2023/12/9)
 ・アップデート情報
 - TP最大値 を設定する機能追加
 
-Copyright (c) 2023 ポテトードラゴン
+Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
 https://opensource.org/licenses/mit-license.php
 

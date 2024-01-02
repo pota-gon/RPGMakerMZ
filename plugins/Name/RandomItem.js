@@ -15,7 +15,7 @@
 - 抽選でアイテムを複数入手出来るようにするか検討
 - 必要アイテムに装備品を含めるか、含めないか選べるようにする。
 
-Copyright (c) 2023 ポテトードラゴン
+Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
 https://opensource.org/licenses/mit-license.php
 

@@ -9,7 +9,7 @@ MVベース Ver0.8.7(2022/9/10)
 ・アップデート情報
 - 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
 
-Copyright (c) 2023 ポテトードラゴン
+Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
 https://opensource.org/licenses/mit-license.php
 

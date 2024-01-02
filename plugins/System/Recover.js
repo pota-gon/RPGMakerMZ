@@ -10,7 +10,7 @@
 ・アップデート情報
 - 戦闘終了後の回復処理をマップに移動してから実施するように修正
 
-Copyright (c) 2023 ポテトードラゴン
+Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
 https://opensource.org/licenses/mit-license.php
 

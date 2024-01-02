@@ -37,7 +37,7 @@
 * Ver0.5.1: イベントが表示されている場所には乗り物を呼び出さないように修正
 * Ver0.5.0: 開発版を先行公開
 
-Copyright (c) 2023 ポテトードラゴン
+Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
 https://opensource.org/licenses/mit-license.php
 
