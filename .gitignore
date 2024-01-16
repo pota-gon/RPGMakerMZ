@@ -15,6 +15,7 @@ plugins/*
 !plugins/Name
 !plugins/Option
 !plugins/Other
+!plugins/Patch
 !plugins/Save
 !plugins/Shop
 !plugins/Skill
