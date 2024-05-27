@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-全回復 Ver1.0.6(2023/12/9)
+全回復 Ver1.0.7(2024/5/27)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Recover.js
 @orderAfter dsJobChangeMZ
@@ -8,7 +8,10 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- 戦闘終了後の回復処理をマップに移動してから実施するように修正
+* Ver1.0.7
+- ランダムエンカウントだと戦闘終了時にゲームオーバーになるバグ修正
+- リファクタリング
+* Ver1.0.6: 戦闘終了後の回復処理をマップに移動してから実施するように修正
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
@@ -372,70 +375,67 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
     /**
      * 戦闘開始
      */
-    if (BattleStartRecover) {
-        if (Potadra_checkSwitch(StartRecoverSwitch)) {
-            const _BattleManager_startBattle = BattleManager.startBattle;
-            BattleManager.startBattle = function() {
-                $gameParty.battleMembers().forEach(function(actor) {
-                    recoverAllTp(actor, StartClearStates, StartHpRecover, StartMpRecover, StartTpRecover);
-                }, this);
-                _BattleManager_startBattle.apply(this, arguments);
-            };
-        }
+    if (BattleStartRecover && Potadra_checkSwitch(StartRecoverSwitch)) {
+        const _BattleManager_startBattle = BattleManager.startBattle;
+        BattleManager.startBattle = function() {
+            $gameParty.battleMembers().forEach(function(actor) {
+                recoverAllTp(actor, StartClearStates, StartHpRecover, StartMpRecover, StartTpRecover);
+            }, this);
+            _BattleManager_startBattle.apply(this, arguments);
+        };
     }
 
     /**
      * 戦闘終了: シーン移動
      */
-    if (BattleEndRecover) {
-        if (Potadra_checkSwitch(EndRecoverSwitch)) {
-            const _BattleManager_updateBattleEnd = BattleManager.updateBattleEnd;
-            BattleManager.updateBattleEnd = function() {
-                _BattleManager_updateBattleEnd.apply(this, arguments);
-                $gameParty.battleMembers().forEach(function(actor) {
-                    recoverAllTp(actor, EndClearStates, EndHpRecover, EndMpRecover, EndTpRecover);
-                }, this);
-            };
-        }
+    if (BattleEndRecover && Potadra_checkSwitch(EndRecoverSwitch)) {
+        const _BattleManager_updateBattleEnd = BattleManager.updateBattleEnd;
+        BattleManager.updateBattleEnd = function() {
+            $gameParty.battleMembers().forEach(function(actor) {
+                recoverAllTp(actor, EndClearStates, EndHpRecover, EndMpRecover, EndTpRecover);
+            }, this);
+            _BattleManager_updateBattleEnd.apply(this, arguments);
+            $gameParty.battleMembers().forEach(function(actor) {
+                recoverAllTp(actor, EndClearStates, EndHpRecover, EndMpRecover, EndTpRecover);
+            }, this);
+        };
     }
 
-    if (LevelUpRecover) {
-        if (Potadra_checkSwitch(LevelRecoverSwitch)) {
-            /**
-              * 経験値の変更
-              *
-              * @param {number} exp - 経験値
-              * @param {boolean} show - レベルアップ表示をするか
-              */
-            const _Game_Actor_changeExp = Game_Actor.prototype.changeExp;
-            Game_Actor.prototype.changeExp = function(exp, show) {
-                const lastLevel = this._level;
-                _Game_Actor_changeExp.apply(this, arguments);
-
-                // レベルアップした場合のみ回復
-                if (this._level > lastLevel) {
-                    recoverAllTp(this, LevelClearStates, LevelHpRecover, LevelMpRecover, LevelTpRecover);
-                }
-            };
-
-            /**
-             * レベルの変更
+    if (LevelUpRecover && Potadra_checkSwitch(LevelRecoverSwitch)) {
+        /**
+             * 経験値の変更
              *
-             * @param {number} level - レベル
-             * @param {boolean} show - レベルを表示するか
+             * @param {number} exp - 経験値
+             * @param {boolean} show - レベルアップ表示をするか
              */
-            const _Game_Actor_changeLevel = Game_Actor.prototype.changeLevel;
-            Game_Actor.prototype.changeLevel = function(level, show) {
-                const lastLevel = this._level;
+        const _Game_Actor_changeExp = Game_Actor.prototype.changeExp;
+        Game_Actor.prototype.changeExp = function(exp, show) {
+            const lastLevel = this._level;
+            _Game_Actor_changeExp.apply(this, arguments);
 
-                _Game_Actor_changeLevel.apply(this, arguments);
+            // レベルアップした場合のみ回復
+            if (this._level > lastLevel) {
+                recoverAllTp(this, LevelClearStates, LevelHpRecover, LevelMpRecover, LevelTpRecover);
+            }
+        };
 
-                // レベルアップした場合のみ回復
-                if (this._level > lastLevel) {
-                    recoverAllTp(this, LevelClearStates, LevelHpRecover, LevelMpRecover, LevelTpRecover);
-                }
-            };
-        }
+        /**
+         * レベルの変更
+         *
+         * @param {number} level - レベル
+         * @param {boolean} show - レベルを表示するか
+         */
+        const _Game_Actor_changeLevel = Game_Actor.prototype.changeLevel;
+        Game_Actor.prototype.changeLevel = function(level, show) {
+            const lastLevel = this._level;
+
+            _Game_Actor_changeLevel.apply(this, arguments);
+
+            // レベルアップした場合のみ回復
+            if (this._level > lastLevel) {
+                recoverAllTp(this, LevelClearStates, LevelHpRecover, LevelMpRecover, LevelTpRecover);
+            }
+        };
     }
 
     /**
@@ -444,21 +444,19 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
      * @param {number} classId - 職業ID
      * @param {boolean} keepExp - 経験値を引き継ぐ
      */
-    if (ChangeClassRecover) {
-        if (Potadra_checkSwitch(ClassRecoverSwitch)) {
-            const _Game_Actor_changeClass = Game_Actor.prototype.changeClass;
-            Game_Actor.prototype.changeClass = function(classId, keepExp) {
-                _Game_Actor_changeClass.apply(this, arguments);
+    if (ChangeClassRecover && Potadra_checkSwitch(ClassRecoverSwitch)) {
+        const _Game_Actor_changeClass = Game_Actor.prototype.changeClass;
+        Game_Actor.prototype.changeClass = function(classId, keepExp) {
+            _Game_Actor_changeClass.apply(this, arguments);
+            recoverAllTp(actor, ClassClearStates, ClassHpRecover, ClassMpRecover, ClassTpRecover);
+        };
+
+        if (dsJobChangeMZ) {
+            const _Game_Actor_changeClassEx = Game_Actor.prototype.changeClassEx;
+            Game_Actor.prototype.changeClassEx = function(classId, keepExp) {
+                _Game_Actor_changeClassEx.apply(this, arguments);
                 recoverAllTp(actor, ClassClearStates, ClassHpRecover, ClassMpRecover, ClassTpRecover);
             };
-
-            if (dsJobChangeMZ) {
-                const _Game_Actor_changeClassEx = Game_Actor.prototype.changeClassEx;
-                Game_Actor.prototype.changeClassEx = function(classId, keepExp) {
-                    _Game_Actor_changeClassEx.apply(this, arguments);
-                    recoverAllTp(actor, ClassClearStates, ClassHpRecover, ClassMpRecover, ClassTpRecover);
-                };
-            }
         }
     }
 
@@ -468,14 +466,12 @@ TPは、TP持ち越しの特徴がある場合のみ回復します。
      * @param {} params - 
      * @returns {boolean} 回復に成功したか
      */
-    if (TpRecover) {
-        if (Potadra_checkSwitch(TpRecoverSwitch)) {
-            Game_Interpreter.prototype.command314 = function(params) {
-                this.iterateActorEx(params[0], params[1], actor => {
-                    recoverAllTp(actor);
-                });
-                return true;
-            };
-        }
+    if (TpRecover && Potadra_checkSwitch(TpRecoverSwitch)) {
+        Game_Interpreter.prototype.command314 = function(params) {
+            this.iterateActorEx(params[0], params[1], actor => {
+                recoverAllTp(actor);
+            });
+            return true;
+        };
     }
 })();

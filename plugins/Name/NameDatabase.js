@@ -1,13 +1,14 @@
 /*:
 @plugindesc
-名前データベース Ver0.10.7(2023/7/30)
+名前データベース Ver0.10.8(2024/5/27)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- アクター初期装備: 装飾品1 などで何番目に装備するか設定できる機能追加
+* Ver0.10.8: Debug.js のデバッグスキル追加による競合を解消
+* Ver0.10.7: アクター初期装備(装飾品1 などで何番目に装備するか設定できる機能追加)
 
 ・TODO
 - ヘルプ更新
@@ -59,6 +60,52 @@ https://opensource.org/licenses/mit-license.php
     'use strict';
 
     // ベースプラグインの処理
+    const init_skills_debug_params = Potadra_getPluginParams('Debug');
+    const InitSkillsDebugSkills    = Potadra_stringArray(init_skills_debug_params.DebugSkills);
+    const init_skills_name_database_params = Potadra_getPluginParams('NameDatabase');
+    const InitSkillsLearning               = Potadra_convertBool(init_skills_name_database_params.Learning);
+    if (init_skills_debug_params || init_skills_name_database_params) {
+        const _Game_Actor_initSkills = Game_Actor.prototype.initSkills;
+        Game_Actor.prototype.initSkills = function() {
+            _Game_Actor_initSkills.apply(this, arguments);
+            if (InitSkillsDebugSkills.length > 0) {
+                for (const debug_skill of InitSkillsDebugSkills) {
+                    if (isNaN(debug_skill)) { // 文字列
+                        this.learnSkill(Potadra_nameSearch($dataSkills, debug_skill.trim()));
+                    } else { // 数値
+                        this.learnSkill(Number(debug_skill));
+                    }
+                }
+            }
+            if (InitSkillsLearning) {
+                const learnings = Potadra_learnings(this);
+                for (const learning of learnings) {
+                    if (learning.level <= this._level) {
+                        this.learnSkill(learning.skillId);
+                    }
+                }
+            }
+        };
+    }
+    function Potadra_stringArray(data) {
+        const arr = [];
+        if (data) {
+            for (const value of JSON.parse(data)) {
+                arr.push(String(value));
+            }
+        }
+        return arr;
+    }
+    function Potadra_isPlugin(plugin_name) {
+        return PluginManager._scripts.includes(plugin_name);
+    }
+    function Potadra_getPluginParams(plugin_name) {
+        let params = false;
+        if (Potadra_isPlugin(plugin_name)) {
+            params = PluginManager.parameters(plugin_name);
+        }
+        return params;
+    }
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
@@ -124,6 +171,7 @@ https://opensource.org/licenses/mit-license.php
         const class_data = Potadra_metaData(actor.currentClass().meta['スキル']);
         return Potadra_learning(actor_data).concat(Potadra_learning(class_data));
     }
+
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
@@ -302,20 +350,6 @@ https://opensource.org/licenses/mit-license.php
          *
          * @class
          */
-
-        /**
-         * スキルの初期化
-         */
-        const _Game_Actor_initSkills = Game_Actor.prototype.initSkills;
-        Game_Actor.prototype.initSkills = function() {
-            _Game_Actor_initSkills.apply(this, arguments);
-            const learnings = Potadra_learnings(this);
-            for (const learning of learnings) {
-                if (learning.level <= this._level) {
-                    this.learnSkill(learning.skillId);
-                }
-            }
-        };
 
         /**
          * レベルアップ

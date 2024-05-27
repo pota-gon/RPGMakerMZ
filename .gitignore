@@ -26,6 +26,8 @@ plugins/*
 !plugins/Troop
 !plugins/Window
 plugins/Base/テンプレート.js
+plugins/Base/PotBase.js
+plugins/Battle/EnemyMpCostZero.js
 plugins/Battle/LoseExp.js
 plugins/Battle/Simulation.js
 plugins/Debug/Test.js
@@ -47,7 +49,9 @@ plugins/Skill/GuardSkill.js
 plugins/Skill/TpRecover.js
 plugins/State/*.js
 plugins/State/Shield.js
+plugins/System/ChangeSplashWait.js
 plugins/System/KeyChest.js
+plugins/System/LevelCode.js
 plugins/System/MoveSpeed.js
 plugins/Trait/CounterAttack.js
 plugins/Trait/RepeatCounter.js

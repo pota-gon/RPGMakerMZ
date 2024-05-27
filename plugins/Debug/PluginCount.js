@@ -1,13 +1,17 @@
 /*:
 @plugindesc
-プラグイン数カウント Ver1.0.1(2023/6/26)
+プラグイン数カウント Ver1.0.2(2024/5/27)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Debug/PluginCount.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- コンソールログの出力方法を修正
+* Ver1.0.2: プラグイン名表示機能を追加
+* Ver1.0.1: コンソールログの出力方法を修正
+
+・アップデート情報
+- プラグイン名表示機能を追加
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
@@ -28,6 +32,14 @@ https://opensource.org/licenses/mit-license.php
 @on 有効にする
 @off 常に有効
 @default true
+
+@param ShowPlayName
+@type boolean
+@text プラグイン名表示
+@desc プラグイン名を表示するか
+@on 表示する
+@off 表示しない
+@default false
 */
 (() => {
     'use strict';
@@ -62,7 +74,8 @@ https://opensource.org/licenses/mit-license.php
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用定数
-    const PlayTest = Potadra_convertBool(params.PlayTest);
+    const PlayTest     = Potadra_convertBool(params.PlayTest);
+    const ShowPlayName = Potadra_convertBool(params.ShowPlayName);
 
     function countPlugins() {
         const pluginPath = Potadra_getDirPath('js') + 'plugins.js';
@@ -72,6 +85,7 @@ https://opensource.org/licenses/mit-license.php
         for (let line of lines) {
             if (line.includes('name')) {
                 line = JSON.parse(line.replace(/,$/, ''));
+                if (ShowPlayName) console.log(line.name);
                 line_count++;
                 if (line.status) on_count++;
             }

@@ -1,13 +1,14 @@
 /*:
 @plugindesc
-デバッグ用のプラグイン Ver1.4.7(2023/12/9)
+デバッグ用のプラグイン Ver1.4.8(2024/5/27)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Debug/Debug.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 競合対策のため、共通処理を整理
+* Ver1.4.8: デバッグ時に無条件で使えるデバッグスキルを追加
+* Ver1.4.7: 競合対策のため、共通処理を整理
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
@@ -169,6 +170,11 @@ ONのプラグインがない状態で、ゲームを起動可能になります
 @on 常に逃走可能
 @off 通常通り
 @default false
+
+@param DebugSkills
+@type skill[]
+@text デバッグスキル名
+@desc デバッグ時に無条件で使えるスキル名
 */
 (() => {
     'use strict';
@@ -209,6 +215,96 @@ ONのプラグインがない状態で、ゲームを起動可能になります
                 if ($gameMap) $gameMap.requestRefresh();
             }
         };
+    }
+    const init_skills_debug_params = Potadra_getPluginParams('Debug');
+    const InitSkillsDebugSkills    = Potadra_stringArray(init_skills_debug_params.DebugSkills);
+    const init_skills_name_database_params = Potadra_getPluginParams('NameDatabase');
+    const InitSkillsLearning               = Potadra_convertBool(init_skills_name_database_params.Learning);
+    if (init_skills_debug_params || init_skills_name_database_params) {
+        const _Game_Actor_initSkills = Game_Actor.prototype.initSkills;
+        Game_Actor.prototype.initSkills = function() {
+            _Game_Actor_initSkills.apply(this, arguments);
+            if (InitSkillsDebugSkills.length > 0) {
+                for (const debug_skill of InitSkillsDebugSkills) {
+                    if (isNaN(debug_skill)) { // 文字列
+                        this.learnSkill(Potadra_nameSearch($dataSkills, debug_skill.trim()));
+                    } else { // 数値
+                        this.learnSkill(Number(debug_skill));
+                    }
+                }
+            }
+            if (InitSkillsLearning) {
+                const learnings = Potadra_learnings(this);
+                for (const learning of learnings) {
+                    if (learning.level <= this._level) {
+                        this.learnSkill(learning.skillId);
+                    }
+                }
+            }
+        };
+    }
+    function Potadra_learning(data) {
+        const learnings = [];
+        if (data) {
+            for (const value of data) {
+                if (value) {
+                    const learning_data = value.split(',');
+                    learnings.push({
+                        level: Number(learning_data[0]),
+                        skillId: Potadra_nameSearch($dataSkills, learning_data[1].trim())
+                    });
+                }
+            }
+        }
+        return learnings;
+    }
+    function Potadra_metaData(meta_data, delimiter = '\n') {
+        if (meta_data) {
+            const data = meta_data.split(delimiter);
+            if (data) {
+                return data.map(datum => datum.trim());
+            }
+        }
+        return false;
+    }
+    function Potadra_learnings(actor) {
+        const actor_data = Potadra_metaData(actor.actor().meta['スキル']);
+        const class_data = Potadra_metaData(actor.currentClass().meta['スキル']);
+        return Potadra_learning(actor_data).concat(Potadra_learning(class_data));
+    }
+    function Potadra_search(data, id, column = "name", search_column = "id", val = "", initial = 1) {
+        if (!id) {
+            return val;
+        }
+        for (let i = initial; i < data.length; i++) {
+            if (!data[i]) continue;
+            if (search_column) {
+                if (data[i][search_column] == id) {
+                    if (column) {
+                        val = data[i][column];
+                    } else {
+                        val = data[i];
+                    }
+                    break;
+                }
+            } else if (i == id) {
+                val = data[i];
+                break;
+            }
+        }
+        return val;
+    }
+    function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
+        return Potadra_search(data, name, column, search_column, val, initial);
+    }
+    function Potadra_stringArray(data) {
+        const arr = [];
+        if (data) {
+            for (const value of JSON.parse(data)) {
+                arr.push(String(value));
+            }
+        }
+        return arr;
     }
     function Potadra_isPlugin(plugin_name) {
         return PluginManager._scripts.includes(plugin_name);

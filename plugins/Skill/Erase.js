@@ -98,7 +98,7 @@ https://opensource.org/licenses/mit-license.php
     }
 
     /**
-     * 
+     * アクション実行
      *
      * @param {} target - 
      */

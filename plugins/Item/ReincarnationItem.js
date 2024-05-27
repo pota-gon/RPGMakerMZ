@@ -101,7 +101,7 @@ https://opensource.org/licenses/mit-license.php
     const ReincarnationMetaName = String(params.ReincarnationMetaName) || "転生";
 
     /**
-     * 
+     * アクション実行
      *
      * @param {} target - 
      */

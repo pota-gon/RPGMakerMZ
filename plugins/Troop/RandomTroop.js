@@ -1,13 +1,17 @@
 /*:
 @plugindesc
-敵グループランダム決定 Ver1.4.1(2023/12/29)
+敵グループランダム決定 Ver1.5.0(2024/5/27)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Troop/RandomTroop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 自動整列を無効にする機能を追加
+* Ver1.5.0
+- 自動整列の有効をサイドビューではなく、プラグインパラメータで設定できるように変更
+- 自動整列タグの説明追加
+- タグの説明が分かりづらかったので、一部修正
+* Ver1.4.1: 自動整列を無効にする機能を追加
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
@@ -35,17 +39,30 @@ https://opensource.org/licenses/mit-license.php
 
 タグを指定しない場合は、 通常の敵グループとして扱われます。
 
+#### 必須のタグ
+必ず記載するようにしてください。  
+片方しか設定しない場合は、出現数は固定となります。
+
 <MIN:1>  
 敵キャラの最低出現数を1～8で指定します。
 
 <MAX:1>  
 敵キャラの最大出現数を1～8で指定します。
 
+#### 任意のタグ
+必要に応じて記載してください。
+
 <FIX:1>  
 固定する敵キャラを1～8で指定します。  
 1～8の順番は敵グループに追加した順番です。  
 最初に追加したものが、1番になります。
 また、<FIX:1,2>と , で区切ることで、複数の敵キャラを固定することができます。
+
+<自動整列ON>  
+人数による自動整列を有効にします。
+
+<自動整列OFF>  
+人数による自動整列を無効にします。
 
 ### メモ(敵キャラ)
 
@@ -72,11 +89,27 @@ https://newrpg.seesaa.net/article/475049887.html
 こうもりなどの空中に飛んでいる敵を上部に表示します
 @default 空中
 
-@param DisableAlignmentMetaName
-@text 自動整列OFFタグ
-@desc 自動整列OFFに使うメモ欄タグの名称
-デフォルトは 自動整列OFF
-@default 自動整列OFF
+@param Alignment
+@type boolean
+@text 自動整列
+@desc 自動整列を有効にするか
+@on 有効にする
+@off 有効にしない
+@default true
+
+    @param EnableAlignmentMetaName
+    @parent Alignment
+    @text 自動整列ONタグ
+    @desc 自動整列ONに使うタグの名称
+    デフォルトは 自動整列ON
+    @default 自動整列ON
+
+    @param DisableAlignmentMetaName
+    @parent Alignment
+    @text 自動整列OFFタグ
+    @desc 自動整列OFFに使うタグの名称
+    デフォルトは 自動整列OFF
+    @default 自動整列OFF
 */
 (() => {
     'use strict';
@@ -85,6 +118,13 @@ https://newrpg.seesaa.net/article/475049887.html
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
+    }
+    function Potadra_convertBool(bool) {
+        if (bool === "false" || bool === '' || bool === undefined) {
+            return false;
+        } else {
+            return true;
+        }
     }
     function Potadra_isPlugin(plugin_name) {
         return PluginManager._scripts.includes(plugin_name);
@@ -95,13 +135,6 @@ https://newrpg.seesaa.net/article/475049887.html
             params = PluginManager.parameters(plugin_name);
         }
         return params;
-    }
-    function Potadra_convertBool(bool) {
-        if (bool === "false" || bool === '' || bool === undefined) {
-            return false;
-        } else {
-            return true;
-        }
     }
     function Potadra_meta(meta, tag) {
         if (meta) {
@@ -123,6 +156,8 @@ https://newrpg.seesaa.net/article/475049887.html
 
     // 各パラメータ用変数
     const SkyName                  = String(params.SkyName || '空中');
+    const Alignment                = Potadra_convertBool(params.Alignment);
+    const EnableAlignmentMetaName  = String(params.EnableAlignmentMetaName || '自動整列ON');
     const DisableAlignmentMetaName = String(params.DisableAlignmentMetaName || '自動整列OFF');
 
     // 他プラグイン連携(パラメータ取得)
@@ -211,9 +246,11 @@ https://newrpg.seesaa.net/article/475049887.html
                     enemyId = ary[Math.floor(Math.random() * ary.length)];
                 }
                 let x = first + (first * i) * 2;
-                if ($gameSystem.isSideView() || name.includes(DisableAlignmentMetaName)) {
-                    if (ary_x[i]) x = ary_x[i];
-                    if (ary_y[i]) y = ary_y[i];
+                if (!name.includes(EnableAlignmentMetaName)) {
+                    if (Alignment || name.includes(DisableAlignmentMetaName)) {
+                        if (ary_x[i]) x = ary_x[i];
+                        if (ary_y[i]) y = ary_y[i];
+                    }
                 }
                 const enemy = new Game_Enemy(enemyId, x, y);
 
