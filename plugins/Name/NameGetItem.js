@@ -1,13 +1,16 @@
 /*:
 @plugindesc
-アイテム取得 Ver1.4.5(2022/9/10)
+アイテム入手 Ver1.4.6(2024/6/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Name/NameGetItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 検索時のバグ修正
+* Ver1.4.6
+- 減らす場合の最大値を変更
+- 取得したい => 入手するに名称変更
+* Ver1.4.5: 検索時のバグ修正
 
 ・TODO
 減らす機能: 装備の場合は装備品も含めるか
@@ -18,14 +21,14 @@ https://opensource.org/licenses/mit-license.php
 
 @help
 ## 概要
-名前からアイテムを取得する  
+名前からアイテムを入手する  
 プラグインコマンドを提供します。
 
 ## 使い方
 1. プラグインコマンドを呼び出します
-2. プラグインコマンドの名前に『取得したいアイテム名』を入力します
+2. プラグインコマンドの名前に『入手するアイテム名』を入力します
 3. プラグインコマンドを指定したイベントが呼び出されると、
-アイテムを検索し取得します
+アイテムを検索し入手します
 
 検索の順番は、アイテム => 武器 => 防具 の順番となります。  
 同じ名称のアイテムが複数ある場合は、最初に検索したアイテムを入手します。
@@ -34,20 +37,20 @@ https://opensource.org/licenses/mit-license.php
 ゲーム公開後は、データベースの入れ替えはおすすめしません。
 
 @command get_item
-@text アイテム取得
-@desc 名前からアイテムを取得します
+@text アイテム入手
+@desc 名前からアイテムを入手します
 
     @arg name
     @type string
     @text 名前
-    @desc 取得したいアイテムの名称
+    @desc 入手するアイテムの名称
 
     @arg count
     @type number
     @text 個数
-    @desc 取得したいアイテムの個数
+    @desc 入手するアイテムの個数
     @default 1
-    @min -99999
+    @min -999999999999999
 
     @arg message
     @type multiline_string
@@ -146,7 +149,7 @@ https://opensource.org/licenses/mit-license.php
     // プラグインの導入有無
     const GetInformation = Potadra_isPlugin('GetInformation');
 
-    // プラグインコマンド(アイテム取得)
+    // プラグインコマンド(アイテム入手)
     PluginManager.registerCommand(plugin_name, "get_item", args => {
         const name    = String(args.name);
         const count   = Number(args.count || 1);

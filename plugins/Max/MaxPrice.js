@@ -1,14 +1,16 @@
 /*:
 @plugindesc
-価格の最大値変更 Ver1.1.5(2023/9/11)
+価格の最大値変更 Ver1.1.6(2024/6/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Max/MaxPrice.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- ヘルプ追加
+* Ver1.1.6: NoSale.js との競合対応
+* Ver1.1.5
 - ShopRate.js と CurrencyUnit.js の競合を解消
+- ヘルプ追加
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
@@ -69,22 +71,24 @@ https://opensource.org/licenses/mit-license.php
             return Math.floor(Potadra_MetaPrice(this._item, CommonPriceMetaName, CommonSellRate));
         }
     };
-    function Potadra_isSecound(switch_no) {
-        return $gameSwitches && $gameSwitches.value(switch_no) === true;
-    }
-    function Potadra_getPluginName(extension = 'js') {
-        const reg = new RegExp(".+\/(.+)\." + extension);
-        return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
-    }
-    function Potadra_isPlugin(plugin_name) {
-        return PluginManager._scripts.includes(plugin_name);
-    }
-    function Potadra_getPluginParams(plugin_name) {
-        let params = false;
-        if (Potadra_isPlugin(plugin_name)) {
-            params = PluginManager.parameters(plugin_name);
-        }
-        return params;
+    const window_shop_shell_no_sale_params = Potadra_getPluginParams('NoSale');
+    const Window_ShopSell_NoSaleMetaName   = String(window_shop_shell_no_sale_params.NoSaleMetaName) || '売却不可';
+    const window_shop_shell_max_price_params = Potadra_getPluginParams('MaxPrice');
+    const Window_ShopSell_PriceMetaName      = String(window_shop_shell_max_price_params.PriceMetaName) || '価格';
+    const window_shop_shell_shop_rate_params = Potadra_getPluginParams('ShopRate');
+    const Window_ShopSell_BuyRate            = window_shop_shell_shop_rate_params ? Number(window_shop_shell_shop_rate_params.BuyRate || 1) : 1;
+    if (window_shop_shell_no_sale_params || window_shop_shell_max_price_params) {
+        Window_ShopSell.prototype.isEnabled = function(item) {
+            if (!item) return false;
+            if (window_shop_shell_no_sale_params && Potadra_meta(item.meta, Window_ShopSell_NoSaleMetaName)) {
+                return false;
+            }
+            if (window_shop_shell_max_price_params) {
+                return Potadra_MetaPrice(item, Window_ShopSell_PriceMetaName, Window_ShopSell_BuyRate) > 0;
+            } else {
+                return item && item.price > 0;
+            }
+        };
     }
     function Potadra_meta(meta, tag) {
         if (meta) {
@@ -107,26 +111,18 @@ https://opensource.org/licenses/mit-license.php
             return item.price * rate;
         }
     }
+    function Potadra_isSecound(switch_no) {
+        return $gameSwitches && $gameSwitches.value(switch_no) === true;
+    }
+    function Potadra_isPlugin(plugin_name) {
+        return PluginManager._scripts.includes(plugin_name);
+    }
+    function Potadra_getPluginParams(plugin_name) {
+        let params = false;
+        if (Potadra_isPlugin(plugin_name)) {
+            params = PluginManager.parameters(plugin_name);
+        }
+        return params;
+    }
 
-
-    // パラメータ用変数
-    const plugin_name = Potadra_getPluginName();
-    const params      = PluginManager.parameters(plugin_name);
-
-    // 各パラメータ用変数
-    const PriceMetaName = String(params.PriceMetaName) || '価格';
-
-    // 他プラグイン連携(パラメータ取得)
-    const shop_rate_params = Potadra_getPluginParams('ShopRate');
-    const BuyRate = shop_rate_params ? Number(shop_rate_params.BuyRate || 1) : 1;
-
-    /**
-     * アイテムを許可状態で表示するかどうか
-     *
-     * @param {} item - 
-     * @returns {} 
-     */
-    Window_ShopSell.prototype.isEnabled = function(item) {
-        return item && Potadra_MetaPrice(item, PriceMetaName, BuyRate) > 0;
-    };
 })();

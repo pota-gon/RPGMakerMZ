@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.5.7(2023/9/3)
+ワールド自動生成 Ver0.5.8(2024/6/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,12 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.5.8
+- マップJSON出力(同一マップ出力)すると、二回目以降の自動生成が出来なくなるバグ修正
+- ワールド再生成: ワールド再生成してから、ワールド自動生成のマップに移動するとマップがおかしくなるバグ修正
+- ワールド再生成: メニューで、ワールド自動生成でないマップではコマンドを選択できないように変更
+- バイオーム設定の平原のコメントを変更・追記
+- プラグインパラメータのヘルプ一部修正
 * Ver0.5.7
 - リファクタリング
 - 固定リージョンを変更すると表示がおかしくなるバグ修正
@@ -100,7 +106,8 @@ https://github.com/pota-gon/GenerateWorld
 @param RetentionSaveData
 @type boolean
 @text セーブデータ保持
-@desc セーブデータを保持するか
+@desc ワールド自動生成の生成結果を
+セーブデータに保持するか
 @on 保持する
 @off 保持しない
 @default true
@@ -644,6 +651,7 @@ https://github.com/pota-gon/GenerateWorld
 (() => {
     'use strict';
 
+    // ベースプラグインの処理
     const SEED_LENGTH = 255;
     const BIOME = {
         2048: {'top_tile' : [[2048, 0, 1, 0]], 'bottom_tile' : [[2048, 0, -1, 0], [2096, -0.5, -1, 1]]}, // 海
@@ -662,7 +670,7 @@ https://github.com/pota-gon/GenerateWorld
         2672: {'top_tile' : [[2816, 0, 1, 0], [3008, 0.25, 0.35, 1], [3104, 0.35, 0.5, 1], [3872, 0.5, 1, 1]], 'bottom_tile' : [[2624, 0, -1, 0]]}, // 下界に落ちる滝
         2720: {'top_tile' : [[4064, 0, 1, 0], [4112, 0.5, 1, 1]], 'bottom_tile' : [[2720, 0, -1, 0]]}, // 雲（大地の境界）
         2768: {'top_tile' : [[4064, 0, 1, 0], [4112, 0.5, 1, 1]], 'bottom_tile' : [[2720, 0, -1, 0]]}, // 雲
-        2816: {'top_tile' : [[2816, 0, 1, 0], [3008, 0.25, 0.35, 1], [3104, 0.35, 0.5, 1], [3872, 0.5, 1, 1]], 'bottom_tile' : [[2816, 0, -0.1, 0], [2048, -0.1, -1, 0], [2096, -0.5, -1, 1]]}, // 平原
+        2816: {'top_tile' : [[2816, 0, 1, 0], [3008, 0.25, 0.35, 1], [3104, 0.35, 0.5, 1], [3872, 0.5, 1, 1]], 'bottom_tile' : [[2816, 0, -0.1, 0], [2048, -0.1, -1, 0], [2096, -0.5, -1, 1]]}, // 草原A: 浅瀬を入れたい場合 => [2144, -0.15, -0.175, 1]
         2864: {'top_tile' : [[2816, 0, 1, 0], [2864, 0.35, 1, 1]], 'bottom_tile' : [[2048, 0, -1, 0], [2096, -0.5, -1, 1]]}, // 草原A（濃）
         2912: {'top_tile' : [[2912, 0, 1, 0], [3056, 0.25, 0.35, 1], [3104, 0.35, 0.5, 1], [3872, 0.5, 1, 1]], 'bottom_tile' : [[2048, 0, -1, 0], [2096, -0.5, -1, 1]]}, // 草原B
         2960: {'top_tile' : [[2912, 0, 1, 0], [2960, 0.35, 1, 1]], 'bottom_tile' : [[2048, 0, -1, 0], [2096, -0.5, -1, 1]]}, // 草原B（濃）
@@ -733,7 +741,6 @@ https://github.com/pota-gon/GenerateWorld
             return min + (Math.abs(this.s) % (max + 1 - min));
         }
     }
-    // ベースプラグインの処理
     function Potadra_checkSwitch(switch_no, bool = true) {
         if (switch_no === 0 || $gameSwitches.value(switch_no) === bool) {
             return true;
@@ -1828,6 +1835,38 @@ https://github.com/pota-gon/GenerateWorld
     }
 
     /**
+     * 指定座標にあるタイル ID の取得
+     *
+     * @param {number} x - X座標
+     * @param {number} y - Y座標
+     * @param {number} z - レイヤー
+     * @returns {number} タイル ID
+     * @returns {} 
+     */
+    function orgTileId(x, y, z) {
+        const width = $dataMap.width;
+        const height = $dataMap.height;
+        return $dataMap.data[(z * height + y) * width + x] || 0;
+    };
+
+    /**
+     * 指定座標にあるタイル ID の設定
+     *
+     * @param {number} x - X座標
+     * @param {number} y - Y座標
+     * @param {number} z - レイヤー
+     * @param {number} tileId - タイル ID
+     */
+    function setTileId(x, y, z, tileId) {
+        const index = PotadraGenerate_index(x, y, z);
+        if (RetentionSaveData) {
+            $gameMap._potadra_worlds[index] = tileId;
+        } else {
+            $gameTemp._potadra_worlds[index] = tileId;
+        }
+    }
+
+    /**
      * 指定座標にあるタイル ID の設定
      *
      * @param {number} x - X座標
@@ -2470,7 +2509,7 @@ https://github.com/pota-gon/GenerateWorld
          */
         const _Window_MenuCommand_addMainCommands = Window_MenuCommand.prototype.addMainCommands;
         Window_MenuCommand.prototype.addMainCommands = function() {
-            this.addCommand(RegenerateCommand, "regenerate_world");
+            this.addCommand(RegenerateCommand, "regenerate_world", isGenerateWorld());
             _Window_MenuCommand_addMainCommands.apply(this, arguments);
         };
 
@@ -2621,6 +2660,24 @@ https://github.com/pota-gon/GenerateWorld
             for (let item in $dataMap) {
                 if (item === 'data') {
                     if (isGenerateWorld()) {
+                        let tmp_potadra_worlds;
+                        let potadra_worlds;
+                        if (RetentionSaveData) {
+                            tmp_potadra_worlds = $gameMap._potadra_worlds;
+                        } else {
+                            tmp_potadra_worlds = $gameTemp._potadra_worlds;
+                        }
+
+                        if (same_map_export_json) { // 同一マップに出力
+                            for (let x = 0; x < $dataMap.width; x++) {
+                                for (let y = 0; y < $dataMap.height; y++) {
+                                    const region = orgTileId(x, y, 5);
+                                    const index = PotadraGenerate_index(x, y, 5);
+                                    tmp_potadra_worlds[index] = region;
+                                }
+                            }
+                        }
+
                         if (RetentionSaveData) {
                             tmp = '\n"data":' + JSON.stringify($gameMap._potadra_worlds);
                         } else {
@@ -2694,8 +2751,10 @@ https://github.com/pota-gon/GenerateWorld
     // ワールド再生成
     //==============================================================================
     function RegenerateWorld() {
-        GenerateWorld();
-        PotadraSpawn_spawn(0);
+        if (isGenerateWorld()) {
+            GenerateWorld();
+            PotadraSpawn_spawn(0);
+        }
         SceneManager.goto(Scene_Map);
     }
 

@@ -27,6 +27,7 @@ plugins/*
 !plugins/Window
 plugins/Base/テンプレート.js
 plugins/Base/PotBase.js
+plugins/Battle/BattleMenu.js
 plugins/Battle/EnemyMpCostZero.js
 plugins/Battle/LoseExp.js
 plugins/Battle/Simulation.js
@@ -46,6 +47,8 @@ plugins/Shop/NoSale.js
 plugins/Shop/SimpleSale.js
 plugins/Skill/CriticalSkill.js
 plugins/Skill/GuardSkill.js
+plugins/Skill/MagicLearnSkill.js
+plugins/Trait/PowerUpHeal.js
 plugins/Skill/TpRecover.js
 plugins/State/*.js
 plugins/State/Shield.js
