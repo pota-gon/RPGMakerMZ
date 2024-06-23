@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-名前データベース Ver0.10.8(2024/5/27)
+名前データベース Ver0.10.9(2024/6/23)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.10.9: リファクタリング
 * Ver0.10.8: Debug.js のデバッグスキル追加による競合を解消
 * Ver0.10.7: アクター初期装備(装飾品1 などで何番目に装備するか設定できる機能追加)
 
@@ -192,10 +193,10 @@ https://opensource.org/licenses/mit-license.php
          * @returns {}
          */
         function initEquip(actor) {
-            const slots      = actor.equipSlots();
-            const _equips    = actor._equips;
-            const meta       = actor.actor().meta;
-            const dual       = actor.isDualWield();
+            const slots   = actor.equipSlots();
+            const _equips = actor._equips;
+            const meta    = actor.actor().meta;
+            const dual    = actor.isDualWield();
 
             const tmpType = {};
             const equipTypes = [];

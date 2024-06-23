@@ -1,12 +1,15 @@
 /*:
 @plugindesc
-スキルコスト Ver0.7.4(2022/9/10)
+スキルコスト Ver0.7.5(2024/6/23)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Skill/SkillCost.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.7.5 
+- <アイテム名消費>を<アイテム消費>で行えるように変更
+* Ver0.7.4
 - 検索時のバグ修正
 - meta データの取得処理を修正
 - 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
@@ -43,10 +46,10 @@ https://opensource.org/licenses/mit-license.php
 <所持金消費: 10000>  
 => 通貨単位は不要
 
-<アイテム消費: アイテムID,消費数>  
+<アイテム消費: アイテムID OR アイテム名,消費数>  
+=> 名前の場合は、武器も防具も指定可能
 <武器消費: 武器ID,消費数>  
-<防具消費: 防具ID,消費数>  
-<アイテム名消費: アイテム名,消費数>
+<防具消費: 防具ID,消費数>
 
 @param FixSkillCostSize
 @type boolean
@@ -117,12 +120,6 @@ https://opensource.org/licenses/mit-license.php
 デフォルトは 防具消費
 @default 防具消費
 
-@param ItemNameCostMetaName
-@text アイテム名消費タグ
-@desc アイテム名消費に使うメモ欄タグの名称
-デフォルトは アイテム名消費
-@default アイテム名消費
-
 @param ItemRateCostMetaName
 @text アイテム割合消費タグ
 @desc アイテム割合消費に使うメモ欄タグの名称
@@ -140,12 +137,6 @@ https://opensource.org/licenses/mit-license.php
 @desc 防具割合消費に使うメモ欄タグの名称
 デフォルトは 防具割合消費
 @default 防具割合消費
-
-@param ItemNameRateCostMetaName
-@text アイテム名割合消費タグ
-@desc アイテム名割合消費に使うメモ欄タグの名称
-デフォルトは アイテム名割合消費
-@default アイテム名割合消費
 
 @param HpRateCostMetaName
 @text HP割合消費タグ
@@ -267,14 +258,12 @@ https://opensource.org/licenses/mit-license.php
     const ItemCostMetaName         = String(params.ItemCostMetaName) || 'アイテム消費';
     const WeaponCostMetaName       = String(params.WeaponCostMetaName) || '武器消費';
     const ArmorCostMetaName        = String(params.ArmorItemCostMetaName) || '防具消費';
-    const ItemNameCostMetaName     = String(params.ItemNameCostMetaName) || 'アイテム名消費';
     const HpRateCostMetaName       = String(params.HpRateCostMetaName) || 'HP割合消費';
     const MpRateCostMetaName       = String(params.MpRateCostMetaName) || 'MP割合消費';
     const GoldRateCostMetaName     = String(params.GoldRateCostMetaName) || '所持金割合消費';
     const ItemRateCostMetaName     = String(params.ItemRateCostMetaName) || 'アイテム割合消費';
     const WeaponRateCostMetaName   = String(params.WeaponRateCostMetaName) || '武器割合消費';
     const ArmorRateCostMetaName    = String(params.ArmorItemRateCostMetaName) || '防具割合消費';
-    const ItemNameRateCostMetaName = String(params.ItemNameRateCostMetaName) || 'アイテム名割合消費';
     const MaxHpRateCostMetaName    = String(params.MaxHpRateCostMetaName) || 'MaxHP割合消費';
     const MaxMpRateCostMetaName    = String(params.MaxMpRateCostMetaName) || 'MaxMP割合消費';
 
@@ -413,16 +402,20 @@ https://opensource.org/licenses/mit-license.php
      */
     Game_BattlerBase.prototype.skillItemCost = function(skill) {
         let cost = 0;
+        let item = 1;
         const item_cost           = Potadra_metaData(skill.meta[ItemCostMetaName], ',');
         const weapon_cost         = Potadra_metaData(skill.meta[WeaponCostMetaName], ',');
         const armor_cost          = Potadra_metaData(skill.meta[ArmorCostMetaName], ',');
-        const item_name_cost      = Potadra_metaData(skill.meta[ItemNameCostMetaName], ',');
         const item_rate_cost      = Potadra_metaData(skill.meta[ItemRateCostMetaName], ',');
         const weapon_rate_cost    = Potadra_metaData(skill.meta[WeaponRateCostMetaName], ',');
         const armor_rate_cost     = Potadra_metaData(skill.meta[ArmorRateCostMetaName], ',');
-        const item_name_rate_cost = Potadra_metaData(skill.meta[ItemNameRateCostMetaName], ',');
         if (item_cost) { // アイテム消費
-            this._item = $dataItems[Number(item_cost[0])];
+            item = item_cost[0];
+            if (isNaN(item)) { // 文字列
+                this._item = Potadra_itemSearch(item.trim());
+            } else {
+                this._item = $dataItems[Number(item)];
+            }
             cost += Number(item_cost[1] || 0);
         }
         if (weapon_cost) { // 武器消費
@@ -433,12 +426,13 @@ https://opensource.org/licenses/mit-license.php
             this._item = $dataArmors[Number(armor_cost[0])];
             cost += Number(armor_cost[1] || 0);
         }
-        if (item_name_cost) { // アイテム名消費
-            this._item = Potadra_itemSearch(item_name_cost[0].trim());
-            cost += Number(item_name_cost[1] || 0);
-        }
         if (item_rate_cost) { // アイテム割合消費
-            this._item = $dataItems[Number(item_rate_cost[0])];
+            item = item_rate_cost[0];
+            if (isNaN(item)) { // 文字列
+                this._item = Potadra_itemSearch(item.trim());
+            } else {
+                this._item = $dataItems[Number(item)];
+            }
             cost += ceilZeroCost($gameParty.numItems(this._item), item_rate_cost[1], cost);
         }
         if (weapon_rate_cost) { // 武器割合消費
@@ -448,10 +442,6 @@ https://opensource.org/licenses/mit-license.php
         if (armor_rate_cost) { // 防具割合消費
             this._item = $dataArmors[Number(armor_rate_cost[0])];
             cost += ceilZeroCost($gameParty.numItems(this._item), armor_rate_cost[1], cost);
-        }
-        if (item_name_rate_cost) { // アイテム名割合消費
-            this._item = Potadra_itemSearch(item_name_rate_cost[0].trim());
-            cost += ceilZeroCost($gameParty.numItems(this._item), item_rate_cost[1], cost);
         }
         return Math.floor(cost);
     };
@@ -521,14 +511,12 @@ https://opensource.org/licenses/mit-license.php
         const item_cost           = Potadra_metaData(skill.meta[ItemCostMetaName], ',');
         const weapon_cost         = Potadra_metaData(skill.meta[WeaponCostMetaName], ',');
         const armor_cost          = Potadra_metaData(skill.meta[ArmorCostMetaName], ',');
-        const item_name_cost      = Potadra_metaData(skill.meta[ItemNameCostMetaName], ',');
         const item_rate_cost      = Potadra_metaData(skill.meta[ItemRateCostMetaName], ',');
         const weapon_rate_cost    = Potadra_metaData(skill.meta[WeaponRateCostMetaName], ',');
         const armor_rate_cost     = Potadra_metaData(skill.meta[ArmorRateCostMetaName], ',');
-        const item_name_rate_cost = Potadra_metaData(skill.meta[ItemNameRateCostMetaName], ',');
-        if (item_rate_cost || weapon_rate_cost || armor_rate_cost || item_name_rate_cost) {
+        if (item_rate_cost || weapon_rate_cost || armor_rate_cost) {
             return $gameParty.numItems(this._item) > 0 && $gameParty.numItems(this._item) >= cost;
-        } else if (item_cost || weapon_cost || armor_cost || item_name_cost) {
+        } else if (item_cost || weapon_cost || armor_cost) {
             return $gameParty.numItems(this._item) >= cost;
         } else {
             return true;
