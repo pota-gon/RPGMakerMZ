@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-戦闘スキル・アイテム選択MV風 Ver1.0.4(2024/9/1)
+戦闘スキル・アイテム選択MV風 Ver1.0.4(2024/9/22)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/BattleMenu_SkillMV.js
 @target MZ
