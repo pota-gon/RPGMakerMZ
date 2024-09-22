@@ -1,12 +1,14 @@
 /*:
 @plugindesc
-バトルメンバーの最大数変更 Ver2.0.0(2024/5/27)
+バトルメンバーの最大数変更 Ver2.0.1(2024/9/22)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Max/BattleMembers.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver2.0.1: 他メニュー系のプラグインとの競合対策を追加
+- Sprite_Gauge を変更するのではなく、Sprite_BattleStatusGaugeクラスを作成し継承するように変更
 * Ver2.0.0: リニューアル(プラグインパラメータの再設定が必要になります)
 - 6人以上のメニューを設定できるように修正
 * Ver1.3.6
@@ -378,10 +380,44 @@ https://opensource.org/licenses/mit-license.php
         /**
          * 
          *
+         * @param {} actor - 
+         * @param {} type - 
+         * @param {} x - 
+         * @param {} y - 
+         */
+        Window_BattleStatus.prototype.placeGauge = function(actor, type, x, y) {
+            const key = "actor%1-gauge-%2".format(actor.actorId(), type);
+            const sprite = this.createInnerSprite(key, Sprite_BattleStatusGauge);
+            sprite.setup(actor, type);
+            sprite.move(x, y);
+            sprite.show();
+        };
+
+        class Sprite_BattleStatusGauge extends Sprite_Gauge {
+            constructor() {
+                super();
+            }
+            bitmapWidth() {
+                return getWidth();
+            }
+            /*labelFontSize() {
+                return $gameSystem.mainFontSize() - 8;
+            }
+            valueFontFace() {
+                return $gameSystem.numberFontFace() - 6;
+            }
+            valueFontSize() {
+                return $gameSystem.mainFontSize() - 8;
+            }*/
+        }
+
+        /**
+         * 
+         *
          * @returns {number} 
          */
-        Sprite_Gauge.prototype.bitmapWidth = function() {
-            /*const members = battleMembers();
+        /*Sprite_Gauge.prototype.bitmapWidth = function() {
+            const members = battleMembers();
             switch (members) {
                 case 1:
                     return 128 + (50 * (3 ** (3 - members))) // 128 * 4 + 64 + 2;     // 512 + 64 + 2 = 578      // + 450(50 * 9) 3 ** 2
@@ -413,18 +449,16 @@ https://opensource.org/licenses/mit-license.php
                     return 128 -  ? = 38( -?); //  ? / 3 =  ?
                 default:
                     return 128 - (32 * (battleMembers()- 4));
-            }*/
+            }
 
-            /*const members = battleMembers();
+            const members = battleMembers();
             if (members < 4) {
                 return 128 + (50 * (3 ** (3 - members)));
             } else if (members > 4) {
                 return 128 - (10 + (20 * (members - 4)));
             } else {
                 return 128;
-            }*/
-
-            return getWidth();
-        };
+            }
+        };*/
     }
 })();

@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.5.9(2024/6/23)
+ワールド自動生成 Ver0.6.0(2024/9/22)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,8 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.6.0
+- 船から降りるとき特定条件下でエラーになるバグ修正
 * Ver0.5.9
 - プラグインパラメータに上層OR下層タイルリージョンを追加
 - 浅瀬などの通行不可のタイルに船が呼び出せるバグ修正
@@ -1251,7 +1253,7 @@ https://github.com/pota-gon/GenerateWorld
     function PotadraSpawn_check(x, y, d) {
         const x2 = $gameMap.roundXWithDirection(x, d);
         const y2 = $gameMap.roundYWithDirection(y, d);
-        if (!$gameMap.isValid(x2, y2) || !$gameMap.isPassable(x2, y2, reverseDir) || $gamePlayer.isCollidedWithCharacters(x2, y2)) {
+        if (!$gameMap.isValid(x2, y2) || !$gameMap.isPassable(x2, y2, $gamePlayer.reverseDir(d)) || $gamePlayer.isCollidedWithCharacters(x2, y2)) {
             return false;
         }
         return true;

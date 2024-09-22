@@ -7,7 +7,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- エラーが発生するバグ修正
+* Ver1.0.3: エラーが発生するバグ修正
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.

@@ -7,7 +7,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- meta データの取得処理を修正
+* Ver1.0.1: meta データの取得処理を修正
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.

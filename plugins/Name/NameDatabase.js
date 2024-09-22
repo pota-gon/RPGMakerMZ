@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-名前データベース Ver0.10.9(2024/6/23)
+名前データベース Ver0.11.0(2024/9/22)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.11.0: リファクタリング
 * Ver0.10.9: リファクタリング
 * Ver0.10.8: Debug.js のデバッグスキル追加による競合を解消
 * Ver0.10.7: アクター初期装備(装飾品1 などで何番目に装備するか設定できる機能追加)
@@ -152,6 +153,25 @@ https://opensource.org/licenses/mit-license.php
         }
         return false;
     }
+    function Potadra_skillIds(skill_names) {
+        const skill_ids = [];
+        if (skill_names) {
+            for (let skill_name of skill_names) {
+                if (skill_name) {
+                    let skill_id = false;
+                    if (isNaN(skill_name)) {
+                        skill_id = Potadra.nameSearch($dataSkills, skill_name.trim());
+                    } else {
+                        skill_id = Number(skill_name);
+                    }
+                    if (skill_id) {
+                        skill_ids.push(skill_id);
+                    }
+                }
+            }
+        }
+        return skill_ids;
+    }
     function Potadra_learning(data) {
         const learnings = [];
         if (data) {
@@ -283,27 +303,6 @@ https://opensource.org/licenses/mit-license.php
     // スキル追加(特徴)
     if (AddSkill) {
         /**
-         *
-         *
-         * @param {} data -
-         * @returns {}
-         */
-        function skillIds(data) {
-            const skill_ids = [];
-            if (data) {
-                for (let i = 0; i < data.length; i++) {
-                    if (data[i]) {
-                        const skill_id = Potadra_nameSearch($dataSkills, data[i].trim());
-                        if (skill_id) {
-                            skill_ids.push(skill_id);
-                        }
-                    }
-                }
-            }
-            return skill_ids;
-        }
-
-        /**
          * アクターを扱うクラスです。
          * このクラスは Game_Actors クラス（$gameActors）の内部で使用され、
          * Game_Party クラス（$gameParty）からも参照されます。
@@ -319,11 +318,11 @@ https://opensource.org/licenses/mit-license.php
         Game_Actor.prototype.addedSkills = function() {
             // アクター
             let data = Potadra_metaData(this.actor().meta['スキル追加']);
-            const actor_skill_ids = skillIds(data);
+            const actor_skill_ids = Potadra_skillIds(data);
 
             // 職業
             data = Potadra_metaData(this.currentClass().meta['スキル追加']);
-            const class_skill_ids = skillIds(data);
+            const class_skill_ids = Potadra_skillIds(data);
 
             // 装備
             const equips          = this.equips();
@@ -331,7 +330,7 @@ https://opensource.org/licenses/mit-license.php
             for (let j = 0; j < equips.length; j++) {
                 if (equips[j]) {
                     data = Potadra_metaData(equips[j].meta['スキル追加']);
-                    const ids = skillIds(data);
+                    const ids = Potadra_skillIds(data);
                     for (let k = 0; k < ids.length; k++) {
                         equip_skill_ids.push(ids[k]);
                     }

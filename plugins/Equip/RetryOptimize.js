@@ -8,7 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- 公開
+* Ver1.0.0: 公開
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.

@@ -7,7 +7,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- URLを修正
+* Ver1.2.5: URLを修正
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.

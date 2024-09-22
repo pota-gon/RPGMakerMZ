@@ -7,7 +7,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- 戦闘終了ME停止が正しく動作していないバグ修正
+* Ver1.2.7: 戦闘終了ME停止が正しく動作していないバグ修正
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.

@@ -7,7 +7,7 @@ BGMランダム再生 Ver1.4.8(2022/12/2)
 @author ポテトードラゴン
 
 ・アップデート情報
-- URLを修正
+* Ver1.4.8: URLを修正
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.

@@ -7,7 +7,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- リファクタ
+* Ver1.3.4: リファクタ
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.

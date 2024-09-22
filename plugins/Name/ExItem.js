@@ -7,7 +7,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- ヘルプ更新
+* Ver1.2.5: ヘルプ更新
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.

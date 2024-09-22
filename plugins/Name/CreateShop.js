@@ -1,12 +1,15 @@
 /*:
 @plugindesc
-合成屋 Ver0.10.8(2022/9/10)
+合成屋 Ver0.10.9(2024/9/22)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Name/CreateShop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.10.9: 合成素材があるとき、複数ページを切り替えられる機能が動作していなかったのを修正
+- shiftキーを使用していた部分は、装備の変更と競合するため、Qキー(pagedown)とW(pageup)キーで動作するように変更
+* Ver0.10.8
 - ページがおかしくなるバグ修正
 - 競合対策を実施
 - 検索時のバグ修正
@@ -263,8 +266,8 @@ https://opensource.org/licenses/mit-license.php
     if (params.MenuGoods) {
         MenuGoods = JSON.parse(params.MenuGoods);
     }
-    const materials  = {};
-    const BuyOnly    = Potadra_convertBool(params.BuyOnly);
+    let materials = {};
+    const BuyOnly = Potadra_convertBool(params.BuyOnly);
     let BuyName, SellName, CancelName, MaterialName, MaxSize;
     const MiniWindow = Potadra_convertBool(params.MiniWindow);
     const SubCommand = Potadra_convertBool(params.SubCommand);
@@ -673,8 +676,12 @@ https://opensource.org/licenses/mit-license.php
          * ページの更新
          */
         updatePage() {
-            if (this.isPageChangeEnabled() && this.isPageChangeRequested()) {
-                this.changePage();
+            if (this.isPageChangeEnabled()) {
+                if (this.isPageChangeRequested()) {
+                    this.changePage();
+                } else if (this.isPageBeforeRequested()) {
+                    this.changePage(true);
+                }
             }
         }
 
@@ -684,7 +691,7 @@ https://opensource.org/licenses/mit-license.php
         maxPages() {
             let material = materials[this._index];
             if (material) {
-                return Math.floor(material.length / MaxSize);
+                return Math.ceil(material.length / MaxSize);
             } else {
                 return 1;
             }
@@ -700,12 +707,12 @@ https://opensource.org/licenses/mit-license.php
         }
 
         /**
-         * ページ更新操作(Shiftキーもしくはタッチされた場合)
+         * ページ更新操作(pageupキーもしくはタッチされた場合)
          *
          * @returns {boolean} ページ更新可否
          */
         isPageChangeRequested() {
-            if (Input.isTriggered("shift")) {
+            if (Input.isTriggered("pageup")) {
                 return true;
             }
             if (TouchInput.isTriggered() && this.isTouchedInsideFrame()) {
@@ -715,10 +722,30 @@ https://opensource.org/licenses/mit-license.php
         }
 
         /**
+         * ページ戻る操作(pagedownキーが押された場合)
+         *
+         * @returns {boolean} ページ更新可否
+         */
+        isPageBeforeRequested() {
+            if (Input.isTriggered("pagedown")) {
+                return true;
+            }
+            return false;
+        }
+
+        /**
          * ページ変更
          */
-        changePage() {
-            this._pageIndex = (this._pageIndex + 1) % this.maxPages();
+        changePage(before = false) {
+            if (before) {
+                if (this._pageIndex === 0) {
+                    this._pageIndex = this.maxPages() - 1;
+                } else {
+                    this._pageIndex = (this._pageIndex - 1) % this.maxPages();
+                }
+            } else {
+                this._pageIndex = (this._pageIndex + 1) % this.maxPages();
+            }
             this.refresh();
             this.playCursorSound();
         }
@@ -770,11 +797,11 @@ https://opensource.org/licenses/mit-license.php
             const buy_window_height = this._dummyWindow.height - wh;
             const wy = buy_window_y + buy_window_height;
             // const wy = this._dummyWindow.height - this.mainAreaHeight();
-            //const wy = 120 + 200 + 42;
+            // const wy = 120 + 200 + 42;
             const ww = Graphics.boxWidth - this.statusWidth();
-                // this.mainAreaHeight() -
-                // this._commandWindow.height -
-                // 200 - 42;
+            // this.mainAreaHeight() -
+            // this._commandWindow.height -
+            // 200 - 42;
             return new Rectangle(wx, wy, ww, wh);
         }
 

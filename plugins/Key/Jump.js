@@ -8,7 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- ロンチプラグインの wasdKeyMZ.js と競合するため、順番をエラー表示するように修正
+* Ver1.0.1: ロンチプラグインの wasdKeyMZ.js と競合するため、順番をエラー表示するように修正
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.

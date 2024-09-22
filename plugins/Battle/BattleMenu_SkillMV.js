@@ -1,13 +1,14 @@
 /*:
 @plugindesc
-戦闘スキル・アイテム選択MV風 Ver1.0.3(2022/9/10)
+戦闘スキル・アイテム選択MV風 Ver1.0.4(2024/9/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/SkillAndItem_MV.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/BattleMenu_SkillMV.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+* Ver1.0.4: 敵キャラ選択キャンセル時にアクターのステータスウィンドウが表示されなくなるバグ修正
+* Ver1.0.3: 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
@@ -139,5 +140,14 @@ https://opensource.org/licenses/mit-license.php
         this._skillWindow.hide();
         this._itemWindow.hide();
         _Scene_Battle_onSelectAction.apply(this, arguments);
+    };
+
+    /**
+     * 敵キャラ［キャンセル］
+     */
+    const _Scene_Battle_onEnemyCancel = Scene_Battle.prototype.onEnemyCancel;
+    Scene_Battle.prototype.onEnemyCancel = function() {
+        this._statusWindow.show();
+        _Scene_Battle_onEnemyCancel.apply(this, arguments);
     };
 })();

@@ -7,6 +7,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.3.5
 - ヘルプ追加
 - MaxPrice.js と CurrencyUnit.js の競合を解消
 

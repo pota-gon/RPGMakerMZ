@@ -7,6 +7,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.4.4
 - 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
 - TODO追記
 

@@ -7,7 +7,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-- コピーライト更新
+* Ver1.3.3: コピーライト更新
 
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
