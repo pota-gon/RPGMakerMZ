@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-名前データベース Ver0.11.0(2024/9/22)
+名前データベース Ver0.11.1(2024/11/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.11.1: リファクタリング
 * Ver0.11.0: リファクタリング
 * Ver0.10.9: リファクタリング
 * Ver0.10.8: Debug.js のデバッグスキル追加による競合を解消
@@ -72,11 +73,8 @@ https://opensource.org/licenses/mit-license.php
             _Game_Actor_initSkills.apply(this, arguments);
             if (InitSkillsDebugSkills.length > 0) {
                 for (const debug_skill of InitSkillsDebugSkills) {
-                    if (isNaN(debug_skill)) { // 文字列
-                        this.learnSkill(Potadra_nameSearch($dataSkills, debug_skill.trim()));
-                    } else { // 数値
-                        this.learnSkill(Number(debug_skill));
-                    }
+                    const skill_id = Potadra_checkName($dataSkills, debug_skill);
+                    if (skill_id) this.learnSkill(skill_id);
                 }
             }
             if (InitSkillsLearning) {
@@ -153,20 +151,19 @@ https://opensource.org/licenses/mit-license.php
         }
         return false;
     }
+    function Potadra_checkName(data, name, val = false) {
+        if (isNaN(name)) {
+            return Potadra_nameSearch(data, name.trim(), "id", "name", val);
+        }
+        return Number(name) || val;
+    }
     function Potadra_skillIds(skill_names) {
         const skill_ids = [];
         if (skill_names) {
             for (let skill_name of skill_names) {
                 if (skill_name) {
-                    let skill_id = false;
-                    if (isNaN(skill_name)) {
-                        skill_id = Potadra.nameSearch($dataSkills, skill_name.trim());
-                    } else {
-                        skill_id = Number(skill_name);
-                    }
-                    if (skill_id) {
-                        skill_ids.push(skill_id);
-                    }
+                    const skill_id = Potadra_checkName($dataSkills, skill_name);
+                    if (skill_id) skill_ids.push(skill_id);
                 }
             }
         }

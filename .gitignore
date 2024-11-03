@@ -49,6 +49,7 @@ plugins/Shop/SimpleSale.js
 plugins/Skill/CriticalSkill.js
 plugins/Skill/GuardSkill.js
 plugins/Skill/MagicLearnSkill.js
+plugins/Skill/SummonBattler.js
 plugins/Skill/TpRecover.js
 plugins/State/*.js
 plugins/System/ChangeSplashWait.js

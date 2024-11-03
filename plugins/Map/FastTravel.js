@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ファストトラベル Ver0.9.6(2023/7/9)
+ファストトラベル Ver0.9.7(2024/11/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Map/FastTravel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.9.7: 移動前コモンイベントを追加
 * Ver0.9.6: メニュー表示名の設定をコンボボックスに変更
 
 ・TODO
@@ -195,6 +196,21 @@ https://opensource.org/licenses/mit-license.php
 @text 移動先マップ情報番号変更
 @desc 移動先マップ情報の変数を変更します。
 @default 0
+
+@param before_common_event
+@type common_event
+@text 移動前コモンイベントID
+@desc 移動前のコモンイベントID
+コモンイベント名を指定した場合は、こちらの設定は不要です
+@default 0
+@min 0
+
+    @param before_common_event_name
+    @parent before_common_event
+    @type string
+    @text 移動前コモンイベント名
+    @desc 移動前のコモンイベント名(名前でコモンイベント検索)
+    コモンイベントIDを指定した場合は、こちらの設定は不要です
 
 @param move_common_event
 @type common_event
@@ -673,25 +689,27 @@ https://opensource.org/licenses/mit-license.php
          * コマンド［マップ移動］
          */
         commandMap() {
-            const map_data               = this._moveMapLists[this._fastTravelWindow.index()];
-            const moveSwitch             = Number(map_data.moveSwitch || 0);
-            const moveChangeVariable     = Number(map_data.moveChangeVariable || 0);
-            const common_event_name      = String(map_data.common_event_name);
-            const move_common_event_name = String(map_data.move_common_event_name);
-            const mapName                = String(map_data.mapName);
-            const x                      = Number(map_data.x || 0);
-            const y                      = Number(map_data.y || 0);
-            const direction              = Number(map_data.direction || 0);
-            const fade_type              = Number(map_data.fade_type || 0);
-            const se                     = Potadra_convertAudio(map_data.se);
-            const boat_x                 = Number(map_data.boat_x || 0);
-            const boat_y                 = Number(map_data.boat_y || 0);
-            const ship_x                 = Number(map_data.ship_x || 0);
-            const ship_y                 = Number(map_data.ship_y || 0);
-            const air_ship_x             = Number(map_data.air_ship_x || 0);
-            const air_ship_y             = Number(map_data.air_ship_y || 0);
+            const map_data                 = this._moveMapLists[this._fastTravelWindow.index()];
+            const moveSwitch               = Number(map_data.moveSwitch || 0);
+            const moveChangeVariable       = Number(map_data.moveChangeVariable || 0);
+            const common_event_name        = String(map_data.common_event_name);
+            const before_common_event_name = String(map_data.before_common_event_name);
+            const move_common_event_name   = String(map_data.move_common_event_name);
+            const mapName                  = String(map_data.mapName);
+            const x                        = Number(map_data.x || 0);
+            const y                        = Number(map_data.y || 0);
+            const direction                = Number(map_data.direction || 0);
+            const fade_type                = Number(map_data.fade_type || 0);
+            const se                       = Potadra_convertAudio(map_data.se);
+            const boat_x                   = Number(map_data.boat_x || 0);
+            const boat_y                   = Number(map_data.boat_y || 0);
+            const ship_x                   = Number(map_data.ship_x || 0);
+            const ship_y                   = Number(map_data.ship_y || 0);
+            const air_ship_x               = Number(map_data.air_ship_x || 0);
+            const air_ship_y               = Number(map_data.air_ship_y || 0);
 
             let common_event           = Number(map_data.common_event || 0);
+            let before_common_event    = Number(map_data.before_common_event || 0);
             let move_common_event      = Number(map_data.move_common_event || 0);
             let mapId                  = Number(map_data.mapId || 0);
             let map_id_variable        = Number(map_data.map_id_variable || 0);
@@ -763,6 +781,12 @@ https://opensource.org/licenses/mit-license.php
             if (exit_x_variable !== 0) $gameVariables.setValue(exit_x_variable, $gamePlayer.x);
             if (exit_y_variable !== 0) $gameVariables.setValue(exit_y_variable, $gamePlayer.y);
 
+            if (before_common_event === 0 && before_common_event_name) {
+                before_common_event = Potadra_nameSearch($dataCommonEvents, before_common_event_name, 'id', 'name', 0);
+            }
+            if (before_common_event !== 0) {
+                $gameTemp.reserveCommonEvent(before_common_event);
+            }
             if (common_event === 0 && common_event_name) {
                 common_event = Potadra_nameSearch($dataCommonEvents, common_event_name, 'id', 'name', 0);
             }

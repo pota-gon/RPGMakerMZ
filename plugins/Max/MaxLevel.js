@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-レベル上限突破 Ver0.14.3(2023/12/9)
+レベル上限突破 Ver0.14.4(2024/11/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Max/MaxLevel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.14.4: パラメータ名に HP・MP など省略系で指定できるように修正
 * Ver0.14.3
 - 初期値と成長率をプラグインパラメータで設定出来るように修正
 - 初期レベルをデータベースで設定したとき正しく反映されないバグ修正
@@ -475,8 +476,16 @@ https://opensource.org/licenses/mit-license.php
      */
     Game_Actor.prototype.paramBase = function(paramId) {
         const actor = this.actor();
-        const data = Potadra_metaData(actor.meta[TextManager.param(paramId)], ',');
+        let data = Potadra_metaData(actor.meta[TextManager.param(paramId)], ',');
         let init_param, param; // 初期値, 成長率
+
+        if (paramId === 0 && !data) {
+            data = Potadra_metaData(actor.meta[TextManager.hp], ',');
+            if (!data) data = Potadra_metaData(actor.meta[TextManager.hpA], ',');
+        } else if (paramId === 1 && !data) {
+            data = Potadra_metaData(actor.meta[TextManager.mp], ',');
+            if (!data) data = Potadra_metaData(actor.meta[TextManager.mpA], ',');
+        }
 
         if (data) {
             init_param = Number(data[0]);

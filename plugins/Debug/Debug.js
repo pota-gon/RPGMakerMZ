@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-デバッグ用のプラグイン Ver1.4.8(2024/5/27)
+デバッグ用のプラグイン Ver1.4.9(2024/11/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Debug/Debug.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.4.9: リファクタリング
 * Ver1.4.8: デバッグ時に無条件で使えるデバッグスキルを追加
 * Ver1.4.7: 競合対策のため、共通処理を整理
 
@@ -226,11 +227,8 @@ ONのプラグインがない状態で、ゲームを起動可能になります
             _Game_Actor_initSkills.apply(this, arguments);
             if (InitSkillsDebugSkills.length > 0) {
                 for (const debug_skill of InitSkillsDebugSkills) {
-                    if (isNaN(debug_skill)) { // 文字列
-                        this.learnSkill(Potadra_nameSearch($dataSkills, debug_skill.trim()));
-                    } else { // 数値
-                        this.learnSkill(Number(debug_skill));
-                    }
+                    const skill_id = Potadra_checkName($dataSkills, debug_skill);
+                    if (skill_id) this.learnSkill(skill_id);
                 }
             }
             if (InitSkillsLearning) {
@@ -272,30 +270,14 @@ ONのプラグインがない状態で、ゲームを起動可能になります
         const class_data = Potadra_metaData(actor.currentClass().meta['スキル']);
         return Potadra_learning(actor_data).concat(Potadra_learning(class_data));
     }
-    function Potadra_search(data, id, column = "name", search_column = "id", val = "", initial = 1) {
-        if (!id) {
-            return val;
-        }
-        for (let i = initial; i < data.length; i++) {
-            if (!data[i]) continue;
-            if (search_column) {
-                if (data[i][search_column] == id) {
-                    if (column) {
-                        val = data[i][column];
-                    } else {
-                        val = data[i];
-                    }
-                    break;
-                }
-            } else if (i == id) {
-                val = data[i];
-                break;
-            }
-        }
-        return val;
-    }
     function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
         return Potadra_search(data, name, column, search_column, val, initial);
+    }
+    function Potadra_checkName(data, name, val = false) {
+        if (isNaN(name)) {
+            return Potadra_nameSearch(data, name.trim(), "id", "name", val);
+        }
+        return Number(name) || val;
     }
     function Potadra_stringArray(data) {
         const arr = [];

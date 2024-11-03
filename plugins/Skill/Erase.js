@@ -114,7 +114,7 @@ https://opensource.org/licenses/mit-license.php
     };
 
     /**
-     * 
+     * 通常アクションの呼び出し
      *
      * @param {} subject - 
      * @param {} target - 

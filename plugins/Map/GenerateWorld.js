@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.6.0(2024/9/22)
+ワールド自動生成 Ver0.6.1(2024/11/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,15 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.6.1
+- プラグインコマンド(マップ情報初期化)を追加
+- プラグインパラメータ: タイル連番リージョン(StartTileRegion)追加
+- シード番号をデバッグログに表示する機能追加
+- シード番号が正しく処理されないバグ修正
+- RateMap イベントで表示できる場所がないときに TypeError Cannot read properties of undefined が発生するバグ修正
+- リージョン系プラグインパラメータを 1 ～ 255 までで制限するように修正
+- マップJSON出力で、元々のリージョンを出力できるオプションを追加
+- リファクタリング
 * Ver0.6.0
 - 船から降りるとき特定条件下でエラーになるバグ修正
 * Ver0.5.9
@@ -130,12 +139,16 @@ https://github.com/pota-gon/GenerateWorld
 @text タイル固定リージョン
 @desc タイルを固定するリージョン
 @default 1
+@min 1
+@max 255
 
 @param TwoChoiceRegion
 @type number
 @text 上層OR下層タイルリージョン
 @desc 上層を含むタイルか下層タイルのみのどちらかが出現するリージョン
 @default 2
+@min 1
+@max 255
 
 @param ExceptRegion
 @type number
@@ -143,6 +156,8 @@ https://github.com/pota-gon/GenerateWorld
 @desc 上層タイルを除外するリージョン
 ※ TODOにあったやつ。作る意味がよく分からない。
 @default 3
+@min 1
+@max 255
 
 @param PassableRegion
 @type number
@@ -150,6 +165,26 @@ https://github.com/pota-gon/GenerateWorld
 @desc 通行可能なタイルのみ出現するリージョン
 ※ 未実装
 @default 4
+@min 1
+@max 255
+
+@param ImpassableRegion
+@type number
+@text 通行不能リージョン
+@desc 通行不能なタイルのみ出現するリージョン
+※ 未実装
+@default 5
+@min 1
+@max 255
+
+@param StartTileRegion
+@type number
+@text タイル連番リージョン
+@desc タイルに指定する連番リージョン
+0 でリージョンは設定されなくなります
+@default 8
+@min 0
+@max 255
 
 @param Tilesets
 @type struct<Tilesets>[]
@@ -224,6 +259,16 @@ https://github.com/pota-gon/GenerateWorld
         @text 同一マップJSON出力
         @desc 同一マップにJSONを出力するか
         出力しない場合、新規マップとして出力されます
+        @on 出力する
+        @off 出力しない
+        @default false
+
+        @param ExportOrgRegion
+        @parent ExportJsonCommand
+        @type boolean
+        @text 元リージョン出力
+        @desc 元リージョンをJSONに出力するか
+        出力しない場合、自動生成のリージョンが出力
         @on 出力する
         @off 出力しない
         @default false
@@ -606,6 +651,15 @@ https://github.com/pota-gon/GenerateWorld
     @off 出力しない
     @default false
 
+    @arg export_org_region
+    @type boolean
+    @text 元リージョン出力
+    @desc 元リージョンをJSONに出力するか
+    出力しない場合、自動生成のリージョンが出力
+    @on 出力する
+    @off 出力しない
+    @default false
+
     @arg event_export
     @type boolean
     @text イベント出力
@@ -622,6 +676,10 @@ https://github.com/pota-gon/GenerateWorld
     @on バックアップする
     @off バックアップしない
     @default true
+
+@command InitMap
+@text マップ情報初期化
+@desc ワールド自動生成で作成したマップ情報を初期化します。
 */
 
 
@@ -1336,9 +1394,12 @@ https://github.com/pota-gon/GenerateWorld
     const TwoChoiceRegion   = Number(params.TwoChoiceRegion || 2);
     const ExceptRegion      = Number(params.ExceptRegion) || 3;
     const PassableRegion    = Number(params.PassableRegion) || 4;
+    const ImpassableRegion  = Number(params.ImpassableRegion) || 5;
+    const StartTileRegion   = Number(params.StartTileRegion) || 7;
     const RegenerateCommand = String(params.RegenerateCommand);
     const ExportJsonCommand = String(params.ExportJsonCommand);
     const SameMapExportJson = Potadra_convertBool(params.SameMapExportJson);
+    const ExportOrgRegion   = Potadra_convertBool(params.ExportOrgRegion);
     const BackupJson        = Potadra_convertBool(params.BackupJson);
     const EventExport       = Potadra_convertBool(params.EventExport);
     const CommandKey        = Potadra_convertBool(params.CommandKey);
@@ -1382,10 +1443,10 @@ https://github.com/pota-gon/GenerateWorld
     const _Spriteset_Map_createTilemap = Spriteset_Map.prototype.createTilemap;
     Spriteset_Map.prototype.createTilemap = function() {
         let s;
-        if (Potadra_checkVariable(SeedVariable)) {
+        if (Potadra_checkVariable(SeedVariable) && $gameVariables.value(SeedVariable) !== 0) {
             s = $gameVariables.value(SeedVariable);
         } else {
-            s = Math.floor( Math.random() * (99999999 - (-99999999)) ) - 99999999;
+            s = Math.floor(Math.random() * (99999999 - (-99999999) + 1)) - 99999999;
         }
         if (isGenerateWorld()) {
             const value = RetentionSaveData ? !$gameMap._potadra_auto : !$gameTemp._potadra_auto;
@@ -1511,21 +1572,37 @@ https://github.com/pota-gon/GenerateWorld
     // プラグインコマンド(マップJSON出力)
     PluginManager.registerCommand(plugin_name, "ExportMapJson", args => {
         same_map_export_json = Potadra_convertBool(args.same_map_export_json);
+        export_org_region    = Potadra_convertBool(args.export_org_region);
         event_export         = Potadra_convertBool(args.event_export);
         backup_json          = Potadra_convertBool(args.backup_json);
-        JsonExport(same_map_export_json, event_export, backup_json);
+        JsonExport(same_map_export_json, export_org_region, event_export, backup_json);
+    });
+
+    // プラグインコマンド(マップ情報初期化)
+    PluginManager.registerCommand(plugin_name, "InitMap", args => {
+        if (RetentionSaveData) {
+            $gameMap._potadra_worlds = [];
+            $gameMap._potadra_auto = false;
+        } else {
+            $gameTemp._potadra_worlds = [];
+            $gameTemp._potadra_auto = false;
+        }
+        if (Potadra_checkVariable(SeedVariable)) {
+            $gameVariables.setValue(SeedVariable, 0);
+        }
     });
 
     //==============================================================================
     // ワールド自動生成
     //==============================================================================
-    function GenerateWorld(s = Math.floor( Math.random() * (99999999 - (-99999999)) ) - 99999999) {
+    function GenerateWorld(s = Math.floor(Math.random() * (99999999 - (-99999999) + 1)) - 99999999) {
         if (_Game_Map_tileId.call(this, 0, 0, 0) === 0) return false;
 
         let firstTime = Date.now(); // 開始時間
 
         // シードを変数に記憶
         if (Potadra_checkVariable(SeedVariable)) {
+            console.log("シード番号:" + s);
             $gameVariables.setValue(SeedVariable, s);
         }
 
@@ -1613,14 +1690,15 @@ https://github.com/pota-gon/GenerateWorld
             if (meta_value) {
                 // RateMap イベント
                 let probability = Number(meta_value) || 0;
-                if (Math.random() < probability) {
+                const passable_positions_length = passable_positions.length;
+                if (passable_positions_length > 0 && Math.random() < probability) {
                     // 表示対象
                     const region_value = Potadra_meta(meta, 'Region');
                     if (region_value) {
                         const region = Number(region_value);
                         if (region > 0) {
                             const r = regions[region];
-                            if (r) {
+                            if (r && r.length > 0) {
                                 const rand = Math.floor(Math.random() * r.length);
                                 event.locate(r[rand].x, r[rand].y);
                                 r.splice(rand, 1);
@@ -1628,7 +1706,7 @@ https://github.com/pota-gon/GenerateWorld
                             }
                         }
                     }
-                    const rand = Math.floor(Math.random() * passable_positions.length);
+                    const rand = Math.floor(Math.random() * passable_positions_length);
                     event.locate(passable_positions[rand].x, passable_positions[rand].y);
                     passable_positions.splice(rand, 1);
                 } else {
@@ -1740,7 +1818,6 @@ https://github.com/pota-gon/GenerateWorld
                                 if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, 0);
                                 if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, 0);
                             }
-
                         } else if (tile === ExceptRegion) { // 上層タイル除外
                             createBiome(x, y, BIOME[tile], SEED_LENGTH, false);
                         } else if (tile === PassableRegion) { // 通行可能タイルのみ
@@ -1853,7 +1930,7 @@ https://github.com/pota-gon/GenerateWorld
     }
 
     /**
-     * 指定座標にあるタイル ID の取得
+     * 指定座標にあるタイル ID の取得(ワールド自動生成前のタイル)
      *
      * @param {number} x - X座標
      * @param {number} y - Y座標
@@ -2357,18 +2434,22 @@ https://github.com/pota-gon/GenerateWorld
                 let region;
                 if (layer2 !== 0) {
                     layer2 -= 2000;
-                    region = (layer2 / 48) + TileRegion;
+                    region = (layer2 / 48) + StartTileRegion;
                 } else {
                     let layer1 = edgeTileId(x, y, 0);
                     layer1 -= 2000;
-                    region = (layer1 / 48) + TileRegion;
+                    region = (layer1 / 48) + StartTileRegion;
                 }
 
                 autoTile(x, y, 0);
                 autoTile(x, y, 1);
                 autoTile(x, y, 2);
                 autoTile(x, y, 3);
-                setTileId(x, y, 5, region); // リージョン
+                if (StartTileRegion !== 0) {
+                    setTileId(x, y, 5, region); // 自動設定リージョン
+                } else {
+                    setTileId(x, y, 5); // リージョンなし
+                }
             }
         }
     }
@@ -2538,7 +2619,7 @@ https://github.com/pota-gon/GenerateWorld
          * コマンド［マップJSON出力］
          */
         Scene_Menu.prototype.export_map_json = function() {
-            JsonExport(SameMapExportJson);
+            JsonExport(SameMapExportJson, ExportOrgRegion);
             SceneManager.goto(Scene_Map);
         };
     }
@@ -2546,7 +2627,7 @@ https://github.com/pota-gon/GenerateWorld
     //==============================================================================
     // マップJSON出力
     //==============================================================================
-    function JsonExport(same_map_export_json, event_export = EventExport, backup_json = BackupJson) {
+    function JsonExport(same_map_export_json, export_org_region, event_export = EventExport, backup_json = BackupJson) {
         if (StorageManager.isLocalMode()) {
             const exportDirPath = Potadra_getDirPath('data');
             const backupDirPath = Potadra_getDirPath(backUpPathText);
@@ -2624,7 +2705,7 @@ https://github.com/pota-gon/GenerateWorld
                 if (item === 'data') {
                     if (isGenerateWorld()) {
                         const tmp_potadra_worlds = RetentionSaveData ? $gameMap._potadra_worlds : $gameTemp._potadra_worlds;
-                        if (same_map_export_json) { // 同一マップに出力
+                        if (same_map_export_json || export_org_region) { // 同一マップに出力 OR 元リージョン出力
                             for (let x = 0; x < $dataMap.width; x++) {
                                 for (let y = 0; y < $dataMap.height; y++) {
                                     const region = orgTileId(x, y, 5);
@@ -2633,12 +2714,7 @@ https://github.com/pota-gon/GenerateWorld
                                 }
                             }
                         }
-
-                        if (RetentionSaveData) {
-                            tmp = '\n"data":' + JSON.stringify($gameMap._potadra_worlds);
-                        } else {
-                            tmp = '\n"data":' + JSON.stringify($gameTemp._potadra_worlds);
-                        }
+                        tmp = '\n"data":' + JSON.stringify(tmp_potadra_worlds);
                     } else {
                         tmp = '\n"data":' + JSON.stringify($dataMap.data);
                     }
@@ -2667,40 +2743,32 @@ https://github.com/pota-gon/GenerateWorld
     // コマンドキー
     //==============================================================================
     if (CommandKey && Potadra_isTest()) {
-        let regenerate_code, export_json_code, output_json_code;
-        if (RegenerateKey) {
-            regenerate_code = Potadra_keyCode(RegenerateKey);
-            if (regenerate_code) {
-                Input.keyMapper[regenerate_code] = RegenerateKey;
-            } else {
-                console.warn('ワールド再生成のキーが競合しています。この機能を使う場合はプラグインパラメータから他のキーを指定してください。');
-            }
-        }
-        if (ExportJsonKey) {
-            export_json_code = Potadra_keyCode(ExportJsonKey);
-            if (export_json_code) {
-                Input.keyMapper[export_json_code] = ExportJsonKey;
-            } else {
-                console.warn('マップJSON出力(イベントあり)のキーが競合しています。この機能を使う場合はプラグインパラメータから他のキーを指定してください。');
-            }
-        }
-        if (OutputJsonKey) {
-            output_json_code = Potadra_keyCode(OutputJsonKey);
-            if (output_json_code) {
-                Input.keyMapper[output_json_code] = OutputJsonKey;
-            } else {
-                console.warn('マップJSON出力(イベントなし)のキーが競合しています。この機能を使う場合はプラグインパラメータから他のキーを指定してください。');
-            }
-        }
+        const regenerate_code  = SetKey(RegenerateKey, 'ワールド再生成のキーが競合しています。この機能を使う場合はプラグインパラメータから他のキーを指定してください。');
+        const export_json_code = SetKey(ExportJsonKey, 'マップJSON出力(イベントあり)のキーが競合しています。この機能を使う場合はプラグインパラメータから他のキーを指定してください。');
+        const output_json_code = SetKey(OutputJsonKey, 'マップJSON出力(イベントなし)のキーが競合しています。この機能を使う場合はプラグインパラメータから他のキーを指定してください。');
 
         const _Game_Player_triggerButtonAction = Game_Player.prototype.triggerButtonAction;
         Game_Player.prototype.triggerButtonAction = function() {
             const value = _Game_Player_triggerButtonAction.apply(this, arguments);
             if (regenerate_code && Input.isTriggered(RegenerateKey)) RegenerateWorld();
-            if (export_json_code && Input.isTriggered(ExportJsonKey)) JsonExport(SameMapExportJson, true);
-            if (output_json_code && Input.isTriggered(OutputJsonKey)) JsonExport(SameMapExportJson, false);
+            if (export_json_code && Input.isTriggered(ExportJsonKey)) JsonExport(SameMapExportJson, ExportOrgRegion, true);
+            if (output_json_code && Input.isTriggered(OutputJsonKey)) JsonExport(SameMapExportJson, ExportOrgRegion, false);
             return value;
         };
+    }
+
+    // コマンドキー設定
+    function SetKey(key, message) {
+        if (key) {
+            const code = Potadra_keyCode(key);
+            if (code) {
+                Input.keyMapper[code] = key;
+                return code;
+            } else {
+                console.warn(message);
+            }
+        }
+        return false;
     }
 
     //==============================================================================

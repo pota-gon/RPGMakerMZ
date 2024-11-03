@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-名前ウィンドウ自動化 Ver1.3.5(2022/4/1)
+名前ウィンドウ自動化 Ver1.3.6(2024/11/3)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Event/NameWindow.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.3.6: プラグインパラメータの名前ウィンドウ除外イベント名(IgnoreEventName) が機能していなかったバグを修正
 * Ver1.3.5: コピーライト更新
 
 Copyright (c) 2024 ポテトードラゴン
@@ -79,34 +80,33 @@ https://opensource.org/licenses/mit-license.php
         } else if (params[2] == 0) {
             // 通常ウィンドウの場合
             const event_name = $dataMap.events[this._eventId].name;
+            if (event_name.includes(IgnoreEventName)) {
+                // IgnoreEventName で指定されているイベント名の場合、名前ウィンドウは表示しない
+            } else if (params[0]) {
+                // 顔グラフィックが指定されている場合
+                const event = $gameMap._events[this._eventId];
+                const image = event.page().image;
 
-            if (params[0]) {
-            // 顔グラフィックが指定されている場合
-            const event = $gameMap._events[this._eventId];
-            const image = event.page().image;
-
-            if (image.characterName === params[0] && image.characterIndex === params[1]) {
-                // 現在のページの歩行グラフィックと
-                // 文章の表示の顔グラフィックが一致した場合、
-                // イベント名を名前として表示
-                $gameMessage.setSpeakerName(event_name);
-            } else {
-                // 現在のページの歩行グラフィックと
-                // データベースのアクターの歩行グラフィックが一致した場合
-                // アクターの名前を名前として表示
-                for(let i = 1; i < $dataActors.length; i++) {
-                    const actor = $dataActors[i];
-                    if(actor.characterName == params[0] && actor.characterIndex == params[1]) {
-                        $gameMessage.setSpeakerName(actor.name);
-                        break;
+                if (image.characterName === params[0] && image.characterIndex === params[1]) {
+                    // 現在のページの歩行グラフィックと
+                    // 文章の表示の顔グラフィックが一致した場合、
+                    // イベント名を名前として表示
+                    $gameMessage.setSpeakerName(event_name);
+                } else {
+                    // 現在のページの歩行グラフィックと
+                    // データベースのアクターの歩行グラフィックが一致した場合
+                    // アクターの名前を名前として表示
+                    for(let i = 1; i < $dataActors.length; i++) {
+                        const actor = $dataActors[i];
+                        if(actor.characterName == params[0] && actor.characterIndex == params[1]) {
+                            $gameMessage.setSpeakerName(actor.name);
+                            break;
+                        }
                     }
                 }
-            }
-            } else if (event_name.includes(IgnoreEventName)) {
-            // IgnoreEventName で指定されているイベント名の場合、名前ウィンドウは表示しない
             } else {
-            // 顔グラフィックが指定されていない場合、イベント名を名前として表示
-            $gameMessage.setSpeakerName(event_name);
+                // 顔グラフィックが指定されていない場合、イベント名を名前として表示
+                $gameMessage.setSpeakerName(event_name);
             }
         }
 
