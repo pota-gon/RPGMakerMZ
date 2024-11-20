@@ -10,9 +10,6 @@
 * Ver1.0.2: プラグイン名表示機能を追加
 * Ver1.0.1: コンソールログの出力方法を修正
 
-・アップデート情報
-- プラグイン名表示機能を追加
-
 Copyright (c) 2024 ポテトードラゴン
 Released under the MIT License.
 https://opensource.org/licenses/mit-license.php

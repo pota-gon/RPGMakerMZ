@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-隠しアイテム表示 Ver1.0.5(2022/9/10)
+隠しアイテム表示 Ver1.0.6(2024/11/20)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Item/ShowSecret.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.6: テスト時のみ有効（PlayTest）の説明修正
 * Ver1.0.5
 - isPlayTest が正しく機能していなかったのを修正
 - 一部パラメータの名前変更
@@ -29,7 +30,7 @@ https://opensource.org/licenses/mit-license.php
 @text テスト時のみ有効
 @desc テスト時のみ有効にするか
 @on 有効にする
-@off 有効にしない
+@off 常に有効
 @default true
 
 @param SecretItemA

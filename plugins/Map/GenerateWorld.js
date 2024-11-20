@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.6.1(2024/11/3)
+ワールド自動生成 Ver0.6.2(2024/11/20)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,14 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.6.2
+- 通行不能な位置にイベントが表示されるバグ修正
+- タイル完全固定リージョンを追加
+- リージョン系の設定を 0 で無効にできるように変更
+- RateMap イベントにリージョンを指定したとき該当のリージョンがない場合、イベントを削除するように変更
+- RateMap イベントの配置条件を上下左右通行可能から、上下左右の何れかが通行可能な場合に変更
+- リージョンを指定した場合、リージョンを指定していないイベントと同じ位置にイベントが重なるバグ修正
+- リージョンを指定したイベントも通行可能判定を実施するように変更
 * Ver0.6.1
 - プラグインコマンド(マップ情報初期化)を追加
 - プラグインパラメータ: タイル連番リージョン(StartTileRegion)追加
@@ -138,16 +146,18 @@ https://github.com/pota-gon/GenerateWorld
 @type number
 @text タイル固定リージョン
 @desc タイルを固定するリージョン
+0 でリージョンは設定されなくなります
 @default 1
-@min 1
+@min 0
 @max 255
 
 @param TwoChoiceRegion
 @type number
 @text 上層OR下層タイルリージョン
 @desc 上層を含むタイルか下層タイルのみのどちらかが出現するリージョン
+0 でリージョンは設定されなくなります
 @default 2
-@min 1
+@min 0
 @max 255
 
 @param ExceptRegion
@@ -156,7 +166,7 @@ https://github.com/pota-gon/GenerateWorld
 @desc 上層タイルを除外するリージョン
 ※ TODOにあったやつ。作る意味がよく分からない。
 @default 3
-@min 1
+@min 0
 @max 255
 
 @param PassableRegion
@@ -165,7 +175,7 @@ https://github.com/pota-gon/GenerateWorld
 @desc 通行可能なタイルのみ出現するリージョン
 ※ 未実装
 @default 4
-@min 1
+@min 0
 @max 255
 
 @param ImpassableRegion
@@ -174,7 +184,16 @@ https://github.com/pota-gon/GenerateWorld
 @desc 通行不能なタイルのみ出現するリージョン
 ※ 未実装
 @default 5
-@min 1
+@min 0
+@max 255
+
+@param LockTileRegion
+@type number
+@text タイル完全固定リージョン
+@desc タイルをリージョンを含め固定するリージョン
+0 でリージョンは設定されなくなります
+@default 6
+@min 0
 @max 255
 
 @param StartTileRegion
@@ -1295,11 +1314,11 @@ https://github.com/pota-gon/GenerateWorld
     }
     function PotadraSpawn_isPassable(x, y, and_flg = false) {
         if (and_flg) {
-            return $gameMap.isPassable(x, y, PotadraDirection_UNDER()) && $gameMap.isPassable(x, y, PotadraDirection_LEFT()) &&
-                   $gameMap.isPassable(x, y, PotadraDirection_RIGHT()) && $gameMap.isPassable(x, y, PotadraDirection_UP());
+            return $gamePlayer.isMapPassable(x, y, PotadraDirection_UNDER()) && $gamePlayer.isMapPassable(x, y, PotadraDirection_LEFT()) &&
+                   $gamePlayer.isMapPassable(x, y, PotadraDirection_RIGHT()) && $gamePlayer.isMapPassable(x, y, PotadraDirection_UP());
         } else {
-            return $gameMap.isPassable(x, y, PotadraDirection_UNDER()) || $gameMap.isPassable(x, y, PotadraDirection_LEFT()) ||
-                   $gameMap.isPassable(x, y, PotadraDirection_RIGHT()) || $gameMap.isPassable(x, y, PotadraDirection_UP());
+            return $gamePlayer.isMapPassable(x, y, PotadraDirection_UNDER()) || $gamePlayer.isMapPassable(x, y, PotadraDirection_LEFT()) ||
+                   $gamePlayer.isMapPassable(x, y, PotadraDirection_RIGHT()) || $gamePlayer.isMapPassable(x, y, PotadraDirection_UP());
         }
     }
     function PotadraSpawn_setPositionVehicle(current_x, current_y, min_x = 0, min_y = 0, max_x = $dataMap.width, max_y = $dataMap.height) {
@@ -1395,6 +1414,7 @@ https://github.com/pota-gon/GenerateWorld
     const ExceptRegion      = Number(params.ExceptRegion) || 3;
     const PassableRegion    = Number(params.PassableRegion) || 4;
     const ImpassableRegion  = Number(params.ImpassableRegion) || 5;
+    const LockTileRegion    = Number(params.LockTileRegion) || 6;
     const StartTileRegion   = Number(params.StartTileRegion) || 7;
     const RegenerateCommand = String(params.RegenerateCommand);
     const ExportJsonCommand = String(params.ExportJsonCommand);
@@ -1647,10 +1667,10 @@ https://github.com/pota-gon/GenerateWorld
     // イベントの設定
     //==============================================================================
     function setEvents() {
-        const ng_positions         = [];
-        const positions            = [];
+        const ng_positions         = []; // RateMap イベント以外の座標
+        // const positions            = [];
         const passable_positions   = [];
-        const unpassable_positions = [];
+        // const unpassable_positions = [];
         const regions              = {};
         const events               = $gameMap.events();
 
@@ -1670,16 +1690,19 @@ https://github.com/pota-gon/GenerateWorld
                     continue;
                 }
 
-                if (PotadraSpawn_isPassable(x, y, true)) {
-                    passable_positions.push({x: x, y: y});
-                } else {
-                    unpassable_positions.push({x: x, y: y});
-                }
-                positions.push({x: x, y: y});
-
                 const region = $gameMap.tileId(x, y, 5);
                 if (!regions[region]) regions[region] = [];
-                regions[region].push({x: x, y: y});
+
+                if ($gameMap.isBoatPassable(x, y) || $gameMap.isShipPassable(x, y)) { // 小型船と大型船は、リージョン指定時のみ配置
+                    regions[region].push({x: x, y: y});
+                } else if (PotadraSpawn_isPassable(x, y)) { // 上下左右のどこかが通行可能な場所
+                    passable_positions.push({x: x, y: y});
+                    regions[region].push({x: x, y: y});
+
+                } else {
+                    // unpassable_positions.push({x: x, y: y});
+                }
+                // positions.push({x: x, y: y});
             }
         }
 
@@ -1702,8 +1725,11 @@ https://github.com/pota-gon/GenerateWorld
                                 const rand = Math.floor(Math.random() * r.length);
                                 event.locate(r[rand].x, r[rand].y);
                                 r.splice(rand, 1);
-                                continue;
+                                passable_positions.splice(rand, 1);
+                            } else { // リージョンの地形が存在しない場合、イベントを削除する
+                                $gameMap.eraseEvent(event._eventId);
                             }
+                            continue;
                         }
                     }
                     const rand = Math.floor(Math.random() * passable_positions_length);
@@ -1759,7 +1785,7 @@ https://github.com/pota-gon/GenerateWorld
             for (let y = 0; y < max_j; y++) {
                 const region  = _Game_Map_tileId.call(this, x, y, 5);
                 const layer_2 = _Game_Map_tileId.call(this, x, y, 1);
-                if (region === TileRegion || region === TwoChoiceRegion) {
+                if ((TileRegion !== 0 && region === TileRegion) || (TwoChoiceRegion !== 0 && region === TwoChoiceRegion)) {
                     layer1[x][y] = MiniatureTileId(x, y);
                     layer2[x][y] = MiniatureTileId(x, y, 1);
                     layer3[x][y] = MiniatureTileId(x, y, 2);
@@ -1798,13 +1824,13 @@ https://github.com/pota-gon/GenerateWorld
                 for (let x = start_x; x < end_x; x++) {
                     for (let y = start_y; y < end_y; y++) {
                         const tile = tiles[i][j];
-                        if (tile === TileRegion) { // 固定
+                        if (TileRegion !== 0 && tile === TileRegion) { // 固定
                             if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
                             if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, layer2[i][j]);
                             if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, layer3[i][j]);
                             if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, layer4[i][j]);
                             if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, layer5[i][j]);
-                        } else if (tile === TwoChoiceRegion) { // 上層 OR 下層タイル リージョン
+                        } else if (TwoChoiceRegion !== 0 && tile === TwoChoiceRegion) { // 上層 OR 下層タイル リージョン
                             if (Potadra_random(50)) { // 固定
                                 if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
                                 if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, layer2[i][j]);
@@ -1818,9 +1844,9 @@ https://github.com/pota-gon/GenerateWorld
                                 if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, 0);
                                 if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, 0);
                             }
-                        } else if (tile === ExceptRegion) { // 上層タイル除外
+                        } else if (ExceptRegion !== 0 && tile === ExceptRegion) { // 上層タイル除外
                             createBiome(x, y, BIOME[tile], SEED_LENGTH, false);
-                        } else if (tile === PassableRegion) { // 通行可能タイルのみ
+                        } else if (PassableRegion !== 0 && tile === PassableRegion) { // 通行可能タイルのみ
                             createBiome(x, y, BIOME[tile], SEED_LENGTH, true, true);
                         } else if (BIOME[tile]) {
                             createBiome(x, y, BIOME[tile], SEED_LENGTH);
@@ -1938,9 +1964,9 @@ https://github.com/pota-gon/GenerateWorld
      * @returns {number} タイル ID
      * @returns {} 
      */
-    function orgTileId(x, y, z) {
+    /*function orgTileId(x, y, z) {
         return $dataMap.data[(z * $dataMap.height + y) * $dataMap.width + x] || 0;
-    };
+    };*/
 
     /**
      * 指定座標にあるタイル ID の設定
@@ -2445,7 +2471,10 @@ https://github.com/pota-gon/GenerateWorld
                 autoTile(x, y, 1);
                 autoTile(x, y, 2);
                 autoTile(x, y, 3);
-                if (StartTileRegion !== 0) {
+
+                if (LockTileRegion !== 0 && LockTileRegion === _Game_Map_tileId.call(this, x, y, 5)) {
+                    setTileId(x, y, 5, LockTileRegion); // タイル完全固定リージョン
+                } else if (StartTileRegion !== 0) {
                     setTileId(x, y, 5, region); // 自動設定リージョン
                 } else {
                     setTileId(x, y, 5); // リージョンなし
