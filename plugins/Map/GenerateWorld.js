@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.6.2(2024/11/20)
+ワールド自動生成 Ver0.6.3(2024/11/26)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,10 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.6.3
+- シード周りの不具合解消
+- シード値ごとの配列作成処理を高速化
+- シード値ごとの配列をキャッシュするように変更
 * Ver0.6.2
 - 通行不能な位置にイベントが表示されるバグ修正
 - タイル完全固定リージョンを追加
@@ -806,19 +810,6 @@ https://github.com/pota-gon/GenerateWorld
         4256: {'top_tile' : [[3200, 0, 1, 0], [4256, 0, 1, 1]], 'bottom_tile' : [[3200, 0, -1, 0]]}, // 丘（砂岩）
         4304: {'top_tile' : [[3968, 0, 1, 0], [4304, 0, 1, 1]], 'bottom_tile' : [[3968, 0, -1, 0]]} // 丘（雪）
     };
-    let seed = [151,160,137,91,90,15,
-        131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
-        190, 6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,
-        88,237,149,56,87,174,20,125,136,171,168, 68,175,74,165,71,134,139,48,27,166,
-        77,146,158,231,83,111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,
-        102,143,54, 65,25,63,161, 1,216,80,73,209,76,132,187,208, 89,18,169,200,196,
-        135,130,116,188,159,86,164,100,109,198,173,186, 3,64,52,217,226,250,124,123,
-        5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,17,182,189,28,42,
-        223,183,170,213,119,248,152, 2,44,154,163, 70,221,153,101,155,167, 43,172,9,
-        129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
-        251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
-        49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-        138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180];
     let tileIds        = [];
     let aroundTileIds  = [];
     let distantTileIds = [];
@@ -1462,15 +1453,9 @@ https://github.com/pota-gon/GenerateWorld
      */
     const _Spriteset_Map_createTilemap = Spriteset_Map.prototype.createTilemap;
     Spriteset_Map.prototype.createTilemap = function() {
-        let s;
-        if (Potadra_checkVariable(SeedVariable) && $gameVariables.value(SeedVariable) !== 0) {
-            s = $gameVariables.value(SeedVariable);
-        } else {
-            s = Math.floor(Math.random() * (99999999 - (-99999999) + 1)) - 99999999;
-        }
         if (isGenerateWorld()) {
             const value = RetentionSaveData ? !$gameMap._potadra_auto : !$gameTemp._potadra_auto;
-            if (value) GenerateWorld(s);
+            if (value) GenerateWorld();
             PotadraSpawn_spawn(0, true);
         }
         _Spriteset_Map_createTilemap.apply(this, arguments);
@@ -1615,22 +1600,19 @@ https://github.com/pota-gon/GenerateWorld
     //==============================================================================
     // ワールド自動生成
     //==============================================================================
-    function GenerateWorld(s = Math.floor(Math.random() * (99999999 - (-99999999) + 1)) - 99999999) {
+    function GenerateWorld() {
         if (_Game_Map_tileId.call(this, 0, 0, 0) === 0) return false;
 
         let firstTime = Date.now(); // 開始時間
 
         // シードを変数に記憶
-        if (Potadra_checkVariable(SeedVariable)) {
-            console.log("シード番号:" + s);
-            $gameVariables.setValue(SeedVariable, s);
-        }
+        const s = setSeed();
 
         // 乱数設定(Xorshift)
-        const random = new PotadraXorShift($dataSystem.advanced.screenWidth, $dataSystem.advanced.screenHeight, $dataSystem.tileSize, s);
-        let p = new Array(255);
-        for(let i = 0; i < 256; i++) p[i] = seed.splice(random.xorshift(), 1)[0];
-        seed = Array.from(new Set(p.filter(Boolean).concat(seed)));
+        if ($gameTemp._seed !== s) {
+            $gameTemp._seedArray = shuffle(s);
+            $gameTemp._seed = s;
+        }
 
         showTime(firstTime, 'シード設定');
 
@@ -1661,6 +1643,46 @@ https://github.com/pota-gon/GenerateWorld
         showTime(startTime, 'イベント設定配置');
 
         showTime(firstTime, 'マップ作成');
+    }
+
+    //==============================================================================
+    // シード設定
+    //==============================================================================
+
+    // シードを変数に記憶
+    function setSeed() {
+        let s;
+        if (Potadra_checkVariable(SeedVariable) && $gameVariables.value(SeedVariable) !== 0) {
+            s = $gameVariables.value(SeedVariable);
+        } else {
+            s = Math.floor(Math.random() * (99999999 - (-99999999) + 1)) - 99999999;
+            $gameVariables.setValue(SeedVariable, s);
+        }
+        console.debug("シード番号:" + s);
+        return s;
+    }
+
+    // 0-255のシード配列をシャッフル
+    function shuffle(s) {
+        const random = new PotadraXorShift($dataSystem.advanced.screenWidth, $dataSystem.advanced.screenHeight, $dataSystem.tileSize, s);
+        let array = [];
+        let start = 0;
+        for(let i = 0; i < 256; i++) {
+            let s = random.xorshift();
+            let r = s % 256; // 0 - 255 の値
+            if (array.includes(r)) {
+                for(let j = start; j < 256; j++) {
+                    if (!array.includes(j)) {
+                        array.push(r);
+                        start = r;
+                        break;
+                    }
+                }
+            } else {
+                array.push(r);
+            }
+        }
+        return array;
     }
 
     //==============================================================================
@@ -1867,7 +1889,7 @@ https://github.com/pota-gon/GenerateWorld
             for (let y = 0; y < $dataMap.height; y++) {
                 const layer1 = edgeTileId(x, y, 0, 2816);
                 const layer2 = edgeTileId(x, y, 1, 2096);
-                const value = PotadraPerlinNoise_my_noise(x, y, SEED_LENGTH, seed);
+                const value = PotadraPerlinNoise_my_noise(x, y, SEED_LENGTH, $gameTemp._seedArray);
 
                 // 山(岩) のとき
                 if (layer2 === 3872) {
@@ -2117,7 +2139,7 @@ https://github.com/pota-gon/GenerateWorld
         // const tile_set        = BiomeTileSets.tile_set;
         // const biome_tile_sets = BiomeTileSets.biome_tile_sets;
         // console.debug(BiomeTileSets);
-        const value = PotadraPerlinNoise_my_noise(x, y, seed_length, seed);
+        const value = PotadraPerlinNoise_my_noise(x, y, seed_length, $gameTemp._seedArray);
         topTile(value, x, y, biome.top_tile, upper, passable);
         bottomTile(value, x, y, biome.bottom_tile);
     }
@@ -2308,7 +2330,7 @@ https://github.com/pota-gon/GenerateWorld
     }
 
     // 周囲のタイルID のチェック
-    function isAroundTile(x, y, z, tileId) {
+    /*function isAroundTile(x, y, z, tileId) {
         aroundTile(x, y, z, tileId);
         return Tilemap.isSameKindTile(tileId, aroundTileIds[1]) || Tilemap.isSameKindTile(tileId, aroundTileIds[2]) ||
                Tilemap.isSameKindTile(tileId, aroundTileIds[3]) || Tilemap.isSameKindTile(tileId, aroundTileIds[4]) ||
@@ -2321,7 +2343,7 @@ https://github.com/pota-gon/GenerateWorld
                Tilemap.isSameKindTile(tileId, aroundTileIds[3]) && Tilemap.isSameKindTile(tileId, aroundTileIds[4]) &&
                Tilemap.isSameKindTile(tileId, aroundTileIds[5]) && Tilemap.isSameKindTile(tileId, aroundTileIds[6]) &&
                Tilemap.isSameKindTile(tileId, aroundTileIds[7]) && Tilemap.isSameKindTile(tileId, aroundTileIds[8]);
-    }
+    }*/
 
     // 周囲のタイル塗りつぶし
     function fillAroundTile(_x, _y, z, tileId, changeZ, changeTileId) {
@@ -2406,7 +2428,7 @@ https://github.com/pota-gon/GenerateWorld
     }
     // 周囲の判定
     // count = 0 で、マップ最大まで判定
-    function around(current_x, current_y, z, tileID, count = 0, map_x = $dataMap.width, map_y = $dataMap.height) {
+    /*function around(current_x, current_y, z, tileID, count = 0, map_x = $dataMap.width, map_y = $dataMap.height) {
         let min_x = current_x - count;
         let min_y = current_y - count;
         let max_x = current_x + count;
@@ -2429,7 +2451,7 @@ https://github.com/pota-gon/GenerateWorld
             }
         }
         return false;
-    }
+    }*/
 
     // 範囲内のタイルID取得
     function isScope(z, _min_x, _min_y, _max_x, _max_y, tileIds) {

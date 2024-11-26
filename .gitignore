@@ -39,6 +39,7 @@ plugins/Key/DiagonalMove.js
 plugins/Map/EncountAirShip.js
 plugins/Map/SampleMap.js
 plugins/Map/TemporaryTile.js
+plugins/Name/ExSkill.js
 plugins/Name/NameSwitch.js
 plugins/Other/ExportEnemy.js
 plugins/Other/HtmlSupport.js
@@ -53,10 +54,10 @@ plugins/Skill/SummonBattler.js
 plugins/Skill/TpRecover.js
 plugins/State/*.js
 plugins/System/ChangeSplashWait.js
+plugins/System/FixSetupForNewGame.js
+plugins/System/FixSetupStartingMembers.js
 plugins/System/LevelCode.js
 plugins/System/MoveSpeed.js
-plugins/Trait/CounterAttack.js
 plugins/Trait/PowerUpHeal.js
-plugins/Trait/RepeatCounter.js
 plugins/Troop/TroopRewards.js
 plugins/Window/*.js
