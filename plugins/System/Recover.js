@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-全回復 Ver1.0.8(2025/1/18)
+全回復 Ver1.0.9(2025/1/24)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Recover.js
 @orderAfter dsJobChangeMZ
@@ -8,6 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.9: NUUN_SceneFormation.js に対応する待機メンバー全回復(NuunFormationMember)パラメータ追加
 * Ver1.0.8: プラグインバラメータの解除除外ステート(ExceptClearStates)に名前を指定できるようにした
 * Ver1.0.7
 - ランダムエンカウントだと戦闘終了時にゲームオーバーになるバグ修正
@@ -272,6 +273,14 @@ TPは、TP持ち越しの特徴がある場合のみ回復します
     @desc このスイッチがON のときに全回復コマンドTP回復を有効にします
     0(なし)の場合は、スイッチは使用しません
     @default 0
+
+@param NuunFormationMember
+@type boolean
+@text 待機メンバー全回復
+@desc NUUN_SceneFormation 導入時に全回復するか
+@on 回復する
+@off 回復しない
+@default true
 */
 (() => {
     'use strict';
@@ -326,36 +335,50 @@ TPは、TP持ち越しの特徴がある場合のみ回復します
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
-    const ExceptClearStates  = Potadra_stringArray(params.ExceptClearStates);
-    const BattleStartRecover = Potadra_convertBool(params.BattleStartRecover);
-    const StartRecoverSwitch = Number(params.StartRecoverSwitch || 0);
-    const StartHpRecover     = Potadra_convertBool(params.StartHpRecover);
-    const StartMpRecover     = Potadra_convertBool(params.StartMpRecover);
-    const StartTpRecover     = Potadra_convertBool(params.StartTpRecover);
-    const StartClearStates   = Potadra_convertBool(params.StartClearStates);
-    const BattleEndRecover   = Potadra_convertBool(params.BattleEndRecover);
-    const EndRecoverSwitch   = Number(params.EndRecoverSwitch || 0);
-    const EndHpRecover       = Potadra_convertBool(params.EndHpRecover);
-    const EndMpRecover       = Potadra_convertBool(params.EndMpRecover);
-    const EndTpRecover       = Potadra_convertBool(params.EndTpRecover);
-    const EndClearStates     = Potadra_convertBool(params.EndClearStates);
-    const LevelUpRecover     = Potadra_convertBool(params.LevelUpRecover);
-    const LevelRecoverSwitch = Number(params.LevelRecoverSwitch || 0);
-    const LevelHpRecover     = Potadra_convertBool(params.LevelHpRecover);
-    const LevelMpRecover     = Potadra_convertBool(params.LevelMpRecover);
-    const LevelTpRecover     = Potadra_convertBool(params.LevelTpRecover);
-    const LevelClearStates   = Potadra_convertBool(params.LevelClearStates);
-    const ChangeClassRecover = Potadra_convertBool(params.ChangeClassRecover);
-    const ClassRecoverSwitch = Number(params.ClassRecoverSwitch || 0);
-    const ClassHpRecover     = Potadra_convertBool(params.ClassHpRecover);
-    const ClassMpRecover     = Potadra_convertBool(params.ClassMpRecover);
-    const ClassTpRecover     = Potadra_convertBool(params.ClassTpRecover);
-    const ClassClearStates   = Potadra_convertBool(params.ClassClearStates);
-    const TpRecover          = Potadra_convertBool(params.TpRecover);
-    const TpRecoverSwitch    = Number(params.TpRecoverSwitch || 0);
+    const ExceptClearStates   = Potadra_stringArray(params.ExceptClearStates);
+    const BattleStartRecover  = Potadra_convertBool(params.BattleStartRecover);
+    const StartRecoverSwitch  = Number(params.StartRecoverSwitch || 0);
+    const StartHpRecover      = Potadra_convertBool(params.StartHpRecover);
+    const StartMpRecover      = Potadra_convertBool(params.StartMpRecover);
+    const StartTpRecover      = Potadra_convertBool(params.StartTpRecover);
+    const StartClearStates    = Potadra_convertBool(params.StartClearStates);
+    const BattleEndRecover    = Potadra_convertBool(params.BattleEndRecover);
+    const EndRecoverSwitch    = Number(params.EndRecoverSwitch || 0);
+    const EndHpRecover        = Potadra_convertBool(params.EndHpRecover);
+    const EndMpRecover        = Potadra_convertBool(params.EndMpRecover);
+    const EndTpRecover        = Potadra_convertBool(params.EndTpRecover);
+    const EndClearStates      = Potadra_convertBool(params.EndClearStates);
+    const LevelUpRecover      = Potadra_convertBool(params.LevelUpRecover);
+    const LevelRecoverSwitch  = Number(params.LevelRecoverSwitch || 0);
+    const LevelHpRecover      = Potadra_convertBool(params.LevelHpRecover);
+    const LevelMpRecover      = Potadra_convertBool(params.LevelMpRecover);
+    const LevelTpRecover      = Potadra_convertBool(params.LevelTpRecover);
+    const LevelClearStates    = Potadra_convertBool(params.LevelClearStates);
+    const ChangeClassRecover  = Potadra_convertBool(params.ChangeClassRecover);
+    const ClassRecoverSwitch  = Number(params.ClassRecoverSwitch || 0);
+    const ClassHpRecover      = Potadra_convertBool(params.ClassHpRecover);
+    const ClassMpRecover      = Potadra_convertBool(params.ClassMpRecover);
+    const ClassTpRecover      = Potadra_convertBool(params.ClassTpRecover);
+    const ClassClearStates    = Potadra_convertBool(params.ClassClearStates);
+    const TpRecover           = Potadra_convertBool(params.TpRecover);
+    const TpRecoverSwitch     = Number(params.TpRecoverSwitch || 0);
+    const NuunFormationMember = Potadra_convertBool(params.NuunFormationMember);
 
     // 他プラグイン連携(プラグインの導入有無)
     const dsJobChangeMZ = Potadra_isPlugin('dsJobChangeMZ');
+    const NUUN_SceneFormation = Potadra_isPlugin('NUUN_SceneFormation');
+
+    /**
+     * 全回復対象メンバー
+     */
+    function recoverMembers() {
+        const battle_members = $gameParty.battleMembers();
+        if (NUUN_SceneFormation && NuunFormationMember) {
+            formation_members = $gameParty.formationMember();
+            return battle_members.concat(formation_members);
+        }
+        return battle_members;
+    }
 
     /**
      * 全回復
@@ -397,7 +420,7 @@ TPは、TP持ち越しの特徴がある場合のみ回復します
     if (BattleStartRecover && Potadra_checkSwitch(StartRecoverSwitch)) {
         const _BattleManager_startBattle = BattleManager.startBattle;
         BattleManager.startBattle = function() {
-            $gameParty.battleMembers().forEach(function(actor) {
+            recoverMembers().forEach(function(actor) {
                 recoverAllTp(actor, StartClearStates, StartHpRecover, StartMpRecover, StartTpRecover);
             }, this);
             _BattleManager_startBattle.apply(this, arguments);
@@ -410,11 +433,11 @@ TPは、TP持ち越しの特徴がある場合のみ回復します
     if (BattleEndRecover && Potadra_checkSwitch(EndRecoverSwitch)) {
         const _BattleManager_updateBattleEnd = BattleManager.updateBattleEnd;
         BattleManager.updateBattleEnd = function() {
-            $gameParty.battleMembers().forEach(function(actor) {
+            recoverMembers().forEach(function(actor) {
                 recoverAllTp(actor, EndClearStates, EndHpRecover, EndMpRecover, EndTpRecover);
             }, this);
             _BattleManager_updateBattleEnd.apply(this, arguments);
-            $gameParty.battleMembers().forEach(function(actor) {
+            recoverMembers().forEach(function(actor) {
                 recoverAllTp(actor, EndClearStates, EndHpRecover, EndMpRecover, EndTpRecover);
             }, this);
         };
@@ -422,11 +445,11 @@ TPは、TP持ち越しの特徴がある場合のみ回復します
 
     if (LevelUpRecover && Potadra_checkSwitch(LevelRecoverSwitch)) {
         /**
-             * 経験値の変更
-             *
-             * @param {number} exp - 経験値
-             * @param {boolean} show - レベルアップ表示をするか
-             */
+         * 経験値の変更
+         *
+         * @param {number} exp - 経験値
+         * @param {boolean} show - レベルアップ表示をするか
+         */
         const _Game_Actor_changeExp = Game_Actor.prototype.changeExp;
         Game_Actor.prototype.changeExp = function(exp, show) {
             const lastLevel = this._level;
