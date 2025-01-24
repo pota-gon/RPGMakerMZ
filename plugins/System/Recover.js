@@ -374,7 +374,7 @@ TPは、TP持ち越しの特徴がある場合のみ回復します
     function recoverMembers() {
         const battle_members = $gameParty.battleMembers();
         if (NUUN_SceneFormation && NuunFormationMember) {
-            formation_members = $gameParty.formationMember();
+            const formation_members = $gameParty.formationMember();
             return battle_members.concat(formation_members);
         }
         return battle_members;
