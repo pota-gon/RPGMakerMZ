@@ -384,6 +384,8 @@ TPは、TP持ち越しの特徴がある場合のみ回復します
      * 全回復
      */
     function recoverAllTp(actor, clear_states = true, hp_recover = true, mp_recover = true, tp_recover = true) {
+        if (!actor) return true;
+
         if (clear_states) {
             clearStates(actor);
         }
