@@ -2,7 +2,7 @@
 @plugindesc
 クイズ Ver1.0.3(2022/4/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Game/Event/Quiz.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Event/Quiz.js
 @target MZ
 @author ポテトードラゴン
 

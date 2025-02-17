@@ -2,7 +2,7 @@
 @plugindesc
 ステータス最大値設定 Ver0.0.2(2024/12/27)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Config/Max/MaxStatus.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Max/MaxStatus.js
 @target MZ
 @author ポテトードラゴン
 

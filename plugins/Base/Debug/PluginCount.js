@@ -2,7 +2,7 @@
 @plugindesc
 プラグイン数カウント Ver1.0.3(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Base/Debug/PluginCount.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Debug/PluginCount.js
 @target MZ
 @author ポテトードラゴン
 

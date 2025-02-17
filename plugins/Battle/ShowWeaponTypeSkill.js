@@ -2,7 +2,7 @@
 @plugindesc
 武器不一致スキル非表示 Ver1.3.3(2022/4/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/ShowWeaponTypeSkill.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/ShowWeaponTypeSkill.js
 @target MZ
 @author ポテトードラゴン
 

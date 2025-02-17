@@ -2,7 +2,7 @@
 @plugindesc
 売却不可 Ver1.0.0(2025/1/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Shop/NoSale.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Shop/NoSale.js
 @target MZ
 @author ポテトードラゴン
 

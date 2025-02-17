@@ -2,7 +2,7 @@
 @plugindesc
 アイテムの最大所持数変更 Ver1.6.8(2023/12/9)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Config/Max/MaxItem.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Max/MaxItem.js
 @target MZ
 @author ポテトードラゴン
 

@@ -2,7 +2,7 @@
 @plugindesc
 一時スイッチ Ver1.0.3(2022/12/2)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Switch/TempSwitches.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Switch/TempSwitches.js
 @target MZ
 @author ポテトードラゴン
 

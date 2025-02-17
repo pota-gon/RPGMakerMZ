@@ -2,7 +2,7 @@
 @plugindesc
 必ず逃走 Ver1.4.4(2022/4/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/Escape.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/Escape.js
 @target MZ
 @author ポテトードラゴン
 

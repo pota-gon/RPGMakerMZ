@@ -2,7 +2,7 @@
 @plugindesc
 左メニュー Ver1.0.3(2022/9/10)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Menu/LeftMenu.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Menu/LeftMenu.js
 @target MZ
 @author ポテトードラゴン
 

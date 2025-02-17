@@ -2,7 +2,7 @@
 @plugindesc
 ショップレート Ver1.3.5(2023/9/11)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Shop/ShopRate.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Shop/ShopRate.js
 @target MZ
 @author ポテトードラゴン
 

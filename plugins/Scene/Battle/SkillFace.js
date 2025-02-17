@@ -2,7 +2,7 @@
 @plugindesc
 戦闘スキル画面に顔グラフィック表示 Ver1.0.0(2025/1/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Battle/SkillFace.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Battle/SkillFace.js
 @target MZ
 @author ポテトードラゴン
 

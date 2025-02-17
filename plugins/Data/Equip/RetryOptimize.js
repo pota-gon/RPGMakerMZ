@@ -2,7 +2,7 @@
 @plugindesc
 最強装備判定リトライ Ver1.0.0(2022/12/2)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Data/Equip/RetryOptimize.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Data/Equip/RetryOptimize.js
 @orderBefore ExcludeAtOptimize
 @target MZ
 @author ポテトードラゴン

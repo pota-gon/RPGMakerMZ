@@ -2,7 +2,7 @@
 @plugindesc
 戦闘コマンド非表示 Ver1.4.5(2022/9/10)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/HideCommand.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/HideCommand.js
 @target MZ
 @author ポテトードラゴン
 

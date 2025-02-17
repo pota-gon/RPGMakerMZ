@@ -2,7 +2,7 @@
 @plugindesc
 タイトル処理 Ver1.4.1(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Title/Title.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Title/Title.js
 @target MZ
 @author ポテトードラゴン
 

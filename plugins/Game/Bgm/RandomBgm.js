@@ -2,7 +2,7 @@
 @plugindesc
 BGMランダム再生 Ver2.0.0(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Game/Bgm/RandomBgm.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Bgm/RandomBgm.js
 @target MZ
 @author ポテトードラゴン
 

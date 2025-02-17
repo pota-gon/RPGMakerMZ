@@ -2,7 +2,7 @@
 @plugindesc
 メンバーステート Ver1.0.0(2025/1/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Data/State/MemberState.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Data/State/MemberState.js
 @target MZ
 @author ポテトードラゴン
 

@@ -2,7 +2,7 @@
 @plugindesc
 全回復 Ver1.0.9(2025/1/24)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Recover.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Recover.js
 @orderAfter dsJobChangeMZ
 @target MZ
 @author ポテトードラゴン

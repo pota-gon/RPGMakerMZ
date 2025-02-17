@@ -2,7 +2,7 @@
 @plugindesc
 スキルコスト Ver0.8.0(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Data/Skill/SkillCost.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Data/Skill/SkillCost.js
 @orderAfter Madante
 @target MZ
 @author ポテトードラゴン

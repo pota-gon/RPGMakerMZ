@@ -2,7 +2,7 @@
 @plugindesc
 名前コモンイベント呼び出し Ver1.0.5(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Name/NameCommonEvent.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameCommonEvent.js
 @target MZ
 @author ポテトードラゴン
 

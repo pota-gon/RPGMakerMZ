@@ -2,7 +2,7 @@
 @plugindesc
 習得スキル表示装備画面 Ver1.0.1(2025/1/8)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Window/EquipWindows.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Window/EquipWindows.js
 @target MZ
 @author ポテトードラゴン
 

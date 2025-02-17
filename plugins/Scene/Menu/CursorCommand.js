@@ -2,7 +2,7 @@
 @plugindesc
 メニューコマンドカーソル移動追加 Ver1.4.5(2022/9/10)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Menu/CursorCommand.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Menu/CursorCommand.js
 @target MZ
 @author ポテトードラゴン
 

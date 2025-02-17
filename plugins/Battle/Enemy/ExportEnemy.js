@@ -2,7 +2,7 @@
 @plugindesc
 敵キャラ画像出力 Ver1.0.0(2025/1/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/Enemy/ExportEnemy.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/Enemy/ExportEnemy.js
 @target MZ
 @author ポテトードラゴン
 

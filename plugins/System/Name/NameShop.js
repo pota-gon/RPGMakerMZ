@@ -2,7 +2,7 @@
 @plugindesc
 名前ショップ Ver1.3.8(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Name/NameShop.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameShop.js
 @target MZ
 @author ポテトードラゴン
 

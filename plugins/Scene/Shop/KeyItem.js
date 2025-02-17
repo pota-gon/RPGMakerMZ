@@ -2,7 +2,7 @@
 @plugindesc
 大事なもの売却禁止 Ver1.0.2(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Shop/KeyItem.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Shop/KeyItem.js
 @target MZ
 @author ポテトードラゴン
 

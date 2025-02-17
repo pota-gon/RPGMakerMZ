@@ -2,7 +2,7 @@
 @plugindesc
 テンキー入力 Ver1.0.1(2023/6/26)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Config/Key/TenKeyPad.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Key/TenKeyPad.js
 @orderAfter wasdKeyMZ
 @target MZ
 @author ポテトードラゴン

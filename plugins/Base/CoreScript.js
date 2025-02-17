@@ -2,7 +2,7 @@
 @plugindesc
 コアスクリプト Ver0.5.4(2025/1/20)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Base/CoreScript.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/CoreScript.js
 @target MZ
 @author ポテトードラゴン
 

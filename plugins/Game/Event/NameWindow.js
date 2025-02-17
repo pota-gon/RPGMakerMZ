@@ -2,7 +2,7 @@
 @plugindesc
 名前ウィンドウ自動化 Ver1.3.6(2024/11/3)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Game/Event/NameWindow.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Event/NameWindow.js
 @target MZ
 @author ポテトードラゴン
 

@@ -2,7 +2,7 @@
 @plugindesc
 オートセーブオプション Ver1.0.6(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Config/Option/AutoSave.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Option/AutoSave.js
 @target MZ
 @author ポテトードラゴン
 

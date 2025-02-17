@@ -2,7 +2,7 @@
 @plugindesc
 TP Ver1.0.2(2023/12/9)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/Tp.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/Tp.js
 @target MZ
 @author ポテトードラゴン
 

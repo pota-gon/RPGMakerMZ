@@ -2,7 +2,7 @@
 @plugindesc
 ジャンプ Ver1.0.1(2023/6/26)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Config/Key/Jump.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Key/Jump.js
 @orderAfter wasdKeyMZ
 @target MZ
 @author ポテトードラゴン

@@ -2,7 +2,7 @@
 @plugindesc
 戦闘スキル・アイテム選択MV風 Ver1.0.4(2024/9/22)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Battle/SkillMV.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Battle/SkillMV.js
 @target MZ
 @author ポテトードラゴン
 

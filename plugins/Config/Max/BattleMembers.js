@@ -2,7 +2,7 @@
 @plugindesc
 バトルメンバーの最大数変更 Ver2.0.3(2025/1/20)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Config/Max/BattleMembers.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Max/BattleMembers.js
 @target MZ
 @author ポテトードラゴン
 

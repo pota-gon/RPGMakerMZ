@@ -2,7 +2,7 @@
 @plugindesc
 MVベース Ver0.8.7(2022/9/10)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Base/Core/MV.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Core/MV.js
 @target MZ
 @author ポテトードラゴン
 

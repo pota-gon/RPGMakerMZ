@@ -2,7 +2,7 @@
 @plugindesc
 デバッグ用のプラグイン Ver1.4.9(2024/11/3)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Base/Debug/Debug.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Debug/Debug.js
 @target MZ
 @author ポテトードラゴン
 

@@ -2,7 +2,7 @@
 @plugindesc
 スプラッシュ画面ウェイト時間変更 Ver1.0.0(2025/1/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Scene/Title/ChangeSplashWait.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Title/ChangeSplashWait.js
 @target MZ
 @author ポテトードラゴン
 

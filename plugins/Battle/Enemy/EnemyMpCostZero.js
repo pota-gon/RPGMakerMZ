@@ -2,7 +2,7 @@
 @plugindesc
 敵消費MPコスト0 Ver1.0.0(2025/1/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/Enemy/EnemyMpCostZero.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/Enemy/EnemyMpCostZero.js
 @target MZ
 @author ポテトードラゴン
 

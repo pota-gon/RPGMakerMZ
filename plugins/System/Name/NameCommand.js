@@ -2,7 +2,7 @@
 @plugindesc
 名前コマンド Ver0.5.1(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Name/NameCommand.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameCommand.js
 @target MZ
 @author ポテトードラゴン
 

@@ -2,7 +2,7 @@
 @plugindesc
 セーブ後装備タイプ増加可能 Ver1.0.0(2023/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Save/IncreaseEquipType.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Save/IncreaseEquipType.js
 @target MZ
 @author ポテトードラゴン
 

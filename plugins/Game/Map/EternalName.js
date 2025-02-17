@@ -2,7 +2,7 @@
 @plugindesc
 常時マップ名表示 Ver1.4.4(2022/9/10)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Game/Map/EternalName.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/EternalName.js
 @target MZ
 @author ポテトードラゴン
 

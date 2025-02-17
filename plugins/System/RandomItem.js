@@ -2,7 +2,7 @@
 @plugindesc
 ランダムアイテム入手 Ver2.0.1(2025/1/20)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/RandomItem.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/RandomItem.js
 @target MZ
 @author ポテトードラゴン
 

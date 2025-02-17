@@ -2,7 +2,7 @@
 @plugindesc
 レベル上限突破 Ver0.14.4(2024/11/3)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Config/Max/MaxLevel.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Max/MaxLevel.js
 @target MZ
 @author ポテトードラゴン
 

@@ -2,7 +2,7 @@
 @plugindesc
 セーブ暗号化解除 Ver1.2.6(2024/11/20)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Save/NoEncrypt.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Save/NoEncrypt.js
 @target MZ
 @author ポテトードラゴン
 

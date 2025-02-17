@@ -2,7 +2,7 @@
 @plugindesc
 属性平均計算 Ver1.3.6(2022/9/10)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/ElementAverage.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/ElementAverage.js
 @target MZ
 @author ポテトードラゴン
 

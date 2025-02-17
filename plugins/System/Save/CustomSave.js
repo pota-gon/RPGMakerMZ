@@ -2,7 +2,7 @@
 @plugindesc
 セーブ内容カスタマイズ Ver0.5.0(2022/12/2)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Save/CustomSave.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Save/CustomSave.js
 @orderAfter NoEncrypt
 @target MZ
 @author ポテトードラゴン

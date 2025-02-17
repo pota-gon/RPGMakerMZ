@@ -2,7 +2,7 @@
 @plugindesc
 Exp固定 Ver1.0.3(2025/1/18)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/Exp/FixedExp.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/Exp/FixedExp.js
 @target MZ
 @author ポテトードラゴン
 
