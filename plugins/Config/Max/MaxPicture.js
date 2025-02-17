@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ピクチャの最大数変更 Ver1.0.1(2022/9/10)
+ピクチャの最大数変更 Ver1.0.2(2025/2/17)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Config/Max/MaxPicture.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.2: MZの1.9.0アップデートで、上限が500までになったので、デフォルト値やヘルプを501番に変更
 * Ver1.0.1
 - ヘルプ修正
 - 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
@@ -18,11 +19,11 @@ https://opensource.org/licenses/mit-license.php
 @help
 ## 概要
 ピクチャの最大数を変更し
-101番以上のピクチャを操作できるプラグインコマンドを提供します
+501番以上のピクチャを操作できるプラグインコマンドを提供します
 
 ## 使い方
 パラメータを変更し、ピクチャの最大数を変更してください  
-導入時は、200 となっています  
+導入時は、 1000 となっています  
 ※ 最大数をあまり増やしすぎるとフリーズするので  
    変更できるのは、 9999 までとしています
 
@@ -32,7 +33,7 @@ https://opensource.org/licenses/mit-license.php
 @type number
 @text ピクチャの最大数
 @desc ピクチャの最大数を 0 ～ 9999 で指定します
-@default 200
+@default 1000
 @min 0
 @max 9999
 
@@ -44,7 +45,7 @@ https://opensource.org/licenses/mit-license.php
     @type number
     @text ピクチャ番号
     @desc ピクチャの番号を 1 ～ 9999 で指定します
-    @default 101
+    @default 501
     @min 1
     @max 9999
 
@@ -146,7 +147,7 @@ https://opensource.org/licenses/mit-license.php
     @type number
     @text ピクチャ番号
     @desc ピクチャの番号を 1 ～ 9999 で指定します
-    @default 101
+    @default 501
     @min 1
     @max 9999
 
@@ -272,7 +273,7 @@ https://opensource.org/licenses/mit-license.php
     @type number
     @text ピクチャ番号
     @desc ピクチャの番号を 1 ～ 9999 で指定します
-    @default 101
+    @default 501
     @min 1
     @max 9999
 
@@ -292,7 +293,7 @@ https://opensource.org/licenses/mit-license.php
     @type number
     @text ピクチャ番号
     @desc ピクチャの番号を 1 ～ 9999 で指定します
-    @default 101
+    @default 501
     @min 1
     @max 9999
 
@@ -369,7 +370,7 @@ https://opensource.org/licenses/mit-license.php
     @type number
     @text ピクチャ番号
     @desc ピクチャの番号を 1 ～ 9999 で指定します
-    @default 101
+    @default 501
     @min 1
     @max 9999
 */
@@ -394,11 +395,11 @@ https://opensource.org/licenses/mit-license.php
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
-    const MaxPicture = Number(params.MaxPicture || 200);
+    const MaxPicture = Number(params.MaxPicture || 1000);
 
     // プラグインコマンド(ピクチャの表示)
     PluginManager.registerCommand(plugin_name, "show_picture", args => {
-        const pictureId = Number(args.pictureId || 101);
+        const pictureId = Number(args.pictureId || 501);
         const name = String(args.name);
         const origin = Number(args.origin || 0);
         const x = Number(args.x || 0);
@@ -416,7 +417,7 @@ https://opensource.org/licenses/mit-license.php
 
     // プラグインコマンド(ピクチャの移動)
     PluginManager.registerCommand(plugin_name, "move_picture", function(args) {
-        const pictureId = Number(args.pictureId || 101);
+        const pictureId = Number(args.pictureId || 501);
         const easingType = Number(args.easingType || 0);
         const origin = Number(args.origin || 0);
         const x = Number(args.x || 0);
@@ -444,14 +445,14 @@ https://opensource.org/licenses/mit-license.php
 
     // プラグインコマンド(ピクチャの回転)
     PluginManager.registerCommand(plugin_name, "rotate_picture", function(args) {
-        const pictureId = Number(args.pictureId || 101);
+        const pictureId = Number(args.pictureId || 501);
         const speed = Number(args.speed || 0);
         this.command233([pictureId, speed]);
     });
 
     // プラグインコマンド(ピクチャの色調変更)
     PluginManager.registerCommand(plugin_name, "tint_picture", function(args) {
-        const pictureId = Number(args.pictureId || 101);
+        const pictureId = Number(args.pictureId || 501);
         const toneType = String(args.toneType || '通常');
         let tone = [0, 0, 0, 0];
         switch (toneType) {
@@ -482,7 +483,7 @@ https://opensource.org/licenses/mit-license.php
 
     // プラグインコマンド(ピクチャの消去)
     PluginManager.registerCommand(plugin_name, "erase_picture", function(args) {
-        const pictureId = Number(args.pictureId || 101);
+        const pictureId = Number(args.pictureId || 501);
         this.command235([pictureId]);
     });
 
