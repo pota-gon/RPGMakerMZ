@@ -1,5 +1,7 @@
 # 公開しないプラグイン
 plugins/Base/Core/PotBase.js
+plugins/Base/Patch/FixEnemyY.js
+plugins/Base/Patch/MaxEnemyY.js
 plugins/Base/Start/StartMembers.js
 plugins/Battle/Card
 plugins/Battle/Troop/TroopRewards.js

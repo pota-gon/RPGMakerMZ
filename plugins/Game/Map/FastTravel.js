@@ -1,12 +1,16 @@
 /*:
 @plugindesc
-ファストトラベル Ver0.9.8(2025/1/18)
+ファストトラベル Ver0.9.9(2025/2/17)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/FastTravel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.9.9
+- マップIDの指定をMZ1.9.0アップデート(@type map)に対応しました
+  - 次回アップデート(Ver1.0.0)で、(@type location) に対応するため、再設定が必要になります
+    旧バージョン(Ver0.9.9)は OldFastTravel.js とし、暫くは公開する予定です
 * Ver0.9.8
 - メニュー項目に設定がないときにエラー落ちしないようにした
 - SE設定の共通処理を修正
@@ -258,7 +262,7 @@ https://opensource.org/licenses/mit-license.php
     コモンイベントIDを指定した場合は、こちらの設定は不要です
 
 @param mapId
-@type number
+@type map
 @text マップID
 @desc 移動先のマップID
 マップ名を指定した場合は、こちらの設定は不要です
