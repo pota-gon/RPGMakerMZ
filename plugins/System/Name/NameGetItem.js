@@ -317,7 +317,7 @@ https://opensource.org/licenses/mit-license.php
             CommonPopupManager._popEnable = false;
         }
         if (se) AudioManager.playSe(se);
-        if (!GetInformation && !SKM_GetInformationMZ && !TinyGetInfoWndMZ && message && count > 0) {
+        if (!GetInformation && !SKM_GetInformationMZ && !TinyGetInfoWndMZ && message && count !== 0) {
             $gameMessage.add(message.format(item.iconIndex, item.name, count));
         }
     }
