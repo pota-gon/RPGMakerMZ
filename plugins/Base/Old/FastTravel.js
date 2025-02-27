@@ -1,20 +1,15 @@
 /*:
 @plugindesc
-ファストトラベル Ver1.0.0(2025/2/27)
+ファストトラベル Ver0.9.9(2025/2/17)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/FastTravel.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Old/FastTravel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver1.0.0
-- 「@type location」に対応(再設定が必要になります)
-  + マップIDの指定
-  + 乗り物の指定
-- プラグインパラメータ move_common_event を after_common_event に変更(再設定が必要になります)
 * Ver0.9.9
 - マップIDの指定をMZ1.9.0アップデートで追加された「@type map」に対応しました
-  + 次回アップデート(Ver1.0.0)で「@type location」に対応するため、再設定が必要になります
+  - 次回アップデート(Ver1.0.0)で、「@type location」に対応するため、再設定が必要になります
     旧バージョン(Ver0.9.9)は、こちら(https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Old/FastTravel.js)で公開しています
 * Ver0.9.8
 - メニュー項目に設定がないときにエラー落ちしないようにした
@@ -210,6 +205,36 @@ https://opensource.org/licenses/mit-license.php
 @desc 移動先マップ情報の変数を変更します
 @default 0
 
+@param before_common_event
+@type common_event
+@text 移動前コモンイベントID
+@desc 移動前のコモンイベントID
+コモンイベント名を指定した場合は、こちらの設定は不要です
+@default 0
+@min 0
+
+    @param before_common_event_name
+    @parent before_common_event
+    @type string
+    @text 移動前コモンイベント名
+    @desc 移動前のコモンイベント名(名前でコモンイベント検索)
+    コモンイベントIDを指定した場合は、こちらの設定は不要です
+
+@param move_common_event
+@type common_event
+@text 移動後コモンイベントID
+@desc 移動後のコモンイベントID
+コモンイベント名を指定した場合は、こちらの設定は不要です
+@default 0
+@min 0
+
+    @param move_common_event_name
+    @parent move_common_event
+    @type string
+    @text 移動後コモンイベント名
+    @desc 移動後のコモンイベント名(名前でコモンイベント検索)
+    コモンイベントIDを指定した場合は、こちらの設定は不要です
+
 @param move_map_name
 @type string
 @text マップ移動先名
@@ -225,33 +250,50 @@ https://opensource.org/licenses/mit-license.php
 @type common_event
 @text コモンイベントID
 @desc 移動処理のコモンイベントID
+コモンイベント名を指定した場合は、こちらの設定は不要です
 @default 0
 @min 0
 
-    @param before_common_event
+    @param common_event_name
     @parent common_event
-    @type common_event
-    @text 移動前コモンイベントID
-    @desc 移動前のコモンイベントID
+    @type string
+    @text コモンイベント名
+    @desc 移動処理のコモンイベント名(名前でコモンイベント検索)
+    コモンイベントIDを指定した場合は、こちらの設定は不要です
+
+@param mapId
+@type map
+@text マップID
+@desc 移動先のマップID
+マップ名を指定した場合は、こちらの設定は不要です
+@default 0
+@min 0
+
+    @param mapName
+    @parent mapId
+    @type string
+    @text マップ名
+    @desc 移動先のマップ名
+    マップIDを指定した場合は、こちらの設定は不要です
+
+    @param x
+    @parent mapId
+    @type number
+    @text X座標
+    @desc 移動先のマップX座標
     @default 0
     @min 0
 
-    @param after_common_event
-    @parent common_event
-    @type common_event
-    @text 移動後コモンイベントID
-    @desc 移動後のコモンイベントID
+    @param y
+    @parent mapId
+    @type number
+    @text Y座標
+    @desc 移動先のマップY座標
     @default 0
     @min 0
-
-@param map
-@type location
-@text マップ
-@desc 移動先のマップ情報
-@default {"mapId":"0","x":"0","y":"0"}
 
     @param direction
-    @parent map
+    @parent mapId
     @type select
     @text 向き
     @desc 移動先のプレイヤーの向き
@@ -268,7 +310,7 @@ https://opensource.org/licenses/mit-license.php
     @value 8
 
     @param fade_type
-    @parent map
+    @parent mapId
     @type select
     @text フェード
     @desc フェードアウトとフェードインの設定
@@ -281,7 +323,7 @@ https://opensource.org/licenses/mit-license.php
     @value 2
 
     @param se
-    @parent map
+    @parent mapId
     @type struct<SE>
     @text 場所移動SE
     @desc 場所移動時に再生するSE
@@ -289,7 +331,7 @@ https://opensource.org/licenses/mit-license.php
     @default {"name":"Move1","volume":"90","pitch":"100","pan":"0"}
 
     @param map_id_variable
-    @parent map
+    @parent mapId
     @type variable
     @text 移動先マップID記憶変数
     @desc 移動先マップIDを記憶するかどうか
@@ -313,7 +355,7 @@ https://opensource.org/licenses/mit-license.php
         @default 0
 
     @param exit_map_id_variable
-    @parent map
+    @parent mapId
     @type variable
     @text 出口マップID記憶変数
     @desc 出口のマップIDを記憶する変数
@@ -337,7 +379,7 @@ https://opensource.org/licenses/mit-license.php
         @default 0
 
     @param escape_map_id_variable
-    @parent map
+    @parent mapId
     @type variable
     @text エスケープマップID記憶変数
     @desc エスケープのマップIDを記憶する変数
@@ -360,26 +402,47 @@ https://opensource.org/licenses/mit-license.php
         0 の場合は、パラメータの変数を参照
         @default 0
 
-@param boat
-@type location
-@text 小型船座標
-@desc 移動先の小型船座標
-マップIDは設定しても現在のマップになります
-@default {"mapId":"0","x":"0","y":"0"}
+@param boat_x
+@type number
+@text 小型船のX座標
+@desc 移動先の小型船X座標
+@default 0
+@min 0
 
-@param ship
-@type location
-@text 大型船座標
-@desc 移動先の大型船座標
-マップIDは設定しても現在のマップになります
-@default {"mapId":"0","x":"0","y":"0"}
+@param boat_y
+@type number
+@text 小型船のY座標
+@desc 移動先の小型船Y座標
+@default 0
+@min 0
 
-@param air_ship
-@type location
-@text 飛行船座標
-@desc 移動先の飛行船座標
-マップIDは設定しても現在のマップになります
-@default {"mapId":"0","x":"0","y":"0"}
+@param ship_x
+@type number
+@text 大型船のX座標
+@desc 移動先の大型船X座標
+@default 0
+@min 0
+
+@param ship_y
+@type number
+@text 大型船のY座標
+@desc 移動先の大型船Y座標
+@default 0
+@min 0
+
+@param air_ship_x
+@type number
+@text 飛行船のX座標
+@desc 移動先の飛行船X座標
+@default 0
+@min 0
+
+@param air_ship_y
+@type number
+@text 飛行船のY座標
+@desc 移動先の飛行船Y座標
+@default 0
+@min 0
 */
 
 /*~struct~SE:
@@ -439,29 +502,6 @@ https://opensource.org/licenses/mit-license.php
         const pan    = Number(audio.pan || 0);
         return {"name": name, "volume": volume, "pitch": pitch, "pan": pan};
     }
-    function Potadra_convertMap(struct_map, cast = false) {
-        if (!struct_map) return false;
-        let map;
-        try {
-            map = JSON.parse(struct_map);
-        } catch(e){
-            return false;
-        }
-        let map_id = map.mapId;
-        if (cast) map_id = Number(map_id || 0);
-        const x = Number(map.x || 0);
-        const y = Number(map.y || 0);
-        return {"mapId": map_id, "x": x, "y": y};
-    }
-    function Potadra_checkName(data, name, val = false) {
-        if (isNaN(name)) {
-            return Potadra_nameSearch(data, name.trim(), "id", "name", val);
-        }
-        return Number(name || val);
-    }
-    function Potadra_checkVariable(variable_no) {
-        return variable_no > 0 && variable_no <= 5000;
-    }
     function Potadra_search(data, id, column = "name", search_column = "id", val = "", initial = 1) {
         if (!id) return val;
         for (let i = initial; i < data.length; i++) {
@@ -478,6 +518,9 @@ https://opensource.org/licenses/mit-license.php
     }
     function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
         return Potadra_search(data, name, column, search_column, val, initial);
+    }
+    function Potadra_checkVariable(variable_no) {
+        return variable_no > 0 && variable_no <= 5000;
     }
 
     // パラメータ用変数
@@ -644,21 +687,26 @@ https://opensource.org/licenses/mit-license.php
             const map_data                 = this._moveMapLists[this._fastTravelWindow.index()];
             const moveSwitch               = Number(map_data.moveSwitch || 0);
             const moveChangeVariable       = Number(map_data.moveChangeVariable || 0);
+            const common_event_name        = String(map_data.common_event_name);
+            const before_common_event_name = String(map_data.before_common_event_name);
+            const move_common_event_name   = String(map_data.move_common_event_name);
+            const mapName                  = String(map_data.mapName);
+            const x                        = Number(map_data.x || 0);
+            const y                        = Number(map_data.y || 0);
+            const direction                = Number(map_data.direction || 0);
+            const fade_type                = Number(map_data.fade_type || 0);
             const se                       = Potadra_convertAudio(map_data.se, 'Move1');
+            const boat_x                   = Number(map_data.boat_x || 0);
+            const boat_y                   = Number(map_data.boat_y || 0);
+            const ship_x                   = Number(map_data.ship_x || 0);
+            const ship_y                   = Number(map_data.ship_y || 0);
+            const air_ship_x               = Number(map_data.air_ship_x || 0);
+            const air_ship_y               = Number(map_data.air_ship_y || 0);
 
-            const map       = Potadra_convertMap(map_data.map);
-            const mapId     = Potadra_checkName($dataMapInfos, map.mapId, 1);
-            const direction = Number(map_data.direction || 0);
-            const fade_type = Number(map_data.fade_type || 0);
-
-            const boat     = Potadra_convertMap(map_data.boat);
-            const ship     = Potadra_convertMap(map_data.ship);
-            const air_ship = Potadra_convertMap(map_data.air_ship);
-
-            const common_event        = Potadra_checkName($dataCommonEvents, map_data.common_event, 0);
-            const before_common_event = Potadra_checkName($dataCommonEvents, map_data.before_common_event, 0);
-            const after_common_event  = Potadra_checkName($dataCommonEvents, map_data.after_common_event, 0);
-
+            let common_event           = Number(map_data.common_event || 0);
+            let before_common_event    = Number(map_data.before_common_event || 0);
+            let move_common_event      = Number(map_data.move_common_event || 0);
+            let mapId                  = Number(map_data.mapId || 0);
             let map_id_variable        = Number(map_data.map_id_variable || 0);
             let x_variable             = Number(map_data.x_variable || 0);
             let y_variable             = Number(map_data.y_variable || 0);
@@ -679,6 +727,10 @@ https://opensource.org/licenses/mit-license.php
             if (escape_x_variable === 0) escape_x_variable = Escape_X_Variable;
             if (escape_y_variable === 0) escape_y_variable = Escape_Y_Variable;
 
+            if (mapId === 0 && mapName) {
+                mapId = Potadra_nameSearch($dataMapInfos, mapName, 'id', 'name', 1);
+            }
+
             SceneManager.goto(Scene_Map);
 
             // 乗る動作の途中(乗ったことにする)
@@ -692,22 +744,22 @@ https://opensource.org/licenses/mit-license.php
             }
 
             // 小型船
-            let boatX = boat.x;
-            let boatY = boat.y;
-            if (boatX === 0) boatX = $dataSystem.boat.startX;
-            if (boatY === 0) boatY = $dataSystem.boat.startY;
+            let boatX = boat_x;
+            let boatY = boat_y;
+            if (boat_x === 0) boatX = $dataSystem.boat.startX;
+            if (boat_y === 0) boatY = $dataSystem.boat.startY;
 
             // 大型船
-            let shipX = ship.x;
-            let shipY = ship.y;
-            if (shipX === 0) shipX = $dataSystem.ship.startX;
-            if (shipY === 0) shipY = $dataSystem.ship.startY;
+            let shipX = ship_x;
+            let shipY = ship_y;
+            if (ship_x === 0) shipX = $dataSystem.ship.startX;
+            if (ship_y === 0) shipY = $dataSystem.ship.startY;
 
             // 飛行船
-            let airX = air_ship.x;
-            let airY = air_ship.y;
-            if (airX === 0) airX = $dataSystem.airship.startX;
-            if (airY === 0) airY = $dataSystem.airship.startY;
+            let airX = air_ship_x;
+            let airY = air_ship_y;
+            if (air_ship_x === 0) airX = $dataSystem.airship.startX;
+            if (air_ship_y === 0) airY = $dataSystem.airship.startY;
 
             // 乗り物の位置設定
             $gameMap.boat().setPosition(boatX, boatY);
@@ -716,25 +768,34 @@ https://opensource.org/licenses/mit-license.php
 
             // 移動先記憶
             if (map_id_variable !== 0) $gameVariables.setValue(map_id_variable, mapId);
-            if (x_variable !== 0) $gameVariables.setValue(x_variable, map.x);
-            if (y_variable !== 0) $gameVariables.setValue(y_variable, map.y);
+            if (x_variable !== 0) $gameVariables.setValue(x_variable, x);
+            if (y_variable !== 0) $gameVariables.setValue(y_variable, y);
 
             // 出口記憶
             if (exit_map_id_variable !== 0) $gameVariables.setValue(exit_map_id_variable, $gameMap._mapId);
             if (exit_x_variable !== 0) $gameVariables.setValue(exit_x_variable, $gamePlayer.x);
             if (exit_y_variable !== 0) $gameVariables.setValue(exit_y_variable, $gamePlayer.y);
 
+            if (before_common_event === 0 && before_common_event_name) {
+                before_common_event = Potadra_nameSearch($dataCommonEvents, before_common_event_name, 'id', 'name', 0);
+            }
             if (before_common_event !== 0) {
                 $gameTemp.reserveCommonEvent(before_common_event);
             }
+            if (common_event === 0 && common_event_name) {
+                common_event = Potadra_nameSearch($dataCommonEvents, common_event_name, 'id', 'name', 0);
+            }
             if (common_event === 0) {
                 if (se) AudioManager.playSe(se);
-                $gameMap._interpreter.command201([0, mapId, map.x, map.y, direction, fade_type]);
+                $gameMap._interpreter.command201([0, mapId, x, y, direction, fade_type]);
             } else {
                 $gameTemp.reserveCommonEvent(common_event);
             }
-            if (after_common_event !== 0) {
-                $gameTemp.reserveCommonEvent(after_common_event);
+            if (move_common_event === 0 && move_common_event_name) {
+                move_common_event = Potadra_nameSearch($dataCommonEvents, move_common_event_name, 'id', 'name', 0);
+            }
+            if (move_common_event !== 0) {
+                $gameTemp.reserveCommonEvent(move_common_event);
             }
 
             // 移動判定スイッチ

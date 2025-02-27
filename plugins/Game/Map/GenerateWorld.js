@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.6.4(2025/1/18)
+ワールド自動生成 Ver0.6.5(2025/2/27)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,8 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.6.5
+- MZ1.9.0アップデートにて「@type map」が追加されたので、未実装の機能のプラグインパラメータを修正
 * Ver0.6.4
 - 乱数の初期設定でメルセンヌ・ツイスタを使用するように修正
 - 乱数配列のシャッフルを簡易的な方式に変更
@@ -728,7 +730,7 @@ https://github.com/pota-gon/GenerateWorld
 @default 1
 
 @param map_id
-@type number
+@type map
 @text タイルセットマップID
 @desc タイルの設定を決めるマップID
 0 の場合は使用しません。未実装。実装するか検討中
@@ -756,18 +758,11 @@ https://github.com/pota-gon/GenerateWorld
 
 /*~struct~Maps:
 @param map_id
-@type number
+@type map
 @text マップID
 @desc 設定するマップID
-マップ名を指定した場合は、こちらの設定は不要です
 @default 0
 @min 0
-
-@param map_name
-@type string
-@text マップ名
-@desc 設定するマップ名(マップIDが 0 のとき有効)
-マップIDを指定した場合は、こちらの設定は不要です
 */
 (() => {
     'use strict';

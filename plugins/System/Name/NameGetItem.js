@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-アイテム入手 Ver2.0.1(2025/1/20)
+アイテム入手 Ver2.0.2(2025/2/27)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameGetItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver2.0.2: アイテム名と個数に変数を指定できるプラグインコマンド追加
 * Ver2.0.1: 減らす機能に装備の場合は装備品も含めるか選択できるパラメータ追加
 * Ver2.0.0
 - プラグインコマンドが長くなるため、SE設定をstructに変更（再設定が必要になります）
@@ -40,6 +41,9 @@ https://opensource.org/licenses/mit-license.php
 セーブデータ上のアイテムは、IDで記録されます  
 ゲーム公開後は、データベースの入れ替えはおすすめしません
 
+変数を指定したい場合は  
+プラグインコマンド「アイテム入手(変数指定)」を使用してください
+
 @command get_item
 @text アイテム入手
 @desc 名前からアイテムを入手します
@@ -62,6 +66,66 @@ https://opensource.org/licenses/mit-license.php
     @desc 入手するアイテムの個数
     @default 1
     @min -999999999999999
+
+    @param includeEquip
+    @type boolean
+    @text 装備品も含める
+    @desc 装備品も含めるか
+    ※ アイテムを減らす場合のみ有効
+    @on 含める
+    @off 含めない
+    @default false
+
+    @arg message
+    @type multiline_string
+    @text アイテム入手メッセージ
+    @desc アイテム獲得時のメッセージ。空文字の場合、表示しません
+    %1: アイコン番号 %2: アイテム名 %3: 個数
+    @default \I[%1]%2を%3個手に入れた！
+
+    @arg se
+    @type struct<SE>
+    @text アイテム入手SE
+    @desc アイテム入手SE。指定しない場合、再生しません
+    宝箱を開ける音、ピッケルの音などを指定
+    @default {"name":"Item3","volume":"90","pitch":"100","pan":"0"}
+
+@command get_variable_item
+@text アイテム入手(変数指定)
+@desc 名前からアイテムを入手します
+
+    @arg name
+    @type string
+    @text 名前
+    @desc 入手するアイテムの名称
+
+        @arg name_variable
+        @parent name
+        @type variable
+        @text 名前変数名
+        @desc 名前を変数で指定する場合、こちらを使用してください
+        @default 0
+
+        @arg search
+        @parent name
+        @type struct<Search>
+        @text 検索
+        @desc アイテム名検索用
+        このパラメータはデータとしては使用しません
+
+    @arg count
+    @type number
+    @text 個数
+    @desc 入手するアイテムの個数
+    @default 1
+    @min -999999999999999
+
+        @arg count_variable
+        @parent count
+        @type variable
+        @text 個数変数
+        @desc 入手するアイテムの個数を変数で指定
+        @default 0
 
     @param includeEquip
     @type boolean
@@ -168,6 +232,9 @@ https://opensource.org/licenses/mit-license.php
         const pan    = Number(audio.pan || 0);
         return {"name": name, "volume": volume, "pitch": pitch, "pan": pan};
     }
+    function Potadra_checkVariable(variable_no) {
+        return variable_no > 0 && variable_no <= 5000;
+    }
     function Potadra_search(data, id, column = "name", search_column = "id", val = "", initial = 1) {
         if (!id) return val;
         for (let i = initial; i < data.length; i++) {
@@ -202,13 +269,32 @@ https://opensource.org/licenses/mit-license.php
 
     // プラグインコマンド(アイテム入手)
     PluginManager.registerCommand(plugin_name, "get_item", function(args) {
-        const name         = String(args.name);
-        const count        = Number(args.count || 1);
-        const includeEquip = Potadra_convertBool(args.includeEquip);
-        const message      = String(args.message);
-        const se           = Potadra_convertAudio(args.se, 'Item3');
+        get_item(this, args);
+    });
 
-        const item    = Potadra_itemSearch(name);
+    // プラグインコマンド(アイテム入手(変数指定))
+    PluginManager.registerCommand(plugin_name, "get_variable_item", function(args) {
+        get_item(this, args);
+    });
+
+    // 実際の処理
+    function get_item(interpreter, args) {
+        const name_variable  = Number(args.name_variable || 0);
+        const count_variable = Number(args.count_variable || 0);
+        const includeEquip   = Potadra_convertBool(args.includeEquip);
+        const message        = String(args.message);
+        const se             = Potadra_convertAudio(args.se, 'Item3');
+
+        let name  = String(args.name);
+        let count = Number(args.count || 1);
+        if (Potadra_checkVariable(name_variable)) {
+            name = $gameVariables.value(name_variable);
+        }
+        if (Potadra_checkVariable(count_variable)) {
+            count = $gameVariables.value(count_variable);
+        }
+
+        const item = Potadra_itemSearch(name);
         if (GetInformation || SKM_GetInformationMZ) {
             CommonPopupManager._popEnable = CommonPopupManager.popEnable();
         }
@@ -216,11 +302,11 @@ https://opensource.org/licenses/mit-license.php
             let params = [item.id, 0, 0, count, false];
             if (DataManager.isItem(item)) {
                 params = [item.id, 0, 0, count];
-                this.command126(params);
+                interpreter.command126(params);
             } else if (DataManager.isWeapon(item)) {
-                this.command127(params);
+                interpreter.command127(params);
             } else if (DataManager.isArmor(item)) {
-                this.command128(params);
+                interpreter.command128(params);
             } else {
                 return false;
             }
@@ -231,8 +317,8 @@ https://opensource.org/licenses/mit-license.php
             CommonPopupManager._popEnable = false;
         }
         if (se) AudioManager.playSe(se);
-        if (!GetInformation && !SKM_GetInformationMZ && !TinyGetInfoWndMZ && message) {
+        if (!GetInformation && !SKM_GetInformationMZ && !TinyGetInfoWndMZ && message && count > 0) {
             $gameMessage.add(message.format(item.iconIndex, item.name, count));
         }
-    });
+    }
 })();

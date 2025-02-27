@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ゲーム開始時のプレイヤー位置を固定 Ver1.0.0(2025/1/1)
+ゲーム開始時のプレイヤー位置を固定 Ver1.1.0(2025/2/27)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Start/StartPosition.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.1.0: MZ1.9.0アップデートにて追加された「@type location」で設定するように変更(再設定が必要になります)
 * Ver1.0.0: 公開
 
 Copyright (c) 2025 ポテトードラゴン
@@ -22,7 +23,7 @@ https://opensource.org/licenses/mit-license.php
 テストプレイ時に初期位置を変更したときに  
 いきなりラスボスから始まるのを防ぐためのプラグインです
 
-1. プラグインパラメータにマップの座標を記載します
+1. プラグインパラメータにて、マップの座標を設定します
 2. テストプレイを実施し、マップの初期位置が正しくなっているかチェックします
 3. プラグインパラメータの 本番時のみ有効（PlayProd）を
 　「有効にする(true)」に変更します
@@ -38,37 +39,14 @@ https://opensource.org/licenses/mit-license.php
 @off 常に有効
 @default false
 
-@param mapId
-@type number
-@text 初期マップID
-@desc 初期マップ名を指定した場合は、こちらの設定は不要です
-@default 0
-@min 0
-
-    @param mapName
-    @parent mapId
-    @type string
-    @text 初期マップ名
-    @desc 初期マップIDを指定した場合は、こちらの設定は不要です
-
-    @param x
-    @parent mapId
-    @type number
-    @text X座標
-    @desc 初期のマップX座標
-    @default 0
-    @min 0
-
-    @param y
-    @parent mapId
-    @type number
-    @text Y座標
-    @desc 初期のマップY座標
-    @default 0
-    @min 0
+@param map
+@type location
+@text 初期マップ
+@desc 初期マップ情報
+@default {"mapId":"0","x":"0","y":"0"}
 
     @param StartDirection
-    @parent mapId
+    @parent map
     @type select
     @text プレイヤー初期向き
     @desc プレイヤーの初期向き
@@ -97,6 +75,20 @@ https://opensource.org/licenses/mit-license.php
             return true;
         }
     }
+    function Potadra_convertMap(struct_map, cast = false) {
+        if (!struct_map) return false;
+        let map;
+        try {
+            map = JSON.parse(struct_map);
+        } catch(e){
+            return false;
+        }
+        let map_id = map.mapId;
+        if (cast) map_id = Number(map_id || 0);
+        const x = Number(map.x || 0);
+        const y = Number(map.y || 0);
+        return {"mapId": map_id, "x": x, "y": y};
+    }
     function Potadra_isProd(production = true) {
         return !production || !Utils.isOptionValid("test");
     }
@@ -117,6 +109,12 @@ https://opensource.org/licenses/mit-license.php
     function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
         return Potadra_search(data, name, column, search_column, val, initial);
     }
+    function Potadra_checkName(data, name, val = false) {
+        if (isNaN(name)) {
+            return Potadra_nameSearch(data, name.trim(), "id", "name", val);
+        }
+        return Number(name || val);
+    }
 
     // パラメータ用定数
     const plugin_name = Potadra_getPluginName();
@@ -124,10 +122,7 @@ https://opensource.org/licenses/mit-license.php
 
     // 各パラメータ用定数
     const PlayProd       = Potadra_convertBool(params.PlayProd);
-    let mapId            = Number(params.mapId || 0);
-    const mapName        = String(params.mapName);
-    const x              = Number(params.x || 0);
-    const y              = Number(params.y || 0);
+    const map            = Potadra_convertMap(params.map);
     const StartDirection = Number(params.StartDirection || 2);
 
     if (Potadra_isProd(PlayProd)) {
@@ -135,10 +130,8 @@ https://opensource.org/licenses/mit-license.php
          * ゲーム開始時のプレイヤー位置
          */
         Game_Player.prototype.setupForNewGame = function() {
-            if (mapId === 0 && mapName) {
-                mapId = Potadra_nameSearch($dataMapInfos, mapName, 'id', 'name', 1);
-            }
-            this.reserveTransfer(mapId, x, y, StartDirection, 0);
+            const map_id = Potadra_checkName($dataMapInfos, map.mapId, 1);
+            this.reserveTransfer(map_id, map.x, map.y, StartDirection, 0);
         };
     }
 })();
