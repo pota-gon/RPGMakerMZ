@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-敵キャラレベル追加 Ver0.13.4(2022/12/2)
+敵キャラレベル追加 Ver0.13.5(2025/5/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/Enemy/EnemyLevel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.13.5: リファクタリング(共通処理 Potadra_checkSystem を使うように修正)
 * Ver0.13.4: URLを修正
 
 ・TODO
@@ -52,6 +53,17 @@ https://opensource.org/licenses/mit-license.php
     'use strict';
 
     // ベースプラグインの処理
+    function Potadra_checkSystem(data, name, val = false) {
+        if (isNaN(name)) {
+            for (let i = 1; i < data.length; i++) {
+                if (name === data[i]) {
+                    return i;
+                }
+            }
+            return val;
+        }
+        return Number(name || val);
+    }
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
@@ -201,7 +213,8 @@ https://opensource.org/licenses/mit-license.php
      * @returns {number} レベル
      */
     Game_Enemy.prototype.level = function() {
-        return $gameVariables.value(EnemyLevelVariables[this.index()]);
+        const variable_id = Potadra_checkSystem($dataSystem.variables, EnemyLevelVariables[this.index()]);
+        return $gameVariables.value(variable_id);
     };
 
     /**

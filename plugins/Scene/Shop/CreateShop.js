@@ -1,12 +1,20 @@
 /*:
 @plugindesc
-合成屋 Ver0.11.0(2025/1/18)
+合成屋 Ver0.12.0(2025/5/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Shop/CreateShop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.12.0
+- Qキー(pagedown)とW(pageup)キーを使用していた部分は、
+  合成アイテムのスクロールと競合するため、移動左キー(left)と移動右(right)キーで動作するように変更
+- 必要素材の未設定時にParmeter Errorを出力するように修正(プラグインパラメータでON・OFF可能)
+- 必要素材の設定漏れが発生しやすいため、デフォルト値として空配列を指定
+- メニュー表示名の設定をコンボボックスに変更
+- メニュー表示名の説明を修正
+- 未実装の機能、分解に設定注意コメントを追加
 * Ver0.11.0
 - 名前検索用のパラメータ追加
 - リファクタリング
@@ -33,8 +41,9 @@ https://opensource.org/licenses/mit-license.php
 
 
 @param MenuCommand
+@type combo
 @text メニュー表示名
-@desc メニューの表示名
+@desc メニューの表示が出来るコマンド
 空文字でメニューに表示しません
 @default アイテム合成
 
@@ -65,6 +74,7 @@ https://opensource.org/licenses/mit-license.php
     @type boolean
     @text 合成のみ
     @desc 合成するのみにするか
+    ※ 分解は未実装の機能なので、設定変更しないでください
     @on 合成のみ
     @off 合成と分解
     @default false
@@ -79,6 +89,7 @@ https://opensource.org/licenses/mit-license.php
     @parent MenuCommand
     @text 合成屋売却コマンド名
     @desc 合成屋の売却コマンド名
+    ※ 分解は未実装の機能なので、設定変更しないでください
     @default 分解する
 
     @param CancelName
@@ -92,6 +103,25 @@ https://opensource.org/licenses/mit-license.php
     @text 必要素材名
     @desc 必要素材の表示名
     @default 必要素材
+
+@param NoneMaterialMessage
+@type boolean
+@text 必要素材未設定エラーメッセージ
+@desc 必要素材未設定の場合、エラーメッセージを出すか
+出力しない場合、価格だけのアイテムを並べることができます
+@on 出力する
+@off 出力しない
+@default true
+
+    @param NoneMaterialError
+    @parent NoneMaterialMessage
+    @type boolean
+    @text 必要素材未設定エラー
+    @desc 必要素材未設定の場合、エラーとするか
+    エラーにしない場合、エラーが発生してもゲームを終了しません
+    @on エラーにする
+    @off エラーにしない
+    @default true
 
 @param MiniWindow
 @type boolean
@@ -134,6 +164,7 @@ https://opensource.org/licenses/mit-license.php
     @arg SellName
     @text 合成屋売却コマンド名
     @desc 合成屋の売却コマンド名
+    ※ 分解は未実装の機能なので、設定変更しないでください
     @default 分解する
 
     @arg CancelName
@@ -181,6 +212,7 @@ https://opensource.org/licenses/mit-license.php
 @type struct<MaterialsList>[]
 @text 必要素材リスト
 @desc 必要素材のリスト
+@default []
 */
 
 /*~struct~MaterialsList:
@@ -287,8 +319,10 @@ https://opensource.org/licenses/mit-license.php
     let materials = {};
     const BuyOnly = Potadra_convertBool(params.BuyOnly);
     let BuyName, SellName, CancelName, MaterialName, MaxSize;
-    const MiniWindow = Potadra_convertBool(params.MiniWindow);
-    const SubCommand = Potadra_convertBool(params.SubCommand);
+    const NoneMaterialMessage = Potadra_convertBool(params.NoneMaterialMessage);
+    const NoneMaterialError   = Potadra_convertBool(params.NoneMaterialError);
+    const MiniWindow          = Potadra_convertBool(params.MiniWindow);
+    const SubCommand          = Potadra_convertBool(params.SubCommand);
 
     // 他プラグイン連携(パラメータ取得)
     const max_item_params   = Potadra_getPluginParams('MaxItem');
@@ -304,11 +338,17 @@ https://opensource.org/licenses/mit-license.php
         CancelName       = String(args.CancelName || "やめる");
         MaterialName     = String(args.MaterialName);
         MaxSize          = 4;
-        if (MaterialName) {
-            MaxSize = 3;
-        }
+        if (MaterialName) MaxSize = 3;
+
         create_shop(good_lists, buy_only);
     });
+
+    class ParameterError extends Error {
+        constructor(message, options) {
+          super(message, options);
+          this.name = 'Parameter Error'; // エラー名を明示的に
+        }
+    }
 
     // 実際の処理
     function create_shop(good_lists, buy_only) {
@@ -318,7 +358,17 @@ https://opensource.org/licenses/mit-license.php
             const good_data      = JSON.parse(good_lists[i]);
             const name           = good_data.name;
             const price          = good_data.price;
-            const material_lists = JSON.parse(good_data.materials);
+
+            let material_lists = [];
+            try {
+                material_lists = JSON.parse(good_data.materials);
+            } catch (e) {
+                if (NoneMaterialMessage) {
+                    const message = "必要素材が設定されていません。プラグインの設定を見直してください。";
+                    console.warn(message);
+                    if (NoneMaterialError) throw new ParameterError(message);
+                }
+            }
             materials[i] = [];
             for (let j = 0; j < material_lists.length; j++) {
                 const material = JSON.parse(material_lists[j]);
@@ -725,12 +775,12 @@ https://opensource.org/licenses/mit-license.php
         }
 
         /**
-         * ページ更新操作(pageupキーもしくはタッチされた場合)
+         * ページ更新操作(rightキーもしくはタッチされた場合)
          *
          * @returns {boolean} ページ更新可否
          */
         isPageChangeRequested() {
-            if (Input.isTriggered("pageup")) {
+            if (Input.isTriggered("right")) {
                 return true;
             }
             if (TouchInput.isTriggered() && this.isTouchedInsideFrame()) {
@@ -740,12 +790,12 @@ https://opensource.org/licenses/mit-license.php
         }
 
         /**
-         * ページ戻る操作(pagedownキーが押された場合)
+         * ページ戻る操作(leftキーが押された場合)
          *
          * @returns {boolean} ページ更新可否
          */
         isPageBeforeRequested() {
-            if (Input.isTriggered("pagedown")) {
+            if (Input.isTriggered("left")) {
                 return true;
             }
             return false;

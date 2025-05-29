@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-デバッグ用のプラグイン Ver1.4.9(2024/11/3)
+デバッグ用のプラグイン Ver1.5.0(2025/5/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Debug/Debug.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.5.0: 入手しないアイテム名の文字を配列で指定できるように変更
 * Ver1.4.9: リファクタリング
 * Ver1.4.8: デバッグ時に無条件で使えるデバッグスキルを追加
 * Ver1.4.7: 競合対策のため、共通処理を整理
@@ -100,12 +101,19 @@ ONのプラグインがない状態で、ゲームを起動可能になります
 @off 入手しない
 @default false
 
-    @param ExceptItemName
+    @param ExceptItemNames
     @parent AllItem
-    @type string
-    @text 入手しないアイテムの文字列
-    @desc この文字が含まれている場合は、アイテムを入手しません
-    @default -
+    @type string[]
+    @text 入手しないアイテム名の文字配列（部分一致）
+    @desc これらの文字が含まれている場合は、アイテムを入手しません
+    @default ["-"]
+
+    @param ExceptItemExactNames
+    @parent AllItem
+    @type string[]
+    @text 入手しないアイテム名の文字配列（完全一致）
+    @desc このアイテム名の場合は、アイテムを入手しません
+    @default []
 
     @param GetItem
     @parent AllItem
@@ -277,9 +285,6 @@ ONのプラグインがない状態で、ゲームを起動可能になります
         }
         return Number(name || val);
     }
-    function Potadra_stringArray(data) {
-        return data ? JSON.parse(data).map(String) : [];
-    }
     function Potadra_isPlugin(plugin_name) {
         return PluginManager._scripts.includes(plugin_name);
     }
@@ -297,6 +302,9 @@ ONのプラグインがない状態で、ゲームを起動可能になります
             return true;
         }
     }
+    function Potadra_stringArray(data) {
+        return data ? JSON.parse(data).map(String) : [];
+    }
     function Potadra_isTest(play_test = true) {
         return !play_test || Utils.isOptionValid("test");
     }
@@ -307,23 +315,24 @@ ONのプラグインがない状態で、ゲームを起動可能になります
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
-    const PlayTest            = Potadra_convertBool(params.PlayTest);
-    const SkipPluginLoadError = Potadra_convertBool(params.SkipPluginLoadError);
-    const EnableResolution    = Potadra_convertBool(params.EnableResolution);
-    const ResolutionWidth     = Number(params.ResolutionWidth || 816);
-    const ResolutionHeight    = Number(params.ResolutionHeight || 624);
-    const EnableFont          = Potadra_convertBool(params.EnableFont);
-    const mainFontFilename    = String(params.mainFontFilename || 'mplus-1m-regular.woff');
-    const numberFontFilename  = String(params.numberFontFilename || 'mplus-2p-bold-sub.woff');
-    const AllItem             = Potadra_convertBool(params.AllItem);
-    const ExceptItemName      = String(params.ExceptItemName);
-    const GetItem             = Potadra_convertBool(params.GetItem);
-    const GetWeapon           = Potadra_convertBool(params.GetWeapon);
-    const GetArmor            = Potadra_convertBool(params.GetArmor);
-    const GetItemCount        = Number(params.GetItemCount || 0);
-    const GetWeaponCount      = Number(params.GetWeaponCount || 0);
-    const GetArmorCount       = Number(params.GetArmorCount || 0);
-    const AlwaysCanEscape     = Potadra_convertBool(params.AlwaysCanEscape);
+    const PlayTest             = Potadra_convertBool(params.PlayTest);
+    const SkipPluginLoadError  = Potadra_convertBool(params.SkipPluginLoadError);
+    const EnableResolution     = Potadra_convertBool(params.EnableResolution);
+    const ResolutionWidth      = Number(params.ResolutionWidth || 816);
+    const ResolutionHeight     = Number(params.ResolutionHeight || 624);
+    const EnableFont           = Potadra_convertBool(params.EnableFont);
+    const mainFontFilename     = String(params.mainFontFilename || 'mplus-1m-regular.woff');
+    const numberFontFilename   = String(params.numberFontFilename || 'mplus-2p-bold-sub.woff');
+    const AllItem              = Potadra_convertBool(params.AllItem);
+    const ExceptItemNames      = Potadra_stringArray(params.ExceptItemNames);
+    const ExceptItemExactNames = Potadra_stringArray(params.ExceptItemExactNames);
+    const GetItem              = Potadra_convertBool(params.GetItem);
+    const GetWeapon            = Potadra_convertBool(params.GetWeapon);
+    const GetArmor             = Potadra_convertBool(params.GetArmor);
+    const GetItemCount         = Number(params.GetItemCount || 0);
+    const GetWeaponCount       = Number(params.GetWeaponCount || 0);
+    const GetArmorCount        = Number(params.GetArmorCount || 0);
+    const AlwaysCanEscape      = Potadra_convertBool(params.AlwaysCanEscape);
 
     if (Potadra_isTest(PlayTest)) {
         // プラグインロードエラースキップ
@@ -366,6 +375,22 @@ ONのプラグインがない状態で、ゲームを起動可能になります
 
         // アイテム全入手
         if (AllItem) {
+            const checkTestItem = function(item) {
+                if (!item || item.name.length === 0) return false;
+
+                // 部分一致
+                if (ExceptItemNames.length > 0 && ExceptItemNames.some(i => item.name.includes(i))) {
+                    return false;
+                }
+
+                // 完全一致
+                if (ExceptItemExactNames.length > 0 && ExceptItemExactNames.some(i => item.name === i)) {
+                    return false;
+                }
+
+                return true;
+            };
+
             /**
              * オブジェクト初期化
              */
@@ -382,7 +407,7 @@ ONのプラグインがない状態で、ゲームを起動可能になります
              */
             Game_Party.prototype.potadraSetupGetItems = function(data, count = 0) {
                 for (const item of data) {
-                    if (item && item.name.length > 0 && (!ExceptItemName || !item.name.includes(ExceptItemName))) {
+                    if (checkTestItem(item)) {
                         if (count === 0) {
                             this.gainItem(item, this.maxItems(item));
                         } else {

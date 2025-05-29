@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-装備スロット変更 Ver1.4.5(2023/11/9)
+装備スロット変更 Ver1.4.6(2025/5/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Data/Equip/ChangeSlot.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.4.6: リファクタリング(共通処理 Potadra_checkSystem を使うように修正)
 * Ver1.4.5
 - 装備タイプ名を指定出来る機能追加
 - エラーが発生するバグ修正
@@ -89,6 +90,17 @@ https://opensource.org/licenses/mit-license.php
     'use strict';
 
     // ベースプラグインの処理
+    function Potadra_checkSystem(data, name, val = false) {
+        if (isNaN(name)) {
+            for (let i = 1; i < data.length; i++) {
+                if (name === data[i]) {
+                    return i;
+                }
+            }
+            return val;
+        }
+        return Number(name || val);
+    }
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
@@ -144,19 +156,7 @@ https://opensource.org/licenses/mit-license.php
     Game_Actor.prototype.equipSlots = function() {
         const slots = [];
         for (let i = 0; i < Slots.length; i++) {
-            slots.push(Slots[i]);
-        }
-
-        // 装備タイプに文字を指定した場合の設定
-        for (let i = 0; i < slots.length; i++) {
-            const etype = slots[i];
-            if (isNaN(etype)) { // 文字列
-                for (let j = 1; j < $dataSystem.equipTypes.length; j++) {
-                    if (etype === $dataSystem.equipTypes[j]) {
-                        slots[i] = j;
-                    }
-                }
-            }
+            slots.push(Potadra_checkSystem($dataSystem.equipTypes, Slots[i]));
         }
 
         if (slots.length >= 2 && this.isDualWield()) {

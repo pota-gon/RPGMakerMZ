@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.6.5(2025/2/27)
+ワールド自動生成 Ver0.6.6(2025/5/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,9 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.6.6
+- 分類用のリージョン設定パラメータ追加
+- 「@type tileset」の設定に名前で参照できる機能追加
 * Ver0.6.5
 - MZ1.9.0アップデートにて「@type map」が追加されたので、未実装の機能のプラグインパラメータを修正
 * Ver0.6.4
@@ -162,68 +165,79 @@ https://github.com/pota-gon/GenerateWorld
 0(なし)の場合、シードを変数に保存しません
 @default 0
 
-@param TileRegion
-@type number
-@text タイル固定リージョン
-@desc タイルを固定するリージョン
-0 でリージョンは設定されなくなります
-@default 1
-@min 0
-@max 255
+@param Region
+@text リージョン設定
+@desc ※ 分類用のパラメータです
 
-@param TwoChoiceRegion
-@type number
-@text 上層OR下層タイルリージョン
-@desc 上層を含むタイルか下層タイルのみのどちらかが出現するリージョン
-0 でリージョンは設定されなくなります
-@default 2
-@min 0
-@max 255
+    @param TileRegion
+    @parent Region
+    @type number
+    @text タイル固定リージョン
+    @desc タイルを固定するリージョン
+    0 でリージョンは設定されなくなります
+    @default 1
+    @min 0
+    @max 255
 
-@param ExceptRegion
-@type number
-@text 上層タイル除外リージョン
-@desc 上層タイルを除外するリージョン
-※ 未実装。作る必要があるか検討する
-@default 3
-@min 0
-@max 255
+    @param TwoChoiceRegion
+    @parent Region
+    @type number
+    @text 上層OR下層タイルリージョン
+    @desc 上層を含むタイルか下層タイルのみのどちらかが出現するリージョン
+    0 でリージョンは設定されなくなります
+    @default 2
+    @min 0
+    @max 255
 
-@param PassableRegion
-@type number
-@text 通行可能リージョン
-@desc 通行可能なタイルのみ出現するリージョン
-※ 未実装
-@default 4
-@min 0
-@max 255
+    @param ExceptRegion
+    @parent Region
+    @type number
+    @text 上層タイル除外リージョン
+    @desc 上層タイルを除外するリージョン
+    ※ 未実装。作る必要があるか検討する
+    @default 3
+    @min 0
+    @max 255
 
-@param ImpassableRegion
-@type number
-@text 通行不能リージョン
-@desc 通行不能なタイルのみ出現するリージョン
-※ 未実装
-@default 5
-@min 0
-@max 255
+    @param PassableRegion
+    @parent Region
+    @type number
+    @text 通行可能リージョン
+    @desc 通行可能なタイルのみ出現するリージョン
+    ※ 未実装
+    @default 4
+    @min 0
+    @max 255
 
-@param LockTileRegion
-@type number
-@text タイル完全固定リージョン
-@desc タイルをリージョンを含め固定するリージョン
-0 でリージョンは設定されなくなります
-@default 6
-@min 0
-@max 255
+    @param ImpassableRegion
+    @parent Region
+    @type number
+    @text 通行不能リージョン
+    @desc 通行不能なタイルのみ出現するリージョン
+    ※ 未実装
+    @default 5
+    @min 0
+    @max 255
 
-@param StartTileRegion
-@type number
-@text タイル連番リージョン
-@desc タイルに指定する連番リージョン
-0 でリージョンは設定されなくなります
-@default 7
-@min 0
-@max 255
+    @param LockTileRegion
+    @parent Region
+    @type number
+    @text タイル完全固定リージョン
+    @desc タイルをリージョンを含め固定するリージョン
+    0 でリージョンは設定されなくなります
+    @default 6
+    @min 0
+    @max 255
+
+    @param StartTileRegion
+    @parent Region
+    @type number
+    @text タイル連番リージョン
+    @desc タイルに指定する連番リージョン
+    0 でリージョンは設定されなくなります
+    @default 7
+    @min 0
+    @max 255
 
 @param Tilesets
 @type struct<Tilesets>[]
@@ -928,6 +942,29 @@ https://github.com/pota-gon/GenerateWorld
     }
     function Potadra_random(probability, rate = 1) {
         return Math.random() <= probability / 100 * rate;
+    }
+    function Potadra_search(data, id, column = "name", search_column = "id", val = "", initial = 1) {
+        if (!id) return val;
+        for (let i = initial; i < data.length; i++) {
+            if (!data[i]) continue;
+            if (search_column && data[i][search_column] == id) {
+                val = column ? data[i][column] : data[i];
+                break;
+            } else if (i == id) {
+                val = data[i];
+                break;
+            }
+        }
+        return val;
+    }
+    function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
+        return Potadra_search(data, name, column, search_column, val, initial);
+    }
+    function Potadra_checkName(data, name, val = false) {
+        if (isNaN(name)) {
+            return Potadra_nameSearch(data, name.trim(), "id", "name", val);
+        }
+        return Number(name || val);
     }
     function Potadra_numberArray(data) {
         return data ? JSON.parse(data).map(Number) : [];
@@ -2187,7 +2224,7 @@ https://github.com/pota-gon/GenerateWorld
         if (values) {
             for (const s of ShipTilesets) {
                 const ship_tile_set = JSON.parse(s);
-                const tile_set_id   = Number(ship_tile_set.tile_set_id);
+                const tile_set_id = Potadra_checkName($dataTilesets, ship_tile_set.tile_set_id);
                 if ($gameMap.tilesetId() === tile_set_id) {
                     const boat_tile_ids    = Potadra_numberArray(ship_tile_set.boat_tile_ids);
                     const ship_tile_ids    = Potadra_numberArray(ship_tile_set.ship_tile_ids);

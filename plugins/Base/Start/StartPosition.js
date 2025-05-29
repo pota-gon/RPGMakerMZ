@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ゲーム開始時のプレイヤー位置を固定 Ver1.1.0(2025/2/27)
+ゲーム開始時のプレイヤー位置を固定 Ver1.1.1(2025/5/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Start/StartPosition.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.1.1: 初期マップを指定しなかったとき、プレイヤーの向きだけ設定出来るように修正
 * Ver1.1.0: MZ1.9.0アップデートにて追加された「@type location」で設定するように変更(再設定が必要になります)
 * Ver1.0.0: 公開
 
@@ -45,20 +46,19 @@ https://opensource.org/licenses/mit-license.php
 @desc 初期マップ情報
 @default {"mapId":"0","x":"0","y":"0"}
 
-    @param StartDirection
-    @parent map
-    @type select
-    @text プレイヤー初期向き
-    @desc プレイヤーの初期向き
-    @default 2
-    @option 下
-    @value 2
-    @option 左
-    @value 4
-    @option 右
-    @value 6
-    @option 上
-    @value 8
+@param StartDirection
+@type select
+@text プレイヤー初期向き
+@desc プレイヤーの初期向き
+@default 2
+@option 下
+@value 2
+@option 左
+@value 4
+@option 右
+@value 6
+@option 上
+@value 8
 */
 (() => {
     'use strict';
@@ -130,8 +130,15 @@ https://opensource.org/licenses/mit-license.php
          * ゲーム開始時のプレイヤー位置
          */
         Game_Player.prototype.setupForNewGame = function() {
-            const map_id = Potadra_checkName($dataMapInfos, map.mapId, 1);
-            this.reserveTransfer(map_id, map.x, map.y, StartDirection, 0);
+            const map_id = Potadra_checkName($dataMapInfos, map.mapId, 0);
+            if (map_id !== 0) {
+                this.reserveTransfer(map_id, map.x, map.y, StartDirection, 0);
+            } else {
+                const mapId = $dataSystem.startMapId;
+                const x = $dataSystem.startX;
+                const y = $dataSystem.startY;
+                this.reserveTransfer(mapId, x, y, StartDirection, 0);
+            }
         };
     }
 })();

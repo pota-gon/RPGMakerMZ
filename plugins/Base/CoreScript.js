@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-コアスクリプト Ver0.5.4(2025/1/20)
+コアスクリプト Ver0.5.5(2025/5/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/CoreScript.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.5.5: Items パラメータの説明と初期値を修正
 * Ver0.5.4: スキル・アイテムに使用効果TP増加がある場合、最大TPのとき使用不可になる機能追加
 * Ver0.5.3
 - プレイヤーの初期向きを StartPosition.js に移行
@@ -51,8 +52,9 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
 
 @param Items
 @type struct<ItemList>[]
-@text 初期に所持するアイテム
+@text 初期所持アイテム
 @desc 初期に所持するアイテム
+@default []
 
 @param isTopHelpMode
 @type boolean

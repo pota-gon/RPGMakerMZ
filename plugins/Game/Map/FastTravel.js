@@ -1,12 +1,15 @@
 /*:
 @plugindesc
-ファストトラベル Ver1.0.0(2025/2/27)
+ファストトラベル Ver1.0.1(2025/5/29)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/FastTravel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.1
+- メニュー表示名の説明を修正
+- コモンイベントの設定の説明に「0(なし)の場合、使用しません」を追加
 * Ver1.0.0
 - 「@type location」に対応(再設定が必要になります)
   + マップIDの指定
@@ -45,7 +48,7 @@ https://opensource.org/licenses/mit-license.php
 @param MenuCommand
 @type combo
 @text メニュー表示名
-@desc メニューの表示名
+@desc メニューの表示が出来るコマンド
 空文字でメニューに表示しません
 @default ファストトラベル
 @option ファストトラベル
@@ -225,6 +228,7 @@ https://opensource.org/licenses/mit-license.php
 @type common_event
 @text コモンイベントID
 @desc 移動処理のコモンイベントID
+0(なし)の場合、使用しません
 @default 0
 @min 0
 
@@ -233,6 +237,7 @@ https://opensource.org/licenses/mit-license.php
     @type common_event
     @text 移動前コモンイベントID
     @desc 移動前のコモンイベントID
+    0(なし)の場合、使用しません
     @default 0
     @min 0
 
@@ -241,6 +246,7 @@ https://opensource.org/licenses/mit-license.php
     @type common_event
     @text 移動後コモンイベントID
     @desc 移動後のコモンイベントID
+    0(なし)の場合、使用しません
     @default 0
     @min 0
 
