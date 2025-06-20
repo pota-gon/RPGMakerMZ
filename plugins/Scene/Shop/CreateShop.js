@@ -1,12 +1,16 @@
 /*:
 @plugindesc
-合成屋 Ver0.12.0(2025/5/29)
+合成屋 Ver0.13.0(2025/6/20)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Shop/CreateShop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.13.0
+- 商品名と必要素材にアイテム・武器・防具のIDを指定できるように変更
+- ShopScene_Extension.js 導入時は、必要素材の切り替えをshiftキーになるように変更(競合対応)
+- リファクタリング
 * Ver0.12.0
 - Qキー(pagedown)とW(pageup)キーを使用していた部分は、
   合成アイテムのスクロールと競合するため、移動左キー(left)と移動右(right)キーで動作するように変更
@@ -183,24 +187,25 @@ https://opensource.org/licenses/mit-license.php
 @type string
 @text 商品名
 @desc 商品名(アイテム)を名前で指定
+アイテムのIDが指定されている場合は、使用しません
 
     @param item
     @parent name
     @type item
-    @text アイテム名検索用
-    @desc このパラメータはデータとしては使用しません
+    @text アイテムID
+    @desc 商品名(アイテム)をIDで指定
 
     @param weapon
     @parent name
     @type weapon
-    @text 武器名検索用
-    @desc このパラメータはデータとしては使用しません
+    @text 武器ID
+    @desc 商品名(武器)をIDで指定
 
     @param armor
     @parent name
     @type armor
-    @text 防具名検索用
-    @desc このパラメータはデータとしては使用しません
+    @text 防具ID
+    @desc 商品名(防具)をIDで指定
 
 @param price
 @type number
@@ -220,24 +225,25 @@ https://opensource.org/licenses/mit-license.php
 @type string
 @text 必要素材名
 @desc 必要素材名(アイテム)を名前で指定
+アイテムのIDが指定されている場合は、使用しません
 
     @param item
     @parent name
     @type item
-    @text アイテム名検索用
-    @desc このパラメータはデータとしては使用しません
+    @text アイテムID
+    @desc 商品名(アイテム)をIDで指定
 
     @param weapon
     @parent name
     @type weapon
-    @text 武器名検索用
-    @desc このパラメータはデータとしては使用しません
+    @text 武器ID
+    @desc 商品名(武器)をIDで指定
 
     @param armor
     @parent name
     @type armor
-    @text 防具名検索用
-    @desc このパラメータはデータとしては使用しません
+    @text 防具ID
+    @desc 商品名(防具)をIDで指定
 
 @param count
 @type number
@@ -267,31 +273,25 @@ https://opensource.org/licenses/mit-license.php
     function Potadra_getPluginParams(plugin_name) {
         return Potadra_isPlugin(plugin_name) ? PluginManager.parameters(plugin_name) : false;
     }
-    function Potadra_search(data, id, column = "name", search_column = "id", val = "", initial = 1) {
-        if (!id) return val;
-        for (let i = initial; i < data.length; i++) {
-            if (!data[i]) continue;
-            if (search_column && data[i][search_column] == id) {
-                val = column ? data[i][column] : data[i];
-                break;
-            } else if (i == id) {
-                val = data[i];
-                break;
+    function Potadra_itemKindSearch(name, item_id, weapon_id, armor_id, column = false) {
+        const categories = [
+            { kind: 0, data: $dataItems, id: item_id },
+            { kind: 1, data: $dataWeapons, id: weapon_id },
+            { kind: 2, data: $dataArmors, id: armor_id }
+        ];
+        for (const { kind, data, id } of categories) {
+            if (id !== 0) {
+                const item = column === "id" ? id : data[id];
+                if (item) return [kind, item];
             }
         }
-        return val;
-    }
-    function Potadra_itemSearch(name, column = false, search_column = "name", val = false, initial = 1) {
-        const item = Potadra_search($dataItems, name, column, search_column, val, initial);
-        if (item) return item;
-        const weapon = Potadra_search($dataWeapons, name, column, search_column, val, initial);
-        if (weapon) return weapon;
-        const armor = Potadra_search($dataArmors, name, column, search_column, val, initial);
-        if (armor) return armor;
-        return false;
-    }
-    function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
-        return Potadra_search(data, name, column, search_column, val, initial);
+        if (name) {
+            for (const { kind, data } of categories) {
+                const item = Potadra.nameSearch(data, name, column);
+                if (item) return [kind, item];
+            }
+        }
+        return [0, false];
     }
     function Potadra_checkSwitch(switch_no, bool = true) {
         return switch_no === 0 || $gameSwitches.value(switch_no) === bool;
@@ -324,6 +324,9 @@ https://opensource.org/licenses/mit-license.php
     const MiniWindow          = Potadra_convertBool(params.MiniWindow);
     const SubCommand          = Potadra_convertBool(params.SubCommand);
 
+    // 他プラグイン連携(プラグインの導入有無)
+    const ShopScene_Extension = Potadra_isPlugin('ShopScene_Extension');
+
     // 他プラグイン連携(パラメータ取得)
     const max_item_params   = Potadra_getPluginParams('MaxItem');
     const MaxDigits         = max_item_params ? String(max_item_params.MaxDigits || '00') : '00';
@@ -350,50 +353,54 @@ https://opensource.org/licenses/mit-license.php
         }
     }
 
+    // 必要素材の設定
+    function set_material_lists(good_data) {
+        let material_lists = [];
+        try {
+            material_lists = JSON.parse(good_data.materials);
+        } catch (e) {
+            if (NoneMaterialMessage) {
+                const message = "必要素材が設定されていません。プラグインの設定を見直してください。";
+                console.warn(message);
+                if (NoneMaterialError) throw new ParameterError(message);
+            }
+        }
+        return material_lists;
+    }
+    function set_materials(material_lists, i) {
+        materials[i] = [];
+        for (let j = 0; j < material_lists.length; j++) {
+            const material  = JSON.parse(material_lists[j]);
+            const item_id   = Number(material.item || 0);
+            const weapon_id = Number(material.weapon || 0);
+            const armor_id  = Number(material.armor || 0);
+            const item      = Potadra_itemKindSearch(material.name, item_id, weapon_id, armor_id)[1];
+            const count     = Number(material.count);
+            materials[i].push({"item": item, "count": count});
+        }
+    }
+
     // 実際の処理
     function create_shop(good_lists, buy_only) {
         const goods = [];
 
         for (let i = 0; i < good_lists.length; i++) {
-            const good_data      = JSON.parse(good_lists[i]);
-            const name           = good_data.name;
-            const price          = good_data.price;
+            const good_data = JSON.parse(good_lists[i]);
+            const name      = good_data.name;
+            const price     = good_data.price;
+            const item_id   = Number(good_data.item || 0);
+            const weapon_id = Number(good_data.weapon || 0);
+            const armor_id  = Number(good_data.armor || 0);
 
-            let material_lists = [];
-            try {
-                material_lists = JSON.parse(good_data.materials);
-            } catch (e) {
-                if (NoneMaterialMessage) {
-                    const message = "必要素材が設定されていません。プラグインの設定を見直してください。";
-                    console.warn(message);
-                    if (NoneMaterialError) throw new ParameterError(message);
-                }
-            }
-            materials[i] = [];
-            for (let j = 0; j < material_lists.length; j++) {
-                const material = JSON.parse(material_lists[j]);
-                const item  = Potadra_itemSearch(material.name);
-                const count = Number(material.count);
-                materials[i].push({"item": item, "count": count});
-            }
+            // 必要素材の設定
+            let material_lists = set_material_lists(good_data);
+            set_materials(material_lists, i);
 
-            // アイテム
-            let type = 0;
-            let val  = Potadra_nameSearch($dataItems, name);
-
-            if (!val) {
-                // 武器
-                type = 1;
-                val  = Potadra_nameSearch($dataWeapons, name);
-                if (!val) {
-                    // 防具
-                    type = 2;
-                    val  = Potadra_nameSearch($dataArmors, name);
-                }
-            }
-
+            // 商品の設定
+            const item_infos = Potadra_itemKindSearch(name, item_id, weapon_id, armor_id, "id");
+            const val = item_infos[1];
             if (val) {
-                goods.push([type, val, 1, price]);
+                goods.push([item_infos[0], val, 1, price]);
             }
         }
 
@@ -780,7 +787,12 @@ https://opensource.org/licenses/mit-license.php
          * @returns {boolean} ページ更新可否
          */
         isPageChangeRequested() {
-            if (Input.isTriggered("right")) {
+            let right_key = "right";
+
+            // ShopScene_Extension.js 導入時は、shiftキーに変更
+            if (ShopScene_Extension) right_key = "shift";
+
+            if (Input.isTriggered(right_key)) {
                 return true;
             }
             if (TouchInput.isTriggered() && this.isTouchedInsideFrame()) {
@@ -795,7 +807,7 @@ https://opensource.org/licenses/mit-license.php
          * @returns {boolean} ページ更新可否
          */
         isPageBeforeRequested() {
-            if (Input.isTriggered("left")) {
+            if (!ShopScene_Extension && Input.isTriggered("left")) {
                 return true;
             }
             return false;
