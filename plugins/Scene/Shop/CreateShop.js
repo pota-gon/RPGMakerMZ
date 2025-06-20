@@ -1,12 +1,19 @@
 /*:
 @plugindesc
-合成屋 Ver0.13.0(2025/6/20)
+合成屋 Ver0.13.1(2025/6/21)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Shop/CreateShop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.13.1
+- 購入個数ウィンドウのバグ修正
+  + 購入個数を変更したときに必要素材のページが切り替わるバグ修正
+  + 購入個数を変更したときに必要素材が更新されないバグ修正
+- 複数ページがある合成品から、カーソル上下・ページ切り替え時に必要素材が表示されないことがあるバグ修正
+  商品に変更があった場合は、ページ数を1ページ目にするようにしました
+- リファクタリング
 * Ver0.13.0
 - 商品名と必要素材にアイテム・武器・防具のIDを指定できるように変更
 - ShopScene_Extension.js 導入時は、必要素材の切り替えをshiftキーになるように変更(競合対応)
@@ -392,16 +399,16 @@ https://opensource.org/licenses/mit-license.php
             const weapon_id = Number(good_data.weapon || 0);
             const armor_id  = Number(good_data.armor || 0);
 
-            // 必要素材の設定
-            let material_lists = set_material_lists(good_data);
-            set_materials(material_lists, i);
-
             // 商品の設定
             const item_infos = Potadra_itemKindSearch(name, item_id, weapon_id, armor_id, "id");
             const val = item_infos[1];
             if (val) {
                 goods.push([item_infos[0], val, 1, price]);
             }
+
+            // 必要素材の設定
+            let material_lists = set_material_lists(good_data);
+            set_materials(material_lists, i);
         }
 
         SceneManager.push(Scene_CreateShop);
@@ -508,6 +515,30 @@ https://opensource.org/licenses/mit-license.php
         updateHelp() {
             super.updateHelp();
             this._materialWindow.setIndex(this.index());
+        }
+
+        // カーソル上下・ページ切り替え時に_pageIndexを0(初期値)にする
+        cursorDown(wrap) {
+            super.cursorDown(wrap);
+            if (this._materialWindow) this._materialWindow.resetPage();
+        }
+        cursorUp(wrap) {
+            super.cursorUp(wrap);
+            if (this._materialWindow) this._materialWindow.resetPage();
+        }
+        cursorPagedown() {
+            const oldIndex = this.index(); // 変更前の index を保持
+            super.cursorPagedown();        // 通常のページ送り
+            if (this.index() !== oldIndex && this._materialWindow) {
+                this._materialWindow.resetPage(); // index が変わったときのみページをリセット
+            }
+        }
+        cursorPageup() {
+            const oldIndex = this.index(); // 変更前の index を保持
+            super.cursorPageup();          // 通常のページ送り
+            if (this.index() !== oldIndex && this._materialWindow) {
+                this._materialWindow.resetPage(); // index が変わったときのみページをリセット
+            }
         }
 
         /**
@@ -661,6 +692,15 @@ https://opensource.org/licenses/mit-license.php
         }
 
         /**
+         * 個数入力ウィンドウの設定
+         *
+         * @param {} materialWindow -
+         */
+        setNumberWindow(numberWindow) {
+            this._numberWindow = numberWindow;
+        }
+
+        /**
          * インデックスの設定
          *
          * @param {numner} index - インデックス
@@ -748,6 +788,14 @@ https://opensource.org/licenses/mit-license.php
         }
 
         /**
+         * ページの最初に移動する
+         */
+        resetPage() {
+            this._pageIndex = 0;
+            this.refresh();
+        }
+
+        /**
          * ページの更新
          */
         updatePage() {
@@ -778,6 +826,10 @@ https://opensource.org/licenses/mit-license.php
          * @returns {boolean} ページ更新可否
          */
         isPageChangeEnabled() {
+            // NumberWindow が表示されているときは無効化
+            if (this._numberWindow && this._numberWindow.visible) {
+                return false;
+            }
             return this.visible && this.maxPages() >= 2;
         }
 
@@ -847,9 +899,9 @@ https://opensource.org/licenses/mit-license.php
             this.createGoldWindow();
             this.createCommandWindow();
             this.createDummyWindow();
+            this.createMaterialWindow(); // ここを追加
             this.createNumberWindow();
             this.createStatusWindow();
-            this.createMaterialWindow(); // ここを追加
             this.createBuyWindow();
             this.createCategoryWindow();
             this.createSellWindow();
@@ -909,6 +961,7 @@ https://opensource.org/licenses/mit-license.php
             this._numberWindow.setHandler("ok", this.onNumberOk.bind(this));
             this._numberWindow.setHandler("cancel", this.onNumberCancel.bind(this));
             this._numberWindow.setMaterialWindow(this._materialWindow); // ここを追加
+            this._materialWindow.setNumberWindow(this._numberWindow);
             this.addWindow(this._numberWindow);
         }
 
