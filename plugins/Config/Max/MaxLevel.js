@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-レベル上限突破 Ver0.14.4(2024/11/3)
+レベル上限突破 Ver0.14.5(2025/7/22)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Max/MaxLevel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.14.5: 職業でパラメータ設定指定できるように修正
 * Ver0.14.4: パラメータ名に HP・MP など省略系で指定できるように修正
 * Ver0.14.3
 - 初期値と成長率をプラグインパラメータで設定出来るように修正
@@ -38,7 +39,7 @@ https://opensource.org/licenses/mit-license.php
 
 ### 能力値設定
 初期値と成長率を設定します。職業の能力値設定は無効になり  
-アクターのメモ欄で設定するようになります
+アクター OR 職業のメモ欄で設定するようになります
 
 <初期値:120,120,15,15,15,15,15,15>
 => アクターの初期値を HP,MP,攻撃力,防御力,魔法力,魔法防御,敏捷性,運 
@@ -466,7 +467,10 @@ https://opensource.org/licenses/mit-license.php
      */
     Game_Actor.prototype.paramBase = function(paramId) {
         const actor = this.actor();
-        let data = Potadra_metaData(actor.meta[TextManager.param(paramId)], ',');
+
+        let class_data = Potadra_metaData(this.currentClass().meta[TextManager.param(paramId)], ',');
+        let actor_data = Potadra_metaData(actor.meta[TextManager.param(paramId)], ',');
+        let data = actor_data ? actor_data : class_data;
         let init_param, param; // 初期値, 成長率
 
         if (paramId === 0 && !data) {

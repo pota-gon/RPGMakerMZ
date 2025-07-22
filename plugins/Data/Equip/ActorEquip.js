@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-アクター装備 Ver1.0.3(2023/11/9)
+アクター装備 Ver1.0.4(2025/7/22)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Data/Equip/ActorEquip.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.4: bestEquipItemの処理を共通化
 * Ver1.0.3: エラーが発生するバグ修正
 
 Copyright (c) 2025 ポテトードラゴン
@@ -37,6 +38,57 @@ https://opensource.org/licenses/mit-license.php
     'use strict';
 
     // ベースプラグインの処理
+    const best_equip_item_smlx_skill_label = Potadra_isPlugin('SMLXSkillLabel');
+    const best_equip_item_change_slot      = Potadra_isPlugin('ChangeSlot');
+    const best_equip_item_actor_equip      = Potadra_isPlugin('ActorEquip');
+    const best_equip_item_unique_equip     = Potadra_isPlugin('UniqueEquip');
+    if (best_equip_item_smlx_skill_label || best_equip_item_change_slot || best_equip_item_actor_equip || best_equip_item_unique_equip) {
+        function normal_performance(actor, items) {
+            let bestItem = null;
+            let bestPerformance = -1000;
+            for (let i = 0; i < items.length; i++) {
+                const performance = actor.calcEquipItemPerformance(items[i]);
+                if (performance > bestPerformance) {
+                    bestPerformance = performance;
+                    bestItem = items[i];
+                }
+            }
+            return bestItem;
+        }
+        function same_performance(actor, items) {
+            let bestItem = null;
+            let bestPerformance = -1000;
+            let same_items = [];
+            for (let i = 0; i < items.length; i++) {
+                const performance = actor.calcEquipItemPerformance(items[i]);
+                if (performance > bestPerformance) {
+                    bestPerformance = performance;
+                    bestItem = items[i];
+                    same_items = [];
+                } else if (performance === bestPerformance) {
+                    same_items.push(items[i]);
+                }
+            }
+            if (same_items.length > 0) {
+                bestItem = same_items[Math.floor(Math.random() * same_items.length)];
+            }
+            return bestItem;
+        }
+        Game_Actor.prototype.bestEquipItem = function(slotId) {
+            const etypeId = this.equipSlots()[slotId];
+            const items = this.PotadraEquipItems(slotId, etypeId);
+            let bestItem = null;
+            if (best_equip_item_unique_equip) {
+                bestItem = same_performance(this, items);
+            } else {
+                bestItem = normal_performance(this, items);
+            }
+            return bestItem;
+        };
+    }
+    function Potadra_isPlugin(plugin_name) {
+        return PluginManager._scripts.includes(plugin_name);
+    }
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
@@ -71,6 +123,7 @@ https://opensource.org/licenses/mit-license.php
     function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
         return Potadra_search(data, name, column, search_column, val, initial);
     }
+
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
@@ -205,20 +258,7 @@ https://opensource.org/licenses/mit-license.php
      * @param {number} slotId - スロットID
      * @returns {} 
      */
-    Game_Actor.prototype.bestEquipItem = function(slotId) {
-        const etypeId = this.equipSlots()[slotId];
-        const items = this.PotadraEquipItems(slotId, etypeId);
-        let bestItem = null;
-        let bestPerformance = -1000;
-        for (let i = 0; i < items.length; i++) {
-            const performance = this.calcEquipItemPerformance(items[i]);
-            if (performance > bestPerformance) {
-                bestPerformance = performance;
-                bestItem = items[i];
-            }
-        }
-        return bestItem;
-    };
+    // 元の PotadraEquipItems 保持
     if (typeof Game_Actor.prototype.PotadraEquipItems !== 'function') {
         Game_Actor.prototype.PotadraEquipItems = function(slotId, etypeId) {
             return $gameParty.equipItems().filter(item => item.etypeId === etypeId && this.canEquip(item));

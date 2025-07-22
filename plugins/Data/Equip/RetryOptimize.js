@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-最強装備判定リトライ Ver1.0.0(2022/12/2)
+最強装備判定リトライ Ver1.0.1(2025/7/22)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Data/Equip/RetryOptimize.js
 @orderBefore ExcludeAtOptimize
@@ -8,6 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.1: 高速化対応
 * Ver1.0.0: 公開
 
 Copyright (c) 2025 ポテトードラゴン
@@ -44,6 +45,7 @@ https://opensource.org/licenses/mit-license.php
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
+
     function Potadra_meta(meta, tag) {
         if (meta) {
             const data = meta[tag];
@@ -70,28 +72,47 @@ https://opensource.org/licenses/mit-license.php
      * 最強装備
      */
     Game_Actor.prototype.optimizeEquipments = function() {
-        const maxSlots = this.equipSlots().length;
-        for (let i = 0; i < maxSlots; i++) {
-            const equip = this.equips()[i];
+        // 1. 計算中の能力値再計算を無効化
+        // refreshは非常に重い処理なので、最適化中は一時的に何もしない関数に置き換えます。
+        const originalRefresh = this.refresh;
+        this.refresh = function() {};
 
-            if (equip && Potadra_meta(equip.meta, SkipOptimize)) {
+        // UniqueEquip.js の特殊処理を一時的に無効化
+        if (window.Potadra && window.Potadra_UniqueEquip) {
+            window.Potadra_UniqueEquip.isOptimizing = true;
+        }
+
+        const maxSlots = this.equipSlots().length;
+
+        // 2. 最適化対象の装備をすべて外す
+        for (let i = 0; i < maxSlots; i++) {
+            const item = this.equips()[i];
+            if (item && Potadra_meta(item.meta, SkipOptimize)) {
                 continue;
             }
-
             if (this.isEquipChangeOk(i)) {
                 this.changeEquip(i, null);
             }
+        }
 
-            if (this.isEquipChangeOk(i)) {
-                this.changeEquip(i, this.bestEquipItem(i));
+        // 3. 最強装備を決定（2回実行して依存関係を解決）
+        for (let j = 0; j < 2; j++) {
+            for (let i = 0; i < maxSlots; i++) {
+                if (this.isEquipChangeOk(i)) {
+                    const best_equip_item = this.bestEquipItem(i);
+                    if (best_equip_item) {
+                        this.changeEquip(i, this.bestEquipItem(i));
+                    }
+                }
             }
         }
 
-        for (let i = 0; i < maxSlots; i++) {
-            if (!this.equips()[i] && this.isEquipChangeOk(i)) {
-                this.changeEquip(i, this.bestEquipItem(i));
-            }
+        // 4. 処理を元に戻し、最後に一度だけ能力値を再計算
+        this.refresh = originalRefresh;
+        if (window.Potadra && window.Potadra_UniqueEquip) {
+            window.Potadra_UniqueEquip.isOptimizing = false;
         }
+        this.refresh();
     };
 
     /**

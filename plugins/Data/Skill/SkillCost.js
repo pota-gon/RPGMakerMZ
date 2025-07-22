@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-スキルコスト Ver0.8.0(2025/1/18)
+スキルコスト Ver0.8.1(2025/7/22)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Data/Skill/SkillCost.js
 @orderAfter Madante
@@ -8,6 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.8.1: ヘルプ更新、リファクタリング
 * Ver0.8.0
 - DarkPlasma_SkillCooldown.js 導入時にCTの表示が遅くなる問題修正
 - 攻撃スキルを消費0にする機能追加
@@ -29,34 +30,70 @@ https://opensource.org/licenses/mit-license.php
 
 @help
 ## 概要
-様々なスキル拡張機能を追加します
+スキルやアイテムに様々なコスト消費機能を追加するプラグインです。
+HP、MP、TP、所持金、アイテムなど多様なコストを設定できます。
+
+## 基本機能
+- HP/MP/TPの固定値・割合消費
+- 所持金の固定値・割合消費  
+- アイテム/武器/防具の固定値・割合消費
+- 複数コストの同時表示対応
+- 通常攻撃のコスト無効化
+- スキルコスト表示幅の調整
 
 ## 使い方
-スキルのメモ欄に以下のように記載してください  
-※ アイテムにも同様の設定が可能です
+スキルまたはアイテムのメモ欄に以下のタグを記載してください。
 
+### HP・MP・TP消費
 <HP消費: 100>  
-=> 現在の HP -100
+=> 現在のHP -100
 
 <HP割合消費: 10%>  
-=> 現在の HP -10%
+=> 現在のHP -10%
 
-<MP割合消費: 100%>  
-=> 現在の MP -100%
+<MP割合消費: 50%>  
+=> 現在のMP -50%
 
-<MaxHP割合消費: 100%>  
-=> MHP -100%
+<MaxHP割合消費: 25%>  
+=> 最大HP -25%
 
-<MaxMP割合消費: 10%>  
-=> MMP -10%
+<MaxMP割合消費: 30%>  
+=> 最大MP -30%
 
+### 所持金消費
 <所持金消費: 10000>  
-=> 通貨単位は不要
+=> 所持金 -10000（通貨単位は不要）
 
-<アイテム消費: アイテムID OR アイテム名,消費数>  
-=> 名前の場合は、武器も防具も指定可能  
+<所持金割合消費: 20%>  
+=> 所持金 -20%
+
+### アイテム消費
+<アイテム消費: アイテムID,消費数>  
+<アイテム消費: アイテム名,消費数>  
+=> 指定したアイテムを消費
+
 <武器消費: 武器ID,消費数>  
-<防具消費: 防具ID,消費数>
+<防具消費: 防具ID,消費数>  
+=> 指定した武器・防具を消費
+
+<アイテム割合消費: アイテム名,割合%>  
+<武器割合消費: 武器ID,割合%>  
+<防具割合消費: 防具ID,割合%>  
+=> 所持数の割合で消費
+
+## 使用例
+```
+<HP消費: 50>
+<MP割合消費: 25%>
+<所持金消費: 1000>
+<アイテム消費: ポーション,2>
+```
+
+## 注意事項
+- 割合消費で計算結果が1未満の場合、自動的に1に切り上げられます
+- 通常攻撃消費0が有効な場合、攻撃スキルはすべてのコストが無効化されます
+- アイテム名での指定時は、武器・防具も検索対象に含まれます
+- 複数のコストを同時に設定した場合、すべての条件を満たす必要があります
 
 @param FixSkillCostSize
 @type boolean
@@ -256,31 +293,31 @@ https://opensource.org/licenses/mit-license.php
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
-    const params      = PluginManager.parameters(plugin_name);
+    const params = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用定数
-    const FixSkillCostSize         = Potadra_convertBool(params.FixSkillCostSize);
-    const ItemCostName             = String(params.ItemCostName || '個');
-    const AttackCostZero           = Potadra_convertBool(params.AttackCostZero);
-    const HpCostColor              = Number(params.HpCostColor || 21);
-    const GoldCostColor            = Number(params.GoldCostColor || 14);
-    const ItemCostColor            = Number(params.ItemCostColor || 0);
-    const HpName                   = String(params.HpName);
-    const MpName                   = String(params.MpName);
-    const TpName                   = String(params.TpName);
-    const HpCostMetaName           = String(params.HpCostMetaName || 'HP消費');
-    const GoldCostMetaName         = String(params.GoldCostMetaName || '所持金消費');
-    const ItemCostMetaName         = String(params.ItemCostMetaName || 'アイテム消費');
-    const WeaponCostMetaName       = String(params.WeaponCostMetaName || '武器消費');
-    const ArmorCostMetaName        = String(params.ArmorItemCostMetaName || '防具消費');
-    const HpRateCostMetaName       = String(params.HpRateCostMetaName || 'HP割合消費');
-    const MpRateCostMetaName       = String(params.MpRateCostMetaName || 'MP割合消費');
-    const GoldRateCostMetaName     = String(params.GoldRateCostMetaName || '所持金割合消費');
-    const ItemRateCostMetaName     = String(params.ItemRateCostMetaName || 'アイテム割合消費');
-    const WeaponRateCostMetaName   = String(params.WeaponRateCostMetaName || '武器割合消費');
-    const ArmorRateCostMetaName    = String(params.ArmorItemRateCostMetaName || '防具割合消費');
-    const MaxHpRateCostMetaName    = String(params.MaxHpRateCostMetaName || 'MaxHP割合消費');
-    const MaxMpRateCostMetaName    = String(params.MaxMpRateCostMetaName || 'MaxMP割合消費');
+    const FixSkillCostSize = Potadra_convertBool(params.FixSkillCostSize);
+    const ItemCostName = String(params.ItemCostName || '個');
+    const AttackCostZero = Potadra_convertBool(params.AttackCostZero);
+    const HpCostColor = Number(params.HpCostColor || 21);
+    const GoldCostColor = Number(params.GoldCostColor || 14);
+    const ItemCostColor = Number(params.ItemCostColor || 0);
+    const HpName = String(params.HpName);
+    const MpName = String(params.MpName);
+    const TpName = String(params.TpName);
+    const HpCostMetaName = String(params.HpCostMetaName || 'HP消費');
+    const GoldCostMetaName = String(params.GoldCostMetaName || '所持金消費');
+    const ItemCostMetaName = String(params.ItemCostMetaName || 'アイテム消費');
+    const WeaponCostMetaName = String(params.WeaponCostMetaName || '武器消費');
+    const ArmorCostMetaName = String(params.ArmorItemCostMetaName || '防具消費');
+    const HpRateCostMetaName = String(params.HpRateCostMetaName || 'HP割合消費');
+    const MpRateCostMetaName = String(params.MpRateCostMetaName || 'MP割合消費');
+    const GoldRateCostMetaName = String(params.GoldRateCostMetaName || '所持金割合消費');
+    const ItemRateCostMetaName = String(params.ItemRateCostMetaName || 'アイテム割合消費');
+    const WeaponRateCostMetaName = String(params.WeaponRateCostMetaName || '武器割合消費');
+    const ArmorRateCostMetaName = String(params.ArmorItemRateCostMetaName || '防具割合消費');
+    const MaxHpRateCostMetaName = String(params.MaxHpRateCostMetaName || 'MaxHP割合消費');
+    const MaxMpRateCostMetaName = String(params.MaxMpRateCostMetaName || 'MaxMP割合消費');
 
     // 他プラグイン連携(プラグインの導入有無)
     const DarkPlasma_SkillCooldown = Potadra_isPlugin('DarkPlasma_SkillCooldown');
@@ -292,7 +329,7 @@ https://opensource.org/licenses/mit-license.php
          *
          * @returns {} 
          */
-        Window_SkillList.prototype.costWidth = function() {
+        Window_SkillList.prototype.costWidth = function () {
             return this.textWidth("0000");
         };
     }
@@ -302,7 +339,7 @@ https://opensource.org/licenses/mit-license.php
      *
      * @returns {} 
      */
-    ColorManager.hpCostColor = function() {
+    ColorManager.hpCostColor = function () {
         return this.textColor(HpCostColor);
     };
 
@@ -311,7 +348,7 @@ https://opensource.org/licenses/mit-license.php
      *
      * @returns {} 
      */
-    ColorManager.goldCostColor = function() {
+    ColorManager.goldCostColor = function () {
         return this.textColor(GoldCostColor);
     };
 
@@ -320,7 +357,7 @@ https://opensource.org/licenses/mit-license.php
      *
      * @returns {} 
      */
-    ColorManager.itemCostColor = function() {
+    ColorManager.itemCostColor = function () {
         return this.textColor(ItemCostColor);
     };
 
@@ -353,8 +390,8 @@ https://opensource.org/licenses/mit-license.php
      */
     function canPaySkillCommonCost(meta, param, cost, meta_name, rate_meta_name, max_meta_name) {
         const normal_cost = Potadra_meta(meta, meta_name);
-        const rate_cost   = Potadra_meta(meta, rate_meta_name);
-        const max_cost    = Potadra_meta(meta, max_meta_name);
+        const rate_cost = Potadra_meta(meta, rate_meta_name);
+        const max_cost = Potadra_meta(meta, max_meta_name);
         if (rate_cost) {
             return param > 0 && param >= cost;
         } else if (normal_cost || max_cost) {
@@ -373,7 +410,7 @@ https://opensource.org/licenses/mit-license.php
      * 
      */
     const _Game_BattlerBase_initMembers = Game_BattlerBase.prototype.initMembers;
-    Game_BattlerBase.prototype.initMembers = function() {
+    Game_BattlerBase.prototype.initMembers = function () {
         _Game_BattlerBase_initMembers.apply(this, arguments);
         this._item = null;
     };
@@ -384,10 +421,10 @@ https://opensource.org/licenses/mit-license.php
      * @param {} skill - 
      * @returns {} 
      */
-    Game_BattlerBase.prototype.skillHpCost = function(skill) {
+    Game_BattlerBase.prototype.skillHpCost = function (skill) {
         let cost = 0;
-        const hp_cost          = Potadra_meta(skill.meta, HpCostMetaName);
-        const hp_rate_cost     = Potadra_meta(skill.meta, HpRateCostMetaName);
+        const hp_cost = Potadra_meta(skill.meta, HpCostMetaName);
+        const hp_rate_cost = Potadra_meta(skill.meta, HpRateCostMetaName);
         const max_hp_rate_cost = Potadra_meta(skill.meta, MaxHpRateCostMetaName);
         if (hp_cost) { // HP消費
             cost += Number(hp_cost || 0);
@@ -408,9 +445,9 @@ https://opensource.org/licenses/mit-license.php
      * @returns {} 
      */
     const _Game_BattlerBase_skillMpCost = Game_BattlerBase.prototype.skillMpCost;
-    Game_BattlerBase.prototype.skillMpCost = function(skill) {
+    Game_BattlerBase.prototype.skillMpCost = function (skill) {
         let cost = _Game_BattlerBase_skillMpCost.apply(this, arguments);
-        const mp_rate_cost     = Potadra_meta(skill.meta, MpRateCostMetaName);
+        const mp_rate_cost = Potadra_meta(skill.meta, MpRateCostMetaName);
         const max_mp_rate_cost = Potadra_meta(skill.meta, MaxMpRateCostMetaName);
         if (mp_rate_cost) { // MP割合消費
             cost += ceilZeroCost(this.mp, mp_rate_cost, cost);
@@ -427,9 +464,9 @@ https://opensource.org/licenses/mit-license.php
      * @param {} skill - 
      * @returns {} 
      */
-    Game_BattlerBase.prototype.skillGoldCost = function(skill) {
+    Game_BattlerBase.prototype.skillGoldCost = function (skill) {
         let cost = 0;
-        const gold_cost      = Potadra_meta(skill.meta, GoldCostMetaName);
+        const gold_cost = Potadra_meta(skill.meta, GoldCostMetaName);
         const gold_rate_cost = Potadra_meta(skill.meta, GoldRateCostMetaName);
         if (gold_cost) { // 所持金消費
             cost += Number(gold_cost || 0);
@@ -446,15 +483,15 @@ https://opensource.org/licenses/mit-license.php
      * @param {} skill - 
      * @returns {} 
      */
-    Game_BattlerBase.prototype.skillItemCost = function(skill) {
+    Game_BattlerBase.prototype.skillItemCost = function (skill) {
         let cost = 0;
         let item = 1;
-        const item_cost           = Potadra_metaData(skill.meta[ItemCostMetaName], ',');
-        const weapon_cost         = Potadra_metaData(skill.meta[WeaponCostMetaName], ',');
-        const armor_cost          = Potadra_metaData(skill.meta[ArmorCostMetaName], ',');
-        const item_rate_cost      = Potadra_metaData(skill.meta[ItemRateCostMetaName], ',');
-        const weapon_rate_cost    = Potadra_metaData(skill.meta[WeaponRateCostMetaName], ',');
-        const armor_rate_cost     = Potadra_metaData(skill.meta[ArmorRateCostMetaName], ',');
+        const item_cost = Potadra_metaData(skill.meta[ItemCostMetaName], ',');
+        const weapon_cost = Potadra_metaData(skill.meta[WeaponCostMetaName], ',');
+        const armor_cost = Potadra_metaData(skill.meta[ArmorCostMetaName], ',');
+        const item_rate_cost = Potadra_metaData(skill.meta[ItemRateCostMetaName], ',');
+        const weapon_rate_cost = Potadra_metaData(skill.meta[WeaponRateCostMetaName], ',');
+        const armor_rate_cost = Potadra_metaData(skill.meta[ArmorRateCostMetaName], ',');
         if (item_cost) { // アイテム消費
             item = item_cost[0];
             if (isNaN(item)) { // 文字列
@@ -498,7 +535,7 @@ https://opensource.org/licenses/mit-license.php
      * @param {} skill - 
      */
     const _Game_BattlerBase_paySkillCost = Game_BattlerBase.prototype.paySkillCost;
-    Game_BattlerBase.prototype.paySkillCost = function(skill) {
+    Game_BattlerBase.prototype.paySkillCost = function (skill) {
         if (attackCostZero(skill, this)) return true;
 
         _Game_BattlerBase_paySkillCost.apply(this, arguments);
@@ -515,7 +552,7 @@ https://opensource.org/licenses/mit-license.php
      * @param {} skill - 
      */
     const _Game_BattlerBase_canPaySkillCost = Game_BattlerBase.prototype.canPaySkillCost;
-    Game_BattlerBase.prototype.canPaySkillCost = function(skill) {
+    Game_BattlerBase.prototype.canPaySkillCost = function (skill) {
         const value = _Game_BattlerBase_canPaySkillCost.apply(this, arguments);
         if (!value) return false;
 
@@ -533,14 +570,14 @@ https://opensource.org/licenses/mit-license.php
      *
      * @param {} skill - 
      */
-    Game_BattlerBase.prototype.canPaySkillItemCost = function(skill) {
-        const cost                = this.skillItemCost(skill);
-        const item_cost           = Potadra_metaData(skill.meta[ItemCostMetaName], ',');
-        const weapon_cost         = Potadra_metaData(skill.meta[WeaponCostMetaName], ',');
-        const armor_cost          = Potadra_metaData(skill.meta[ArmorCostMetaName], ',');
-        const item_rate_cost      = Potadra_metaData(skill.meta[ItemRateCostMetaName], ',');
-        const weapon_rate_cost    = Potadra_metaData(skill.meta[WeaponRateCostMetaName], ',');
-        const armor_rate_cost     = Potadra_metaData(skill.meta[ArmorRateCostMetaName], ',');
+    Game_BattlerBase.prototype.canPaySkillItemCost = function (skill) {
+        const cost = this.skillItemCost(skill);
+        const item_cost = Potadra_metaData(skill.meta[ItemCostMetaName], ',');
+        const weapon_cost = Potadra_metaData(skill.meta[WeaponCostMetaName], ',');
+        const armor_cost = Potadra_metaData(skill.meta[ArmorCostMetaName], ',');
+        const item_rate_cost = Potadra_metaData(skill.meta[ItemRateCostMetaName], ',');
+        const weapon_rate_cost = Potadra_metaData(skill.meta[WeaponRateCostMetaName], ',');
+        const armor_rate_cost = Potadra_metaData(skill.meta[ArmorRateCostMetaName], ',');
         if (item_rate_cost || weapon_rate_cost || armor_rate_cost) {
             return $gameParty.numItems(this._item) > 0 && $gameParty.numItems(this._item) >= cost;
         } else if (item_cost || weapon_cost || armor_cost) {
@@ -556,7 +593,7 @@ https://opensource.org/licenses/mit-license.php
      * @returns {} 
      */
     const _Game_BattlerBase_canAttack = Game_BattlerBase.prototype.canAttack;
-    Game_BattlerBase.prototype.canAttack = function() {
+    Game_BattlerBase.prototype.canAttack = function () {
         if (AttackCostZero) return true;
 
         return _Game_BattlerBase_canAttack.apply(this, arguments);
@@ -569,7 +606,7 @@ https://opensource.org/licenses/mit-license.php
      * @returns {} 
      */
     const _Game_BattlerBase_canUse = Game_BattlerBase.prototype.canUse;
-    Game_BattlerBase.prototype.canUse = function(item) {
+    Game_BattlerBase.prototype.canUse = function (item) {
         if (attackCostZero(item, this)) return true;
 
         return _Game_BattlerBase_canUse.apply(this, arguments);
@@ -585,7 +622,7 @@ https://opensource.org/licenses/mit-license.php
      *
      * @param {} index - 
      */
-    Window_SkillList.prototype.drawItem = function(index) {
+    Window_SkillList.prototype.drawItem = function (index) {
         const skill = this.itemAt(index);
         if (skill) {
             const costWidth = this.costSkillWidth(skill);
@@ -606,7 +643,7 @@ https://opensource.org/licenses/mit-license.php
      * @param {} y - 
      * @param {} width - 
      */
-    Window_SkillList.prototype.drawSkillCost = function(skill, x, y, width) {
+    Window_SkillList.prototype.drawSkillCost = function (skill, x, y, width) {
         if (attackCostZero(skill, this._actor)) return true;
 
         if (this._actor.skillHpCost(skill) > 0 && this._actor.skillMpCost(skill) > 0 && this._actor.skillTpCost(skill) > 0) {
@@ -658,7 +695,7 @@ https://opensource.org/licenses/mit-license.php
      *
      * @returns {} 
      */
-    Window_SkillList.prototype.costSkillWidth = function(skill) {
+    Window_SkillList.prototype.costSkillWidth = function (skill) {
         if (attackCostZero(skill, this._actor)) return this.textWidth('');
 
         let cost = "000";

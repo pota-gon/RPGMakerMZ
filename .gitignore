@@ -8,6 +8,7 @@ plugins/Battle/Troop/TroopRewards.js
 plugins/Data/Equip/ActorSpecialEquip.js
 plugins/Data/Equip/AddEquipType.js
 plugins/Data/Equip/ClassSpecialEquip.js
+plugins/Data/Equip/UniqueEquip.js
 plugins/Data/Skill/RepeatSkill.js
 plugins/Data/Skill/SummonBattler.js
 plugins/Data/Skill/TpRecover.js
@@ -20,3 +21,4 @@ plugins/System/Ex/ExSkill.js
 plugins/System/Ex/ExState.js
 plugins/System/Ex/Highlight.js
 plugins/System/Max/MaxStatus.js
+plugins/System/Name/NameBattle.js
