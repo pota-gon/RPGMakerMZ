@@ -12,7 +12,7 @@ Exp固定 Ver1.0.3(2025/1/18)
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.
-https://opensource.org/licenses/mit-license.php
+https://opensource.org/license/mit
 
 @help
 ## 概要

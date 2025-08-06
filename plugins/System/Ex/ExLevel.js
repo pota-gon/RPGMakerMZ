@@ -12,7 +12,7 @@ Lv参照制御文字 Ver1.0.1(2025/7/22)
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.
-https://opensource.org/licenses/mit-license.php
+https://opensource.org/license/mit
 
 @help
 ## 概要
