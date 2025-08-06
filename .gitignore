@@ -8,6 +8,8 @@ plugins/Battle/Troop/TroopRewards.js
 plugins/Data/Equip/ActorSpecialEquip.js
 plugins/Data/Equip/AddEquipType.js
 plugins/Data/Equip/ClassSpecialEquip.js
+plugins/Data/Equip/NoActorSpecialEquip.js
+plugins/Data/Equip/NoClassSpecialEquip.js
 plugins/Data/Equip/UniqueEquip.js
 plugins/Data/Skill/RepeatSkill.js
 plugins/Data/Skill/SummonBattler.js

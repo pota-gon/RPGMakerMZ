@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-名前データベース Ver0.11.3(2025/7/22)
+名前データベース Ver0.11.4(2025/8/6)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.11.4: Debug.js との連携
 * Ver0.11.3: ヘルプを更新
 * Ver0.11.2
 - ステート有効度(特徴), ステート無効化(特徴), 攻撃時ステート(特徴) 設定追加
@@ -195,6 +196,7 @@ https://opensource.org/licenses/mit-license.php
 
     // ベースプラグインの処理
     const init_skills_debug_params = Potadra_getPluginParams('Debug');
+    const InitSkillsDebugSkill     = Potadra_convertBool(init_skills_debug_params.DebugSkill);
     const InitSkillsDebugSkills    = Potadra_stringArray(init_skills_debug_params.DebugSkills);
     const init_skills_name_database_params = Potadra_getPluginParams('NameDatabase');
     const InitSkillsLearning               = Potadra_convertBool(init_skills_name_database_params.Learning);
@@ -202,7 +204,7 @@ https://opensource.org/licenses/mit-license.php
         const _Game_Actor_initSkills = Game_Actor.prototype.initSkills;
         Game_Actor.prototype.initSkills = function() {
             _Game_Actor_initSkills.apply(this, arguments);
-            if (InitSkillsDebugSkills.length > 0) {
+            if (InitSkillsDebugSkill && InitSkillsDebugSkills.length > 0) {
                 for (const debug_skill of InitSkillsDebugSkills) {
                     const skill_id = Potadra_checkName($dataSkills, debug_skill);
                     if (skill_id) this.learnSkill(skill_id);

@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-最強装備判定リトライ Ver1.0.1(2025/7/22)
+最強装備判定リトライ Ver1.0.2(2025/8/6)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Data/Equip/RetryOptimize.js
 @orderBefore ExcludeAtOptimize
@@ -8,6 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.2: 不要な処理を削除
 * Ver1.0.1: 高速化対応
 * Ver1.0.0: 公開
 
@@ -45,7 +46,6 @@ https://opensource.org/licenses/mit-license.php
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
-
     function Potadra_meta(meta, tag) {
         if (meta) {
             const data = meta[tag];
@@ -77,11 +77,6 @@ https://opensource.org/licenses/mit-license.php
         const originalRefresh = this.refresh;
         this.refresh = function() {};
 
-        // UniqueEquip.js の特殊処理を一時的に無効化
-        if (window.Potadra && window.Potadra_UniqueEquip) {
-            window.Potadra_UniqueEquip.isOptimizing = true;
-        }
-
         const maxSlots = this.equipSlots().length;
 
         // 2. 最適化対象の装備をすべて外す
@@ -109,9 +104,6 @@ https://opensource.org/licenses/mit-license.php
 
         // 4. 処理を元に戻し、最後に一度だけ能力値を再計算
         this.refresh = originalRefresh;
-        if (window.Potadra && window.Potadra_UniqueEquip) {
-            window.Potadra_UniqueEquip.isOptimizing = false;
-        }
         this.refresh();
     };
 

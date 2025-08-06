@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ファストトラベル Ver1.0.2(2025/7/22)
+ファストトラベル Ver1.0.3(2025/8/6)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/FastTravel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.3: マップ名の表示機能が正しく動作していない問題を修正
 * Ver1.0.2: ヘルプ更新
 * Ver1.0.1
 - メニュー表示名の説明を修正
@@ -764,10 +765,10 @@ ONのときコマンドが使用不可（灰色表示）になります
          * コマンド［マップ移動］
          */
         commandMap() {
-            const map_data                 = this._moveMapLists[this._fastTravelWindow.index()];
-            const moveSwitch               = Number(map_data.moveSwitch || 0);
-            const moveChangeVariable       = Number(map_data.moveChangeVariable || 0);
-            const se                       = Potadra_convertAudio(map_data.se, 'Move1');
+            const map_data           = this._moveMapLists[this._fastTravelWindow.index()];
+            const moveSwitch         = Number(map_data.moveSwitch || 0);
+            const moveChangeVariable = Number(map_data.moveChangeVariable || 0);
+            const se                 = Potadra_convertAudio(map_data.se, 'Move1');
 
             const map       = Potadra_convertMap(map_data.map);
             const mapId     = Potadra_checkName($dataMapInfos, map.mapId, 1);
@@ -962,7 +963,8 @@ ONのときコマンドが使用不可（灰色表示）になります
                     const mapName           = String(map_data.mapName);
                     const common_event_name = String(map_data.common_event_name);
 
-                    let mapId        = Number(map_data.mapId || 0);
+                    const map = Potadra_convertMap(map_data.map);
+                    let mapId = Potadra_checkName($dataMapInfos, map.mapId, 1);
                     let common_event = Number(map_data.common_event || 0);
                     let command_name;
 
@@ -977,6 +979,7 @@ ONのときコマンドが使用不可（灰色表示）になります
                     if (common_event !== 0) command_name = $dataCommonEvents[common_event].name;
                     if (mapId !== 0) command_name = $dataMapInfos[mapId].name || mapId;
                     if (move_map_name) command_name = move_map_name;
+
                     this.addCommand(command_name, "map");
                 }
             }

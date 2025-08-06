@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-デバッグ用のプラグイン Ver1.5.0(2025/5/29)
+デバッグ用のプラグイン Ver1.5.1(2025/8/6)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Debug/Debug.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.5.1: デバッグスキル有効パラメータを追加
 * Ver1.5.0: 入手しないアイテム名の文字を配列で指定できるように変更
 * Ver1.4.9: リファクタリング
 * Ver1.4.8: デバッグ時に無条件で使えるデバッグスキルを追加
@@ -180,10 +181,19 @@ ONのプラグインがない状態で、ゲームを起動可能になります
 @off 通常通り
 @default false
 
-@param DebugSkills
-@type skill[]
-@text デバッグスキル名
-@desc デバッグ時に無条件で使えるスキル名
+@param DebugSkill
+@type boolean
+@text デバッグスキル有効
+@desc デバッグスキルを有効にするか
+@on 有効
+@off 無効
+@default true
+
+    @param DebugSkills
+    @parent DebugSkill
+    @type skill[]
+    @text デバッグスキル
+    @desc デバッグ時に無条件で使えるスキル
 */
 (() => {
     'use strict';
@@ -226,6 +236,7 @@ ONのプラグインがない状態で、ゲームを起動可能になります
         };
     }
     const init_skills_debug_params = Potadra_getPluginParams('Debug');
+    const InitSkillsDebugSkill     = Potadra_convertBool(init_skills_debug_params.DebugSkill);
     const InitSkillsDebugSkills    = Potadra_stringArray(init_skills_debug_params.DebugSkills);
     const init_skills_name_database_params = Potadra_getPluginParams('NameDatabase');
     const InitSkillsLearning               = Potadra_convertBool(init_skills_name_database_params.Learning);
@@ -233,7 +244,7 @@ ONのプラグインがない状態で、ゲームを起動可能になります
         const _Game_Actor_initSkills = Game_Actor.prototype.initSkills;
         Game_Actor.prototype.initSkills = function() {
             _Game_Actor_initSkills.apply(this, arguments);
-            if (InitSkillsDebugSkills.length > 0) {
+            if (InitSkillsDebugSkill && InitSkillsDebugSkills.length > 0) {
                 for (const debug_skill of InitSkillsDebugSkills) {
                     const skill_id = Potadra_checkName($dataSkills, debug_skill);
                     if (skill_id) this.learnSkill(skill_id);
