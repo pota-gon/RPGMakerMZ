@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-全回復 Ver1.0.9(2025/1/24)
+全回復 Ver1.1.0(2025/10/2)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Recover.js
 @orderAfter dsJobChangeMZ
@@ -8,6 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.1.0: ステートが解除されないバグ修正
 * Ver1.0.9: NUUN_SceneFormation.js に対応する待機メンバー全回復(NuunFormationMember)パラメータ追加
 * Ver1.0.8: プラグインバラメータの解除除外ステート(ExceptClearStates)に名前を指定できるようにした
 * Ver1.0.7
@@ -404,14 +405,13 @@ TPは、TP持ち越しの特徴がある場合のみ回復します
      * ステート情報をクリア
      */
     function clearStates(actor) {
+        const except_state_ids = ExceptClearStates.map(id_or_name => 
+            Potadra_checkName($dataStates, id_or_name)
+        );
+
         for (const stateId of actor._states) {
-            if (stateId) {
-                for (const except_clear_state of ExceptClearStates) {
-                    const state_id = Potadra_checkName($dataStates, except_clear_state);
-                    if (state_id !== stateId) {
-                        actor.eraseState(stateId);
-                    }
-                }
+            if (!except_state_ids.includes(stateId)) {
+                actor.eraseState(stateId);
             }
         }
     }

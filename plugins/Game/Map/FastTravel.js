@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ファストトラベル Ver1.0.3(2025/8/6)
+ファストトラベル Ver1.0.4(2025/10/2)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/FastTravel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.4: 存在しないMapIDを指定したときに警告メッセージを表示し、エラーにしないように修正
 * Ver1.0.3: マップ名の表示機能が正しく動作していない問題を修正
 * Ver1.0.2: ヘルプ更新
 * Ver1.0.1
@@ -970,6 +971,11 @@ ONのときコマンドが使用不可（灰色表示）になります
 
                     if (mapId === 0 && mapName) {
                         mapId = Potadra_nameSearch($dataMapInfos, mapName, 'id', 'name', 1);
+                    }
+
+                    if (!$dataMapInfos[mapId]) {
+                        console.warn(`マップID: ${mapId} が存在しません。`);
+                        continue;
                     }
 
                     if (common_event === 0 && common_event_name) {

@@ -1,12 +1,15 @@
 /*:
 @plugindesc
-戦闘スキル画面に顔グラフィック表示 Ver1.0.0(2025/1/1)
+戦闘スキル画面に顔グラフィック表示 Ver1.0.1(2025/10/2)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Battle/SkillFace.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.1
+- 顔グラフィックのサイズの仕様を変更(今までのは旧形式として残した)
+- メニューのスキル画面に顔グラフィックが残ってしまうバグ修正
 * Ver1.0.0
 - 顔グラフィックのサイズを半分にする機能追加
 - メニューのスキルに顔グラフィックを表示する機能追加
@@ -42,6 +45,15 @@ https://opensource.org/license/mit
 @on 半分にする(50%)
 @off 半分にしない(100%)
 @default true
+
+    @param Old
+    @parent HalfFace
+    @type boolean
+    @text 旧形式
+    @desc 旧形式の表示方法にするか
+    @on 旧形式にする
+    @off 旧形式にしない
+    @default false
 
 @param CancelButton
 @type boolean
@@ -110,6 +122,7 @@ https://opensource.org/license/mit
     // 各パラメータ用定数
     const ShowSkillMenu          = Potadra_convertBool(params.ShowSkillMenu);
     const HalfFace               = Potadra_convertBool(params.HalfFace);
+    const Old                    = Potadra_convertBool(params.Old);
     const CancelButton           = Potadra_convertBool(params.CancelButton);
     const CancelButtonPosition   = Potadra_convertBool(params.CancelButtonPosition);
     const CommandAndStatusShow   = Potadra_convertBool(params.CommandAndStatusShow);
@@ -161,13 +174,12 @@ https://opensource.org/license/mit
                     const rect = this.baseTextRect();
                     this.contents.clear();
 
-                    this._faceBitmap = ImageManager.loadFace(face_graphic[0]);
+                    const face_name = face_graphic[0];
+                    const face_index = Number(face_graphic[1] || 0);
+
+                    this._faceBitmap = ImageManager.loadFace(face_name);
                     this._faceBitmap.addLoadListener(() => {
-                        if (HalfFace) {
-                            this.drawHalfFaceTextEx(face_graphic[0], Number(face_graphic[1] || 0), 4, 4, rect);
-                        } else {
-                            this.drawFaceTextEx(face_graphic[0], Number(face_graphic[1] || 0), 4, 4, rect);
-                        }
+                        this.drawFaceTextEx(face_name, face_index, 4, 4, rect, HalfFace, Old);
                     });
                     return true;
                 }
@@ -175,7 +187,7 @@ https://opensource.org/license/mit
             
             super.refresh();
             this._faceBitmap = null;
-        };
+        }
 
         /**
          * 追加説明設定
@@ -193,38 +205,33 @@ https://opensource.org/license/mit
         /**
          * 顔グラフィックと制御文字つきテキストの描画
          */
-        drawFaceTextEx(faceName, faceIndex, x, y, rect) {
-            let width = rect.width || ImageManager.faceWidth;
-            let height = rect.y || ImageManager.faceHeight;
+        drawFaceTextEx(faceName, faceIndex, x, y, rect, half = false, old = false) {
             const bitmap = ImageManager.loadFace(faceName);
             const pw = ImageManager.faceWidth;
             const ph = ImageManager.faceHeight;
-            const sw = Math.min(width, pw);
-            const sh = Math.min(height, ph);
-            const dy = Math.floor(y + Math.max(height - ph, 0) / 2);
-            const sx = Math.floor((faceIndex % 4) * pw + (pw - sw) / 2);
-            const sy = Math.floor(Math.floor(faceIndex / 4) * ph + (ph - sh) / 2);
-            this.contents.blt(bitmap, sx, sy, sw, sh, x, dy);
-            this.drawTextEx(this._text, rect.x + pw, rect.y, rect.width);
-        };
+            const sx = (faceIndex % 4) * pw;
+            const sy = Math.floor(faceIndex / 4) * ph;
 
-        /**
-         * 顔グラフィックと制御文字つきテキストの描画
-         */
-        drawHalfFaceTextEx(faceName, faceIndex, x, y, rect) {
-            let width = (rect.width || ImageManager.faceWidth) / 2;
-            let height = (rect.y || ImageManager.faceHeight) / 2;
-            const bitmap = ImageManager.loadFace(faceName);
-            const pw = ImageManager.faceWidth;
-            const ph = ImageManager.faceHeight;
-            const sw = Math.min(width, pw);
-            const sh = Math.min(height, ph);
-            const dy = Math.floor(y + Math.max(height - ph, 0) / 2);
-            const sx = Math.floor((faceIndex % 4) * pw + (pw - sw) / 2);
-            const sy = Math.floor(Math.floor(faceIndex / 4) * ph + (ph - sh) / 2);
-            this.contents.blt(bitmap, sx, sy, sw, sh, x, dy);
-            this.drawTextEx(this._text, rect.x + pw, rect.y, rect.width);
-        };
+            if (old && half) { // 旧形式(ハーフサイズ)の処理
+                const targetWidth = pw / 2;
+                const targetHeight = ph / 2;
+                const sw = Math.min(rect.width || targetWidth, pw);
+                const sh = Math.min(rect.height || targetHeight, ph);
+                const dy = Math.floor(y + Math.max(targetHeight - ph, 0) / 2);
+                const adjustedSx = Math.floor(sx + (pw - sw) / 2);
+                const adjustedSy = Math.floor(sy + (ph - sh) / 2);
+
+                this.contents.blt(bitmap, adjustedSx, adjustedSy, sw, sh, x, dy);
+                this.drawTextEx(this._text, rect.x + pw, rect.y, rect.width);
+            } else { // 新形式
+                const scale = half ? 0.5 : 1; // ハーフサイズ判定
+                const dw = pw * scale;
+                const dh = ph * scale;
+
+                this.contents.blt(bitmap, sx, sy, pw, ph, x, y, dw, dh);
+                this.drawTextEx(this._text, rect.x + dw + 8, rect.y, rect.width - dw - 8);
+            }
+        }
     }
 
     /**
@@ -246,6 +253,16 @@ https://opensource.org/license/mit
             const rect = this.helpWindowRect();
             this._helpWindow = new Window_SkillFaceHelp(rect);
             this.addWindow(this._helpWindow);
+        };
+
+        /**
+         * スキルタイプキャンセル時の処理
+         */
+        const _Scene_Skill_onItemCancel = Scene_Skill.prototype.onItemCancel;
+        Scene_Skill.prototype.onItemCancel = function() {
+            // ヘルプウィンドウをクリア
+            this._helpWindow.setItem(null);
+            _Scene_Skill_onItemCancel.apply(this, arguments);
         };
     }
 

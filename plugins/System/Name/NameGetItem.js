@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-アイテム入手 Ver2.0.2(2025/2/27)
+名前アイテム入手 Ver2.0.3(2025/10/2)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameGetItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver2.0.3: プラグイン名変更
 * Ver2.0.2: アイテム名と個数に変数を指定できるプラグインコマンド追加
 * Ver2.0.1: 減らす機能に装備の場合は装備品も含めるか選択できるパラメータ追加
 * Ver2.0.0
