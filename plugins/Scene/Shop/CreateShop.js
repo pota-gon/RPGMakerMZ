@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-合成屋 Ver0.13.2(2025/7/22)
+合成屋 Ver0.13.3(2025/10/4)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Scene/Shop/CreateShop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.13.3: 共通プラグインの埋め込み時に存在しない関数を参照してしまうバグ修正
 * Ver0.13.2: ヘルプ更新
 * Ver0.13.1
 - 購入個数ウィンドウのバグ修正
@@ -319,6 +320,23 @@ https://opensource.org/license/mit
     function Potadra_getPluginParams(plugin_name) {
         return Potadra_isPlugin(plugin_name) ? PluginManager.parameters(plugin_name) : false;
     }
+    function Potadra_search(data, id, column = "name", search_column = "id", val = "", initial = 1) {
+        if (!id) return val;
+        for (let i = initial; i < data.length; i++) {
+            if (!data[i]) continue;
+            if (search_column && data[i][search_column] == id) {
+                val = column ? data[i][column] : data[i];
+                break;
+            } else if (i == id) {
+                val = data[i];
+                break;
+            }
+        }
+        return val;
+    }
+    function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
+        return Potadra_search(data, name, column, search_column, val, initial);
+    }
     function Potadra_itemKindSearch(name, item_id, weapon_id, armor_id, column = false) {
         const categories = [
             { kind: 0, data: $dataItems, id: item_id },
@@ -333,7 +351,7 @@ https://opensource.org/license/mit
         }
         if (name) {
             for (const { kind, data } of categories) {
-                const item = Potadra.nameSearch(data, name, column);
+                const item = Potadra_nameSearch(data, name, column);
                 if (item) return [kind, item];
             }
         }

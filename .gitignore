@@ -15,6 +15,7 @@ plugins/Game/Color.js
 plugins/Scene/Window/ChangeChara.js
 plugins/Scene/Window/Story.js
 plugins/Scene/Window/Template
+plugins/Self
 plugins/System/Ex/ExSkill.js
 plugins/System/Ex/ExState.js
 plugins/System/Ex/Highlight.js

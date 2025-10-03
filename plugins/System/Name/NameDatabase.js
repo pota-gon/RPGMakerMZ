@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-名前データベース Ver0.11.4(2025/8/6)
+名前データベース Ver0.11.5(2025/10/4)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.11.5: 共通プラグインの埋め込み時に存在しない関数を参照してしまうバグ修正
 * Ver0.11.4: Debug.js との連携
 * Ver0.11.3: ヘルプを更新
 * Ver0.11.2
@@ -220,12 +221,6 @@ https://opensource.org/license/mit
             }
         };
     }
-    function Potadra_checkName(data, name, val = false) {
-        if (isNaN(name)) {
-            return Potadra_nameSearch(data, name.trim(), "id", "name", val);
-        }
-        return Number(name || val);
-    }
     function Potadra_stringArray(data) {
         return data ? JSON.parse(data).map(String) : [];
     }
@@ -263,25 +258,43 @@ https://opensource.org/license/mit
     function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
         return Potadra_search(data, name, column, search_column, val, initial);
     }
+    function Potadra_checkName(data, name, val = false) {
+        if (isNaN(name)) {
+            return Potadra_nameSearch(data, name.trim(), "id", "name", val);
+        }
+        return Number(name || val);
+    }
+    function Potadra_ids(names, data) {
+        const ids = [];
+        if (names) {
+            for (const name of names) {
+                if (name) {
+                    const id = Potadra_checkName(data, name);
+                    if (id) ids.push(id);
+                }
+            }
+        }
+        return ids;
+    }
     function Potadra_checkMetaIds(battler, tag, data) {
         const b = battler.isActor() ? battler.actor() : battler.enemy();
-        let names = Potadra.metaData(b.meta[tag]);
-        const battler_ids = Potadra.ids(names, data);
+        let names = Potadra_metaData(b.meta[tag]);
+        const battler_ids = Potadra_ids(names, data);
         let class_ids = [];
         let equip_ids = [];
         if (battler.isActor()) {
-            names = Potadra.metaData(battler.currentClass().meta[tag]);
-            class_ids = Potadra.ids(names, data);
+            names = Potadra_metaData(battler.currentClass().meta[tag]);
+            class_ids = Potadra_ids(names, data);
             equip_ids = battler.equips()
                 .filter(equip => equip)
                 .flatMap(equip => {
-                    return Potadra.ids(Potadra.metaData(equip.meta[tag]), data);
+                    return Potadra_ids(Potadra_metaData(equip.meta[tag]), data);
                 });
         }
         let state_ids = [];
         for (const state of battler.states()) {
-            names = Potadra.metaData(state.meta[tag]);
-            const tmp_ids = Potadra.ids(names, data);
+            names = Potadra_metaData(state.meta[tag]);
+            const tmp_ids = Potadra_ids(names, data);
             for (let i = 0; i < tmp_ids.length; i++) {
                 state_ids.push(tmp_ids[i]);
             }
@@ -291,20 +304,20 @@ https://opensource.org/license/mit
     function Potadra_checkMetaData(battler, tag, data) {
         let values = [];
         const b = battler.isActor() ? battler.actor() : battler.enemy();
-        let tmp_values = Potadra.metaData(b.meta[tag]);
+        let tmp_values = Potadra_metaData(b.meta[tag]);
         if (tmp_values) values = values.concat(tmp_values);
         if (battler.isActor()) {
-            tmp_values = Potadra.metaData(battler.currentClass().meta[tag]);
+            tmp_values = Potadra_metaData(battler.currentClass().meta[tag]);
             if (tmp_values) values = values.concat(tmp_values);
             tmp_values = battler.equips()
                 .filter(equip => equip)
                 .flatMap(equip => {
-                    return Potadra.ids(Potadra.metaData(equip.meta[tag]), data);
+                    return Potadra_ids(Potadra_metaData(equip.meta[tag]), data);
                 });
             if (tmp_values) values = values.concat(tmp_values);
         }
         for (const state of battler.states()) {
-            tmp_values = Potadra.metaData(state.meta[tag]);
+            tmp_values = Potadra_metaData(state.meta[tag]);
             if (tmp_values) values = values.concat(tmp_values);
         }
         return values;
