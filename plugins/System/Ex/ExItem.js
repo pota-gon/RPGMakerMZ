@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-アイテム名参照制御文字 Ver1.2.5(2023/7/9)
+アイテム名参照制御文字 Ver1.2.6(2025/10/4)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Ex/ExItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.2.6: 2つ以上同時に使用出来ないバグ修正
 * Ver1.2.5: ヘルプ更新
 
 Copyright (c) 2025 ポテトードラゴン
@@ -63,8 +64,8 @@ https://opensource.org/license/mit
     const _Window_Base_convertEscapeCharacters = Window_Base.prototype.convertEscapeCharacters;
     Window_Base.prototype.convertEscapeCharacters = function(text) {
         let tmp_text = _Window_Base_convertEscapeCharacters.apply(this, arguments);
-        tmp_text = tmp_text.replace(/\x1bII\[(.+?)\](.*)/gi, (_, p1, p2) =>
-            "\x1bI[" + Potadra_itemSearch(p1, 'iconIndex') + "]" + p1 + p2
+        tmp_text = tmp_text.replace(/\x1bII\[(.+?)\]/gi, (_, p1) =>
+            "\x1bI[" + Potadra_itemSearch(p1, 'iconIndex') + "]" + p1
         );
         return tmp_text;
     };
