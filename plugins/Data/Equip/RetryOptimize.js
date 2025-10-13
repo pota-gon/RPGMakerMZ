@@ -10,7 +10,7 @@
 ・アップデート情報
 * Ver1.0.2: 不要な処理を削除
 * Ver1.0.1: 高速化対応
-* Ver1.0.0: 公開
+* Ver1.0.0: 初期版完成
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.

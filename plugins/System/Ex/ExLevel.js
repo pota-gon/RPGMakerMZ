@@ -8,7 +8,7 @@ Lv参照制御文字 Ver1.0.1(2025/7/22)
 
 ・アップデート情報
 * Ver1.0.1: アクター名を指定できる機能追加
-* Ver1.0.0: 公開
+* Ver1.0.0: 初期版完成
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.
