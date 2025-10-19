@@ -1,17 +1,13 @@
 /*:
 @plugindesc
-ステータス最大値設定 Ver0.0.2(2024/12/27)
+ステータス最大値設定 Ver1.0.0(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Max/MaxStatus.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver0.0.2
-- 敵キャラのパラメータ設定実装
-- URL記載
-- ヘルプ更新
-* Ver0.0.1: 作成開始
+* Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.

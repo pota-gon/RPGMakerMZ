@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-セーブ内容カスタマイズ Ver0.5.0(2022/12/2)
+セーブ内容カスタマイズ Ver1.0.0(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Save/CustomSave.js
 @orderAfter NoEncrypt
@@ -8,7 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver0.5.0: 開発版を公開
+* Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.

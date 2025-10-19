@@ -1,19 +1,13 @@
 /*:
 @plugindesc
-レベル上限突破 Ver0.14.5(2025/7/22)
+レベル上限突破 Ver1.0.0(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Config/Max/MaxLevel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver0.14.5: 職業でパラメータ設定指定できるように修正
-* Ver0.14.4: パラメータ名に HP・MP など省略系で指定できるように修正
-* Ver0.14.3
-- 初期値と成長率をプラグインパラメータで設定出来るように修正
-- 初期レベルをデータベースで設定したとき正しく反映されないバグ修正
-- 成長率を設定できる機能追加
-- ヘルプ追記
+* Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.

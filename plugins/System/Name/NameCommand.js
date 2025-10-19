@@ -1,14 +1,13 @@
 /*:
 @plugindesc
-名前コマンド Ver0.5.1(2025/1/18)
+名前コマンド Ver1.0.0(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameCommand.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver0.5.1: 名前検索用のパラメータ追加
-* Ver0.5.0: 開発版を公開
+* Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.

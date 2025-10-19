@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-スキルコスト Ver0.8.1(2025/7/22)
+スキルコスト Ver1.0.0(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Data/Skill/SkillCost.js
 @orderAfter Madante
@@ -8,21 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver0.8.1: ヘルプ更新、リファクタリング
-* Ver0.8.0
-- DarkPlasma_SkillCooldown.js 導入時にCTの表示が遅くなる問題修正
-- 攻撃スキルを消費0にする機能追加
-- HP・MP・TP消費を同時に表示出来る機能追加
-- 色設定のアノテーションをcolorに変更
-- Madante.js と競合するので、@orderAfterを定義
-- リファクタリング
-- ヘルプ更新
-* Ver0.7.5 
-- <アイテム名消費>を<アイテム消費>で行えるように変更
-* Ver0.7.4
-- 検索時のバグ修正
-- meta データの取得処理を修正
-- 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+* Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.

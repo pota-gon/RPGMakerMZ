@@ -1,18 +1,13 @@
 /*:
 @plugindesc
-コアスクリプト Ver0.5.5(2025/5/29)
+コアスクリプト Ver1.0.0(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/CoreScript.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver0.5.5: Items パラメータの説明と初期値を修正
-* Ver0.5.4: スキル・アイテムに使用効果TP増加がある場合、最大TPのとき使用不可になる機能追加
-* Ver0.5.3
-- プレイヤーの初期向きを StartPosition.js に移行
-- リファクタリング
-* Ver0.5.2: 控えメンバーの経験値獲得率を変更するパラメータ追加
+* Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.

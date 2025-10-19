@@ -1,13 +1,13 @@
 /*:
 @plugindesc
-MVベース Ver0.8.7(2022/9/10)
+MVベース Ver1.0.0(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Core/MV.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver0.8.7: 他プラグイン導入時の convertBool が無条件で true を返すバグ修正
+* Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.

@@ -18,16 +18,6 @@
   + マップIDの指定
   + 乗り物の指定
 - プラグインパラメータ move_common_event を after_common_event に変更(再設定が必要になります)
-* Ver0.9.9
-- マップIDの指定をMZ1.9.0アップデートで追加された「@type map」に対応しました
-  + 次回アップデート(Ver1.0.0)で「@type location」に対応するため、再設定が必要になります
-    旧バージョン(Ver0.9.9)は、こちら(https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Base/Old/FastTravel.js)で公開しています
-* Ver0.9.8
-- メニュー項目に設定がないときにエラー落ちしないようにした
-- SE設定の共通処理を修正
-- ヘルプ更新
-* Ver0.9.7: 移動前コモンイベントを追加
-* Ver0.9.6: メニュー表示名の設定をコンボボックスに変更
 
 ・TODO
 - ページ対応

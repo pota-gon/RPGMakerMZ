@@ -1,15 +1,13 @@
 /*:
 @plugindesc
-敵キャラレベル追加 Ver0.13.6(2025/7/22)
+敵キャラレベル追加 Ver1.0.0(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/Enemy/EnemyLevel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver0.13.6: ヘルプ更新
-* Ver0.13.5: リファクタリング(共通処理 Potadra_checkSystem を使うように修正)
-* Ver0.13.4: URLを修正
+* Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.
@@ -112,17 +110,6 @@ https://opensource.org/license/mit
     'use strict';
 
     // ベースプラグインの処理
-    function Potadra_checkSystem(data, name, val = false) {
-        if (isNaN(name)) {
-            for (let i = 1; i < data.length; i++) {
-                if (name === data[i]) {
-                    return i;
-                }
-            }
-            return val;
-        }
-        return Number(name || val);
-    }
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
@@ -143,6 +130,17 @@ https://opensource.org/license/mit
             if (data) return data.map(datum => datum.trim());
         }
         return false;
+    }
+    function Potadra_checkSystem(data, name, val = false) {
+        if (isNaN(name)) {
+            for (let i = 1; i < data.length; i++) {
+                if (name === data[i]) {
+                    return i;
+                }
+            }
+            return val;
+        }
+        return Number(name || val);
     }
     function Potadra_random(probability, rate = 1) {
         return Math.random() <= probability / 100 * rate;

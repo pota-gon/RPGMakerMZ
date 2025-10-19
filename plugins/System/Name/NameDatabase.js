@@ -1,24 +1,13 @@
 /*:
 @plugindesc
-名前データベース Ver0.11.5(2025/10/4)
+名前データベース Ver1.0.0(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
-* Ver0.11.5: 共通プラグインの埋め込み時に存在しない関数を参照してしまうバグ修正
-* Ver0.11.4: Debug.js との連携
-* Ver0.11.3: ヘルプを更新
-* Ver0.11.2
-- ステート有効度(特徴), ステート無効化(特徴), 攻撃時ステート(特徴) 設定追加
-- ステート付加(使用効果), ステート解除(使用効果) 設定追加
-- スキル追加のメタタグ名称を指定できるようにした
-* Ver0.11.1: リファクタリング
-* Ver0.11.0: リファクタリング
-* Ver0.10.9: リファクタリング
-* Ver0.10.8: Debug.js のデバッグスキル追加による競合を解消
-* Ver0.10.7: アクター初期装備(装飾品1 などで何番目に装備するか設定できる機能追加)
+* Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
 Released under the MIT License.
