@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.6.6(2025/5/29)
+ワールド自動生成 Ver0.6.7(2025/10/19)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,9 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.6.7
+- 池の仮実装
+- 開発用のプロジェクトの必要性がほとんどないため、廃止
 * Ver0.6.6
 - 分類用のリージョン設定パラメータ追加
 - 「@type tileset」の設定に名前で参照できる機能追加
@@ -91,11 +94,6 @@ https://opensource.org/license/mit
 
 ## 使い方
 使い方については最低限の使い方のみ記載しています
-
-その他の使用方法については  
-下記サンプルプロジェクトを参考にしてください  
-https://github.com/pota-gon/GenerateWorld
-
 ※ 開発版のため未実装の機能が複数あります。今後のアップデートで対応します
 
 ### 1. マップ設定
@@ -1211,6 +1209,81 @@ https://github.com/pota-gon/GenerateWorld
         }
             return 33;
     }
+    function PotadraCheck_pond(getMapData, setTileId) {
+        const SEA_TILE_ID = 2048; // 海のタイルID
+        const POND_TILE_ID = 2432; // 池（浅瀬）のタイルID
+        const POND_MAX_SIZE = 100; // 池とみなす最大のタイル数
+        const width = $dataMap.width;
+        const height = $dataMap.height;
+        const visited = new Array(width * height).fill(false);
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                const index = y * width + x;
+                if (visited[index] || getMapData(x, y, 0) !== SEA_TILE_ID) {
+                    continue;
+                }
+                const componentTiles = [];
+                const queue = [[x, y]];
+                visited[index] = true;
+                let head = 0;
+                while (head < queue.length) {
+                    const [cx, cy] = queue[head++];
+                    componentTiles.push([cx, cy]);
+                    const neighbors = [[cx, cy - 1], [cx, cy + 1], [cx - 1, cy], [cx + 1, cy]];
+                    for (const n of neighbors) {
+                        let nx = n[0];
+                        let ny = n[1];
+                        if ($gameMap.isLoopHorizontal()) nx = nx.mod(width);
+                        if ($gameMap.isLoopVertical()) ny = ny.mod(height);
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            const nIndex = ny * width + nx;
+                            if (!visited[nIndex] && getMapData(nx, ny, 0) === SEA_TILE_ID) {
+                                visited[nIndex] = true;
+                                queue.push([nx, ny]);
+                            }
+                        }
+                    }
+                }
+                if (componentTiles.length > POND_MAX_SIZE) {
+                    continue; // It's a sea, not a pond.
+                }
+                const componentSet = new Set(componentTiles.map(t => `${t[0]},${t[1]}`));
+                let isEnclosed = true;
+                for (const tile of componentTiles) {
+                    const [px, py] = tile;
+                    const neighbors = [
+                        [px - 1, py - 1], [px, py - 1], [px + 1, py - 1],
+                        [px - 1, py],                 [px + 1, py],
+                        [px - 1, py + 1], [px, py + 1], [px + 1, py + 1]
+                    ];
+                    for (const n of neighbors) {
+                        let nx = n[0];
+                        let ny = n[1];
+                        if (!$gameMap.isLoopHorizontal() && (nx < 0 || nx >= width)) {
+                            isEnclosed = false; break;
+                        }
+                        if (!$gameMap.isLoopVertical() && (ny < 0 || ny >= height)) {
+                            isEnclosed = false; break;
+                        }
+                        if ($gameMap.isLoopHorizontal()) nx = nx.mod(width);
+                        if ($gameMap.isLoopVertical()) ny = ny.mod(height);
+                        if (!componentSet.has(`${nx},${ny}`)) {
+                            if (getMapData(nx, ny, 0) === SEA_TILE_ID) {
+                                isEnclosed = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isEnclosed) break;
+                }
+                if (isEnclosed) {
+                    for (const tile of componentTiles) {
+                        setTileId(tile[0], tile[1], 0, POND_TILE_ID);
+                    }
+                }
+            }
+        }
+    }
     function PotadraDirection_UNDER() { return 2; }
     function PotadraDirection_LEFT()  { return 4; }
     function PotadraDirection_RIGHT() { return 6; }
@@ -1711,6 +1784,11 @@ https://github.com/pota-gon/GenerateWorld
         fixWorld();
         showTime(startTime, '地形の整形');
 
+        // 池の作成
+        startTime = Date.now(); // 開始時間
+        PotadraCheck_pond(getMapData, setTileId);
+        showTime(startTime, '池の作成');
+
         // オートタイル配置
         startTime = Date.now(); // 開始時間
         setAutoTile();
@@ -2028,6 +2106,8 @@ https://github.com/pota-gon/GenerateWorld
             }
         }
     }
+
+
 
     //==============================================================================
     // 関数
