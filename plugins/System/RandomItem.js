@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ランダムアイテム入手 Ver2.0.1(2025/1/20)
+ランダムアイテム入手 Ver2.0.2(2025/12/17)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/RandomItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver2.0.2: アイテム取得回数をカウントする変数設定機能を追加
 * Ver2.0.1: 減らす機能に装備の場合は装備品も含めるか選択できるパラメータ追加
 * Ver2.0.0
 - プラグインコマンドが長くなるため、SE設定をstructに変更（再設定が必要になります）
@@ -205,6 +206,13 @@ https://opensource.org/license/mit
 @desc ゴールド入手時のメッセージ
 %1: アイコン番号 %2: 入手ゴールド %3: 通貨
 @default \I[%1]%2%3手に入れた！
+
+@param CountVariable
+@type variable
+@text 取得回数カウント変数
+@desc アイテム取得回数をカウントする変数
+0の場合、カウントしません
+@default 0
 
 @command random_item
 @text ランダムアイテム取得
@@ -575,14 +583,18 @@ https://opensource.org/license/mit
         }
         return 0;
     }
+    function Potadra_checkVariable(variable_no) {
+        return variable_no > 0 && variable_no <= 5000;
+    }
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
-    const GoldIconIndex  = Number(params.GoldIconIndex || 314);
-    const GoldMessage    = String(params.GoldMessage || '\I[%1]%2%3手に入れた！');
+    const GoldIconIndex = Number(params.GoldIconIndex || 314);
+    const GoldMessage   = String(params.GoldMessage || '\I[%1]%2%3手に入れた！');
+    const CountVariable = Number(params.CountVariable || 0);
 
     // 他プラグイン連携(プラグインの導入有無)
     const GetInformation       = Potadra_isPlugin('GetInformation');
@@ -822,8 +834,15 @@ https://opensource.org/license/mit
             }
         }
 
-        // アイテム入手SE
-        if (se && get_item_count > 0) AudioManager.playSe(se);
+        if (get_item_count > 0) {
+            // アイテム入手SE
+            if (se) AudioManager.playSe(se);
+
+            // 取得回数カウント
+            if (Potadra_checkVariable(CountVariable)) {
+                $gameVariables.setValue(CountVariable, $gameVariables.value(CountVariable) + 1);
+            }
+        }
 
         if (GetInformation || SKM_GetInformationMZ) {
             CommonPopupManager._popEnable = false;

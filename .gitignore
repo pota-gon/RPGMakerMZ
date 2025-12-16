@@ -1,4 +1,5 @@
 # 公開しないプラグイン
+plugins/Archive
 plugins/Base/Core/PotBase.js
 plugins/Base/Patch/FixEnemyY.js
 plugins/Base/Patch/MaxEnemyY.js

@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-名前データベース Ver1.0.0(2025/10/19)
+名前データベース Ver1.0.1(2025/12/17)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/System/Name/NameDatabase.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.1: 習得するスキル（アクター）を追加
 * Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2025 ポテトードラゴン
@@ -43,6 +44,11 @@ https://opensource.org/license/mit
 特徴の「スキル追加」を名前で指定できます
 
 **書式:** `<スキル追加: スキル名>`
+
+### 習得するスキル（アクター）
+アクターのメモ欄に記述することで、習得スキルを名前で指定できます
+
+**書式:** `<習得スキル: レベル, スキル名>`
 
 ### 習得するスキル（職業）
 職業のメモ欄に記述することで、習得スキルを名前で指定できます
@@ -97,6 +103,14 @@ https://opensource.org/license/mit
     @desc スキル追加に使うメモ欄タグの名称
     デフォルトは スキル追加
     @default スキル追加
+
+@param ActorLearning
+@type boolean
+@text 習得するスキル(アクター)
+@desc 習得するスキル(アクター)に対応するかの設定
+@on 対応する
+@off 対応しない
+@default true
 
 @param Learning
 @type boolean
@@ -210,6 +224,26 @@ https://opensource.org/license/mit
             }
         };
     }
+    function Potadra_learning(data) {
+        const learnings = [];
+        if (data) {
+            for (const value of data) {
+                if (value) {
+                    const learning_data = value.split(',');
+                    learnings.push({
+                        level: Number(learning_data[0]),
+                        skillId: Potadra_nameSearch($dataSkills, learning_data[1].trim())
+                    });
+                }
+            }
+        }
+        return learnings;
+    }
+    function Potadra_learnings(actor) {
+        const actor_data = Potadra_metaData(actor.actor().meta['スキル']);
+        const class_data = Potadra_metaData(actor.currentClass().meta['スキル']);
+        return Potadra_learning(actor_data).concat(Potadra_learning(class_data));
+    }
     function Potadra_stringArray(data) {
         return data ? JSON.parse(data).map(String) : [];
     }
@@ -311,26 +345,6 @@ https://opensource.org/license/mit
         }
         return values;
     }
-    function Potadra_learning(data) {
-        const learnings = [];
-        if (data) {
-            for (const value of data) {
-                if (value) {
-                    const learning_data = value.split(',');
-                    learnings.push({
-                        level: Number(learning_data[0]),
-                        skillId: Potadra_nameSearch($dataSkills, learning_data[1].trim())
-                    });
-                }
-            }
-        }
-        return learnings;
-    }
-    function Potadra_learnings(actor) {
-        const actor_data = Potadra_metaData(actor.actor().meta['スキル']);
-        const class_data = Potadra_metaData(actor.currentClass().meta['スキル']);
-        return Potadra_learning(actor_data).concat(Potadra_learning(class_data));
-    }
     function Potadra_metaData(meta_data, delimiter = '\n') {
         if (meta_data) {
             const data = meta_data.split(delimiter);
@@ -359,6 +373,7 @@ https://opensource.org/license/mit
     const AddStateMetaName     = String(params.AddStateMetaName || 'ステート付加');
     const RemoveState          = Potadra_convertBool(params.RemoveState);
     const RemoveStateMetaName  = String(params.RemoveStateMetaName || 'ステート解除');
+    const ActorLearning        = Potadra_convertBool(params.ActorLearning);
     const Learning             = Potadra_convertBool(params.Learning);
 
     // アクターの初期装備
@@ -562,7 +577,7 @@ https://opensource.org/license/mit
     }
 
     // 習得するスキル(職業)
-    if (Learning) {
+    if (Learning || ActorLearning) {
         /**
          * アクターを扱うクラスです。
          * このクラスは Game_Actors クラス（$gameActors）の内部で使用され、
@@ -571,16 +586,65 @@ https://opensource.org/license/mit
          * @class
          */
 
+        const _Game_Actor_setup = Game_Actor.prototype.setup;
+        Game_Actor.prototype.setup = function(actorId) {
+            _Game_Actor_setup.apply(this, arguments);
+            this.learnNamedSkills(0, this._level);
+        };
+
         /**
          * レベルアップ
          */
         const _Game_Actor_levelUp = Game_Actor.prototype.levelUp;
         Game_Actor.prototype.levelUp = function() {
+            const lastLevel = this._level;
             _Game_Actor_levelUp.apply(this, arguments);
-            const learnings = Potadra_learnings(this);
-            for (const learning of learnings) {
-                if (learning.level === this._level) {
-                    this.learnSkill(learning.skillId);
+            this.learnNamedSkills(lastLevel, this._level);
+        };
+
+        /**
+         * 名前指定されたスキルを習得する
+         * @param {number} lastLevel - 判定前のレベル
+         * @param {number} currentLevel - 判定後のレベル
+         */
+        Game_Actor.prototype.learnNamedSkills = function(lastLevel, currentLevel) {
+            // アクターの習得スキル
+            if (ActorLearning) {
+                const meta_data = Potadra_metaData(this.actor().meta['習得スキル']);
+                if (meta_data) {
+                    for (const data of meta_data) {
+                        const values = data.split(',');
+                        if (values.length >= 2) {
+                            const learnLevel = Number(values[0].trim());
+                            const skillName = values[1].trim();
+                            if (learnLevel > lastLevel && learnLevel <= currentLevel) {
+                                const skillId = Potadra_nameSearch($dataSkills, skillName);
+                                if (skillId > 0 && !this.isLearnedSkill(skillId)) {
+                                    this.learnSkill(skillId);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 職業の習得スキル
+            if (Learning) {
+                const class_meta_data = Potadra_metaData(this.currentClass().meta['習得スキル']);
+                if (class_meta_data) {
+                    for (const data of class_meta_data) {
+                        const values = data.split(',');
+                        if (values.length >= 2) {
+                            const learnLevel = Number(values[0].trim());
+                            const skillName = values[1].trim();
+                            if (learnLevel > lastLevel && learnLevel <= currentLevel) {
+                                const skillId = Potadra_nameSearch($dataSkills, skillName);
+                                if (skillId > 0 && !this.isLearnedSkill(skillId)) {
+                                    this.learnSkill(skillId);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         };
