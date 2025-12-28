@@ -145,18 +145,37 @@ https://opensource.org/license/mit
     function Potadra_random(probability, rate = 1) {
         return Math.random() <= probability / 100 * rate;
     }
+
+
+
     function Potadra_search(data, id, column = "name", search_column = "id", val = "", initial = 1) {
-        if (!id) return val;
+        if (id === null || id === undefined) return val;
+        let cache = Potadra__searchCache_get(data);
+        if (!cache) {
+            cache = {};
+            Potadra__searchCache_set(data, cache);
+        }
+        const key = `${search_column}:${id}`;
+        if (key in cache) {
+            const entry = cache[key];
+            return column ? entry?.[column] ?? val : entry;
+        }
+        let result = val;
         for (let i = initial; i < data.length; i++) {
-            if (!data[i]) continue;
-            if (search_column && data[i][search_column] == id) {
-                val = column ? data[i][column] : data[i];
-                break;
-            } else if (i == id) {
-                val = data[i];
-                break;
+            const item = data[i];
+            if (!item) continue;
+            if (search_column && item[search_column] == id) {
+                result = column ? item[column] : item;
+                cache[key] = item;
+                return result;
+            }
+            if (!search_column && i == id) {
+                result = column ? item[column] : item;
+                cache[key] = item;
+                return result;
             }
         }
+        cache[key] = val;
         return val;
     }
     function Potadra_itemSearch(name, column = false, search_column = "name", val = false, initial = 1) {
