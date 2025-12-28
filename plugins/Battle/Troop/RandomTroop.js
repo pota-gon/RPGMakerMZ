@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-敵グループランダム決定 Ver1.5.2(2025/1/20)
+敵グループランダム決定 Ver1.5.3(2025/12/28)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Battle/Troop/RandomTroop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.5.3: リファクタリング、ヘルプ更新
 * Ver1.5.2: ヘルプ更新
 * Ver1.5.1
 - 自動整列の判定が正しくなかったバグ修正
@@ -82,7 +83,7 @@ https://opensource.org/license/mit
 
 ・設定例  
 <空中: 150>  
-Y座標を -200 します。<空中>を指定したときより高い位置に移動します
+Y座標を -150 します。<空中>を指定したときより高い位置に移動します
 
 <空中: 50>  
 Y座標を -50 します。<空中>を指定したときより低い位置に移動します
@@ -166,6 +167,41 @@ https://newrpg.seesaa.net/article/475049887.html
     const ResolutionWidth  = debug_params ? Number(debug_params.ResolutionWidth || 816) : 816;
     const ResolutionHeight = debug_params ? Number(debug_params.ResolutionHeight || 624) : 624;
 
+    function check_max_match(name) {
+        return name.match(/<max:\s*(\d+)>/i);
+    }
+    function check_min_match(name) {
+        return name.match(/<min:\s*(\d+)>/i);
+    }
+    function check_fix_match(name) {
+        return name.match(/<fix:(\s*.+?)>/i);
+    }
+
+    // 敵キャラの出現数を算出
+    function check_max(max, max_match, min_match) {
+        let min = 1;
+        if (max_match) max = Number(max_match[1]);
+        if (min_match) min = Number(min_match[1]);
+
+        // 敵キャラの出現数を算出
+        max = Math.randomInt(max) + 1;
+        if (max < min) {
+            max = min;
+        }
+        return max;
+    }
+
+    // 空中判定
+    function check_sky(enemy) {
+        // Y座標指定
+        const sky = enemy.enemy().meta[SkyName];
+        let sky_y = 100;
+        if (sky) {
+            if (sky !== true) sky_y = Number(sky.trim());
+            enemy._screenY -= sky_y;
+        }
+    }
+
     /**
      * セットアップ
      *
@@ -176,13 +212,9 @@ https://newrpg.seesaa.net/article/475049887.html
         // 通常処理呼び出し
         _Game_Troop_setup.apply(this, arguments);
 
-        const max_pattern = /<max:\s*(\d+)>/i;
-        const min_pattern = /<min:\s*(\d+)>/i;
-        const fix_pattern = /<fix:(\s*.+?)>/i;
-        const name        = this.troop().name;
-        const max_match = name.match(max_pattern);
-        const min_match = name.match(min_pattern);
-        const fix_match = name.match(fix_pattern);
+        const name      = this.troop().name;
+        const max_match = check_max_match(name);
+        const min_match = check_min_match(name);
 
         if (max_match || min_match) {
             this.clear();
@@ -190,20 +222,9 @@ https://newrpg.seesaa.net/article/475049887.html
             this._enemies = [];
 
             const members = this.troop().members;
-            let max = members.length;
-            let min = 1;
-            if (max_match) {
-                max = Number(max_match[1]);
-            }
-            if (min_match) {
-                min = Number(min_match[1]);
-            }
 
             // 敵キャラの出現数を算出
-            max = Math.randomInt(max) + 1;
-            if (max < min) {
-                max = min;
-            }
+            const max     = check_max(members.length, max_match, min_match);
 
             // 抽選する敵キャラのIDを配列に格納
             let ary   = [];
@@ -218,6 +239,7 @@ https://newrpg.seesaa.net/article/475049887.html
             }
 
             // 固定敵キャラの設定
+            const fix_match = check_fix_match(name);
             let fix = [];
             if (fix_match) {
                 fix = fix_match[1].split(',');
@@ -233,6 +255,8 @@ https://newrpg.seesaa.net/article/475049887.html
                 if (!width) width = $dataSystem.advanced.screenWidth;
                 if (!height) height = $dataSystem.advanced.screenHeight;
             }
+            
+            // 配置サイズの計算
             let first = (width / max) / 2;
             let y = height - 180 - 8; // 180 はメニューサイズ、 8 は余白
 
@@ -252,13 +276,9 @@ https://newrpg.seesaa.net/article/475049887.html
                 }
                 const enemy = new Game_Enemy(enemyId, x, y);
 
-                // Y座標指定
-                const sky = enemy.enemy().meta[SkyName];
-                let sky_y = 100;
-                if (sky) {
-                    if (sky !== true) sky_y = Number(sky.trim());
-                    enemy._screenY -= sky_y;
-                }
+                // 空中判定
+                check_sky(enemy);
+
                 this._enemies.push(enemy);
             }
 

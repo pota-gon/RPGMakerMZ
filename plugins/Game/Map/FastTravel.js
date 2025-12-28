@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ファストトラベル Ver1.0.4(2025/10/2)
+ファストトラベル Ver1.0.5(2025/12/28)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/Game/Map/FastTravel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.5: 説明文が全て空の場合、ヘルプウィンドウを非表示にする機能を追加
 * Ver1.0.4: 存在しないMapIDを指定したときに警告メッセージを表示し、エラーにしないように修正
 * Ver1.0.3: マップ名の表示機能が正しく動作していない問題を修正
 * Ver1.0.2: ヘルプ更新
@@ -123,6 +124,7 @@ ONのときコマンドが使用不可（灰色表示）になります
 
 - **マップ説明**
 行き先を選択した時に、右側のヘルプウィンドウに表示される説明文です
+※全ての行き先で空の場合、ヘルプウィンドウは表示されません
 
 - **コモンイベントID**:
   - **移動処理のコモンイベントID**
@@ -274,6 +276,14 @@ ONのときコマンドが使用不可（灰色表示）になります
 @default 1
 @min 1
 @max 3
+
+@param FullWidthWhenNoHelp
+@type boolean
+@text 説明なし時に全幅表示
+@desc 説明文がない場合、リストを全幅表示します
+@default false
+@on 全幅表示
+@off 通常表示
 
 @command fast_travel
 @text ファストトラベル
@@ -537,6 +547,13 @@ ONのときコマンドが使用不可（灰色表示）になります
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
+    function Potadra_convertBool(bool) {
+        if (bool === "false" || bool === '' || bool === undefined) {
+            return false;
+        } else {
+            return true;
+        }
+    }
     function Potadra_checkSwitch(switch_no, bool = true) {
         return switch_no === 0 || $gameSwitches.value(switch_no) === bool;
     }
@@ -615,6 +632,7 @@ ONのときコマンドが使用不可（灰色表示）になります
     const Escape_X_Variable   = Number(params.Escape_X_Variable || 0);
     const Escape_Y_Variable   = Number(params.Escape_Y_Variable || 0);
     const MaxCols             = Number(params.MaxCols || 1);
+    const FullWidthWhenNoHelp = Potadra_convertBool(params.FullWidthWhenNoHelp);
 
     let MoveMapList;
     if (MenuCommand && params.mapLists) {
@@ -670,6 +688,8 @@ ONのときコマンドが使用不可（灰色表示）になります
          */
         prepare(moveMapLists) {
             this._moveMapLists = [];
+            this._hasHelp = false; // ヘルプテキストが1つでもあるか
+
             if (moveMapLists) {
                 for (const value of moveMapLists) {
                     const map_data   = JSON.parse(value);
@@ -677,6 +697,10 @@ ONのときコマンドが使用不可（灰色表示）になります
                     const hideSwitch = Number(map_data.hideSwitch || 0);
                     if (Potadra_checkSwitch(showSwitch) && Potadra_checkSwitch(hideSwitch, false)) {
                         this._moveMapLists.push(map_data);
+                        // map_help が存在し、空でない場合
+                        if (!this._hasHelp && map_data.map_help) {
+                            this._hasHelp = true;
+                        }
                     }
                 }
             }
@@ -691,12 +715,29 @@ ONのときコマンドが使用不可（灰色表示）になります
             if (cancelSwitch !== 0) {
                 $gameSwitches.setValue(cancelSwitch, false);
             }
-            this.createHelpWindow();
+            // ヘルプテキストがある場合のみヘルプウィンドウを作成
+            if (this._hasHelp) {
+                this.createHelpWindow();
+            }
             this.createFastTravelWindow();
         }
 
+        /*
+         * メニュー背景作成
+         */
+        createBackground() {
+            if (this._hasHelp || FullWidthWhenNoHelp) {
+                super.createBackground();
+            } else { // ヘルプテキストがない場合は、ぼかしい背景をなくす
+                this._backgroundFilter = new PIXI.filters.BlurFilter();
+                this._backgroundSprite = new Sprite();
+                this._backgroundSprite.bitmap = SceneManager.backgroundBitmap();
+                this.addChild(this._backgroundSprite);
+            }
+        }
+
         /**
-         * 
+         * ファストトラベルウィンドウを作成
          */
         createFastTravelWindow() {
             const rect = this.fastTravelWindowRect();
@@ -704,19 +745,26 @@ ONのときコマンドが使用不可（灰色表示）になります
             this._fastTravelWindow.setHandler('ok',     this.commandMap.bind(this));
             this._fastTravelWindow.setHandler("cancel", this.onCancel.bind(this));
             this._fastTravelWindow.setupMapLists(this._moveMapLists);
-            this._fastTravelWindow.setHelpWindow(this._helpWindow);
+            // ヘルプウィンドウが存在する場合のみ設定
+            if (this._helpWindow) {
+                this._fastTravelWindow.setHelpWindow(this._helpWindow);
+            }
             this.addWindow(this._fastTravelWindow);
         }
 
         /**
-         * 
+         * ファストトラベルウィンドウの矩形
          *
          * @returns {} 
          */
         fastTravelWindowRect() {
             const wx = 0;
             const wy = this.helpAreaTop();
-            const ww = Graphics.boxWidth / 3;
+            let ww = Graphics.boxWidth / 3;
+            if (FullWidthWhenNoHelp) {
+                // ヘルプテキストがない場合は全幅を使用
+                ww = this._hasHelp ? Graphics.boxWidth / 3 : Graphics.boxWidth;
+            }
             const wh = Graphics.boxHeight - this.buttonAreaHeight();
             return new Rectangle(wx, wy, ww, wh);
         }
@@ -731,7 +779,7 @@ ONのときコマンドが使用不可（灰色表示）になります
         }
 
         /**
-         * 
+         * ヘルプウィンドウの矩形
          *
          * @returns {} 
          */
@@ -928,9 +976,14 @@ ONのときコマンドが使用不可（灰色表示）になります
          * ヘルプテキスト更新
          */
         updateHelp() {
+            // ヘルプウィンドウが存在しない場合は何もしない
+            if (!this._helpWindow) {
+                return;
+            }
+            
             super.updateHelp();
             const map_data = this._data[this.index()];
-            if (map_data) this._helpWindow.setText(map_data.map_help);
+            this._helpWindow.setText(map_data.map_help);
         }
 
         /**
