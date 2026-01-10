@@ -1,0 +1,6 @@
+# 公開しないプラグイン
+plugins/0_Base/PotBase.js
+plugins/2_System/Ex/ExStateIcon.js
+plugins/4_UI/ChangeChara.js
+plugins/4_UI/Story.js
+plugins/4_UI/BattleUI/HideBattleSkillTypes.js
