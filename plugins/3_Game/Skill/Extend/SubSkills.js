@@ -2,7 +2,7 @@
 @plugindesc
 サブスキル Ver1.0.1(2026/1/12)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/SubSkill.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Extend/SubSkills.js
 @target MZ
 @author ポテトードラゴン
 

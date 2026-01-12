@@ -2,7 +2,7 @@
 @plugindesc
 プレスキル Ver1.0.1(2026/1/12)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/PreSkill.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Extend/PreSkills.js
 @target MZ
 @author ポテトードラゴン
 

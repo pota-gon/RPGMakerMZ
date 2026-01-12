@@ -2,7 +2,7 @@
 @plugindesc
 防御スキル Ver1.0.0(2025/1/1)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/GuardSkill.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Add/GuardSkill.js
 @target MZ
 @author ポテトードラゴン
 

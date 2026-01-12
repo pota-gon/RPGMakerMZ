@@ -2,7 +2,7 @@
 @plugindesc
 スキル複数追加 Ver1.3.9(2025/7/22)
 
-@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/MultiSkill.js
+@url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Extend/MultiSkill.js
 @orderAfter NameSkill
 @target MZ
 @author ポテトードラゴン
