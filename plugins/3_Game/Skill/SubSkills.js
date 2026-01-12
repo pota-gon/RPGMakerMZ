@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-サブスキル Ver1.0.0(2026/1/12)
+サブスキル Ver1.0.1(2026/1/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/SubSkill.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.1: 競合対策を実施
 * Ver1.0.0: 初期版完成
 
 Copyright (c) 2026 ポテトードラゴン
@@ -131,10 +132,13 @@ https://opensource.org/license/mit
         return [];
     };
     const start_turn_pre_skills_params = Potadra_getPluginParams('PreSkills');
-    const PreSkillMetaName = String(start_turn_pre_skills_params.PreSkillMetaName || "プレスキル");
+    const StartTurnPreSkillMetaName = String(start_turn_pre_skills_params.PreSkillMetaName || "プレスキル");
     const start_turn_sub_skills_params = Potadra_getPluginParams('SubSkills');
-    const SubSkillMetaName = String(start_turn_sub_skills_params.SubSkillMetaName || "サブキル");
-    if (start_turn_pre_skills_params || start_turn_sub_skills_params) {
+    const StartTurnSubSkillMetaName = String(start_turn_sub_skills_params.SubSkillMetaName || "サブキル");
+    const start_turn_play_remember_skill_params = Potadra_getPluginParams('PlayRememberSkill');
+    const StartTurnActorTurnPlayVariable = Number(start_turn_play_remember_skill_params.ActorTurnPlayVariable || 0);
+    const StartTurnEnemyTurnPlayVariable = Number(start_turn_play_remember_skill_params.EnemyTurnPlayVariable || 0);
+    if (start_turn_pre_skills_params || start_turn_sub_skills_params || start_turn_play_remember_skill_params) {
         function set_actions(meta_names) {
             for (const member of $gameParty.movableMembers()) {
                 let add_actions = [];
@@ -176,10 +180,19 @@ https://opensource.org/license/mit
             const _BattleManager_startTurn = BattleManager.startTurn;
             BattleManager.startTurn = function() {
                 _BattleManager_startTurn.apply(this, arguments);
-                set_actions([PreSkillMetaName, SubSkillMetaName]);
+                if (start_turn_pre_skills_params || start_turn_sub_skills_params) {
+                    set_actions([StartTurnPreSkillMetaName, StartTurnSubSkillMetaName]);
+                }
+                if (start_turn_play_remember_skill_params) {
+                    if (Potadra_checkVariable(StartTurnActorTurnPlayVariable)) $gameVariables.setValue(StartTurnActorTurnPlayVariable, 0);
+                    if (Potadra_checkVariable(StartTurnEnemyTurnPlayVariable)) $gameVariables.setValue(StartTurnEnemyTurnPlayVariable, 0);
+                }
             };
             BattleManager._potadraStartTurn = true;
         }
+    }
+    function Potadra_checkVariable(variable_no) {
+        return variable_no > 0 && variable_no <= 5000;
     }
     function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
         return Potadra_search(data, name, column, search_column, val, initial);
