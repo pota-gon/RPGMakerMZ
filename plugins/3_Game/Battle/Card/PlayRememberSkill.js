@@ -73,7 +73,7 @@ https://opensource.org/license/mit
                         if (!original_action._result) original_action.applyResult(original_target);
                     }
                     for (const meta_name of meta_names) {
-                        if (meta_name === SubSkillMetaName) add_actions.push(original_action);
+                        if (meta_name === StartTurnSubSkillMetaName) add_actions.push(original_action);
                         const item = original_action.item();
                         const skill_names = Potadra_metaData(item.meta[meta_name]);
                         if (skill_names && skill_names.length > 0) {
@@ -93,7 +93,7 @@ https://opensource.org/license/mit
                                 }
                             }
                         }
-                        if (meta_name === PreSkillMetaName) add_actions.push(original_action);
+                        if (meta_name === StartTurnPreSkillMetaName) add_actions.push(original_action);
                     }
                 }
                 member._actions = add_actions;
