@@ -93,7 +93,6 @@ https://opensource.org/license/mit
                                 }
                             }
                         }
-                        if (meta_name === StartTurnPreSkillMetaName) add_actions.push(original_action);
                     }
                 }
                 member._actions = add_actions;

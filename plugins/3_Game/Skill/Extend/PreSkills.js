@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-プレスキル Ver1.0.1(2026/1/12)
+プレスキル Ver1.0.2(2026/1/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Extend/PreSkills.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.2: 通常スキルが2回実行されるバグ修正
 * Ver1.0.1: 競合対策を実施
 * Ver1.0.0: 初期版完成
 
@@ -170,7 +171,6 @@ https://opensource.org/license/mit
                                 }
                             }
                         }
-                        if (meta_name === StartTurnPreSkillMetaName) add_actions.push(original_action);
                     }
                 }
                 member._actions = add_actions;
