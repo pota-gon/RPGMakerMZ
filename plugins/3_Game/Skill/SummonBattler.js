@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-アクター・敵キャラ召喚 Ver1.0.1(2026/1/10)
+アクター・敵キャラ召喚 Ver1.0.2(2026/1/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/SummonBattler.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.2: プレスキル・サブスキル機能を別プラグインに分離
 * Ver1.0.1: プレスキル機能追加、検索にキャッシュ追加
 * Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
@@ -50,26 +51,6 @@ https://opensource.org/license/mit
 例:
 <敵キャラ召喚: 2> // ID2の敵キャラを召喚
 <敵キャラ召喚: ゴブリン, スライム> // ゴブリンとスライムを召喚
-
-#### プレスキル
-<プレスキル: スキルIDまたは名前>
-このタグが設定されたスキルを使用する前に、
-指定したスキルを同じ行動者が先に使用します
-スキル発動前に準備動作を入れるような使い方ができます
-
-例:
-<プレスキル: 10> // ID10のスキルを先に発動
-<プレスキル: 構え> // 構えスキルを先に発動
-
-#### サブスキル
-<サブスキル: スキルIDまたは名前>
-このタグが設定されたスキルを使用した後、
-続けて指定したスキルを同じ行動者が使用します
-召喚と同時に、召喚者にバフをかけるといった使い方ができます
-
-例:
-<サブスキル: 10> // ID10のスキルを追加発動
-<サブスキル: ヘイスト> // ヘイストを追加発動
 
 #### 消滅
 <消滅>
@@ -119,14 +100,6 @@ https://opensource.org/license/mit
 #### 召喚アクター経験値獲得
 ONにすると、召喚されたアクターも戦闘終了時に経験値を獲得するようになります
 デフォルト: OFF (獲得しない)
-
-#### プレスキルタグ
-プレスキルを指定するためのメモ欄タグ名を指定します
-デフォルト: プレスキル
-
-#### サブスキルタグ
-サブスキルを指定するためのメモ欄タグ名を指定します
-デフォルト: サブスキル
 
 #### 戦闘不能スキルタグ
 戦闘不能時スキルを指定するためのメモ欄タグ名を指定します
@@ -179,18 +152,6 @@ OFFの場合、戦闘不能状態のまま戦闘終了まで残ります
 @on 獲得する
 @off 獲得しない
 @default false
-
-@param PreSkillMetaName
-@text プレスキルタグ
-@desc プレスキルに使うメモ欄タグの名称
-デフォルトは プレスキル
-@default プレスキル
-
-@param SubSkillMetaName
-@text サブスキルタグ
-@desc サブスキルに使うメモ欄タグの名称
-デフォルトは サブスキル
-@default サブスキル
 
 @param FaintMetaName
 @text 戦闘不能スキルタグ
@@ -312,20 +273,12 @@ OFFの場合、戦闘不能状態のまま戦闘終了まで残ります
     function Potadra_checkVariable(variable_no) {
         return variable_no > 0 && variable_no <= 5000;
     }
-    function Potadra_checkName(data, name, val = false) {
-        if (isNaN(name)) {
-            return Potadra_nameSearch(data, name.trim(), "id", "name", val);
-        }
-        return Number(name || val);
-    }
 
     // パラメータ用定数
     const plugin_name = Potadra_getPluginName();
     const params = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用定数
-    const PreSkillMetaName = String(params.PreSkillMetaName || "プレスキル");
-    const SubSkillMetaName = String(params.SubSkillMetaName || "サブスキル");
     const SummonActorMetaName = String(params.SummonActorMetaName || "アクター召喚");
     const SummonEnemyMetaName = String(params.SummonEnemyMetaName || "敵キャラ召喚");
     let DummyActorId = Number(params.DummyActorId || 0);
@@ -607,28 +560,10 @@ OFFの場合、戦闘不能状態のまま戦闘終了まで残ります
      */
     const BattleManager_startAction = BattleManager.startAction;
     BattleManager.startAction = function () {
-        const subject = this._subject;
-        const action = subject.currentAction();
-        const item = action.item();
-        
-        // プレスキル
-        const pre_skill_name = Potadra_meta(item.meta, PreSkillMetaName);
-        if (pre_skill_name) {
-            const pre_skill_id = Potadra_checkName($dataSkills, pre_skill_name);
-            if (pre_skill_id) {
-                const pre_action = new Game_Action(subject);
-                pre_action.setSkill(pre_skill_id);
-                subject.setAction(0, pre_action);
-                BattleManager.potadraSetSubject(subject);
-                BattleManager.startAction();
-                this._subject.removeCurrentAction();
-            }
-        }
-        
-        const targets = action.makeTargets();
+        const targets = this._subject.currentAction().makeTargets();
         if (targets.length === 0) {
             BattleManager_startAction.apply(this, arguments);
-            this.potadraAction(item, this._subject, targets[0]);
+            this.potadraAction(this._action.item(), this._subject, targets[0]);
         } else {
             BattleManager_startAction.apply(this, arguments);
         }
@@ -663,20 +598,6 @@ OFFの場合、戦闘不能状態のまま戦闘終了まで残ります
             const realTarget = this.applySubstitute(target);
             this._action.apply(realTarget);
             this._logWindow.displayActionResults(subject, realTarget);
-        }
-
-        // サブスキル
-        const skill_name = Potadra_meta(item.meta, SubSkillMetaName);
-        if (skill_name) {
-            const skill_id = Potadra_checkName($dataSkills, skill_name);
-            if (skill_id) {
-                const sub_action = new Game_Action(subject);
-                sub_action.setSkill(skill_id);
-                subject.setAction(0, sub_action);
-                BattleManager.potadraSetSubject(subject);
-                BattleManager.startAction();
-                this._subject.removeCurrentAction();
-            }
         }
     };
 
