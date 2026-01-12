@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-サブスキル Ver1.0.2(2026/1/12)
+サブスキル Ver1.0.3(2026/1/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Extend/SubSkills.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.3: 単体対象のターゲットがおかしくなるバグ修正
 * Ver1.0.2: 通常スキルが2回実行されるバグ修正
 * Ver1.0.1: 競合対策を実施
 * Ver1.0.0: 初期版完成
@@ -145,11 +146,6 @@ https://opensource.org/license/mit
                 let add_actions = [];
                 for (const original_action of member._actions) {
                     const original_targets = original_action.makeTargets();
-                    if (original_targets.length === 1) {
-                        const original_target = original_targets[0];
-                        original_action.setTarget(original_target);
-                        if (!original_action._result) original_action.applyResult(original_target);
-                    }
                     for (const meta_name of meta_names) {
                         if (meta_name === StartTurnSubSkillMetaName) add_actions.push(original_action);
                         const item = original_action.item();
