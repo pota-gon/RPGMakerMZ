@@ -62,34 +62,55 @@ https://opensource.org/license/mit
     const start_turn_play_remember_skill_params = Potadra_getPluginParams('PlayRememberSkill');
     const StartTurnActorTurnPlayVariable = Number(start_turn_play_remember_skill_params.ActorTurnPlayVariable || 0);
     const StartTurnEnemyTurnPlayVariable = Number(start_turn_play_remember_skill_params.EnemyTurnPlayVariable || 0);
+    Game_BattlerBase.prototype.canPaySimulateSkillCost = function(skill, tp, mp) {
+        return (
+            tp >= this.skillTpCost(skill) &&
+            mp >= this.skillMpCost(skill)
+        );
+    };
     if (start_turn_pre_skills_params || start_turn_sub_skills_params || start_turn_play_remember_skill_params) {
-        function set_actions(meta_names) {
-            for (const member of $gameParty.movableMembers()) {
-                let add_actions = [];
-                for (const original_action of member._actions) {
-                    const original_targets = original_action.makeTargets();
-                    for (const meta_name of meta_names) {
-                        if (meta_name === StartTurnSubSkillMetaName) add_actions.push(original_action);
-                        const item = original_action.item();
-                        const skill_names = Potadra_metaData(item.meta[meta_name]);
-                        if (skill_names && skill_names.length > 0) {
-                            for (const skill_name of skill_names) {
-                                if (!skill_name) continue;
-                                const skill_id = Potadra_checkName($dataSkills, skill_name);
-                                if (skill_id) {
-                                    const action = new Game_Action(member);
-                                    action.setSkill(skill_id);
-                                    const targets = action.potadraMakeTargets(original_action, original_targets);
-                                    if (targets.length === 1) {
-                                        const target = targets[0];
-                                        action.setTarget(target);
-                                        if (!action._result) action.applyResult(target);
-                                    }
-                                    add_actions.push(action);
-                                }
-                            }
+        function set_actions(member, original_action, item, meta_name) {
+            let add_actions = [];
+            const skill_names = Potadra_metaData(item.meta[meta_name]);
+            if (skill_names && skill_names.length > 0) {
+                const original_targets = original_action.makeTargets();
+                for (const skill_name of skill_names) {
+                    if (!skill_name) continue;
+                    const skill_id = Potadra_checkName($dataSkills, skill_name);
+                    if (skill_id) {
+                        const action = new Game_Action(member);
+                        action.setSkill(skill_id);
+                        const targets = action.potadraMakeTargets(original_action, original_targets);
+                        if (targets.length === 1) {
+                            const target = targets[0];
+                            action.setTarget(target);
+                            if (!action._result) action.applyResult(target);
                         }
+                        add_actions.push(action);
                     }
+                }
+            }
+            return add_actions;
+        }
+        function PreSubSkills() {
+            const members = $gameParty.movableMembers().concat($gameTroop.movableMembers());
+            for (const member of members) {
+                let add_actions = [];
+                let tp = member._tp;
+                let mp = member._mp;
+                for (const original_action of member._actions) {
+                    const item = original_action.item();
+                    if (!member.canPaySimulateSkillCost(item, tp, mp)) {
+                        add_actions.push(original_action);
+                        continue;
+                    }
+                    tp -= member.skillTpCost(item);
+                    mp -= member.skillMpCost(item);
+                    let pre_actions = [];
+                    let sub_actions = [];
+                    if (start_turn_pre_skills_params) pre_actions = set_actions(member, original_action, item, StartTurnPreSkillMetaName);
+                    if (start_turn_sub_skills_params) sub_actions = set_actions(member, original_action, item, StartTurnSubSkillMetaName);
+                    add_actions = add_actions.concat(pre_actions).concat([original_action]).concat(sub_actions);
                 }
                 member._actions = add_actions;
             }
@@ -98,9 +119,7 @@ https://opensource.org/license/mit
             const _BattleManager_startTurn = BattleManager.startTurn;
             BattleManager.startTurn = function() {
                 _BattleManager_startTurn.apply(this, arguments);
-                if (start_turn_pre_skills_params || start_turn_sub_skills_params) {
-                    set_actions([StartTurnPreSkillMetaName, StartTurnSubSkillMetaName]);
-                }
+                if (start_turn_pre_skills_params || start_turn_sub_skills_params) PreSubSkills();
                 if (start_turn_play_remember_skill_params) {
                     if (Potadra_checkVariable(StartTurnActorTurnPlayVariable)) $gameVariables.setValue(StartTurnActorTurnPlayVariable, 0);
                     if (Potadra_checkVariable(StartTurnEnemyTurnPlayVariable)) $gameVariables.setValue(StartTurnEnemyTurnPlayVariable, 0);
