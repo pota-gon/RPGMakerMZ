@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-サブスキル Ver1.0.4(2026/1/13)
+サブスキル Ver1.0.5(2026/1/18)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Extend/SubSkills.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.5: 敵キャラなどアクションが1つも設定されていないとエラーになるバグ修正
 * Ver1.0.4: 元のスキルのコストが足りていない時もプレスキルが追加されるバグ修正
 * Ver1.0.3: 単体対象のターゲットがおかしくなるバグ修正
 * Ver1.0.2: 通常スキルが2回実行されるバグ修正
@@ -179,6 +180,7 @@ https://opensource.org/license/mit
                 let mp = member._mp;
                 for (const original_action of member._actions) {
                     const item = original_action.item();
+                    if (!item) continue;
                     if (!member.canPaySimulateSkillCost(item, tp, mp)) {
                         add_actions.push(original_action);
                         continue;

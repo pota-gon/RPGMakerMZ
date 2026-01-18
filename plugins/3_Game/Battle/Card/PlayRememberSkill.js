@@ -100,6 +100,7 @@ https://opensource.org/license/mit
                 let mp = member._mp;
                 for (const original_action of member._actions) {
                     const item = original_action.item();
+                    if (!item) continue;
                     if (!member.canPaySimulateSkillCost(item, tp, mp)) {
                         add_actions.push(original_action);
                         continue;

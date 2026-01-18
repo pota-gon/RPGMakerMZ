@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-名前データベース Ver1.0.2(2026/1/10)
+名前データベース Ver1.0.3(2026/1/18)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/2_System/Name/NameDatabase.js
 @orderAfter Game_Action_Result
@@ -8,10 +8,11 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.3: スキル封印(特徴)を追加
 * Ver1.0.2
 - ステート解除をスキル・アイテム実行前に行うように修正、リファクタリング
 - ステート有効度と攻撃時ステートが正しく動いていないバグ修正
-* Ver1.0.1: 習得するスキル（アクター）を追加
+* Ver1.0.1: 習得するスキル(アクター)を追加
 * Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2026 ポテトードラゴン
@@ -43,30 +44,36 @@ https://opensource.org/license/mit
 ・1番目の装飾品スロットに「指輪」を装備
 `<装飾品1: 指輪>`
 
-### スキル追加（特徴）
+### スキル追加(特徴)
 アクター、職業、武器、防具、ステートのメモ欄に記述することで
 特徴の「スキル追加」を名前で指定できます
 
 **書式:** `<スキル追加: スキル名>`
 
-### 習得するスキル（アクター）
+### スキル封印(特徴)
+アクター、職業、武器、防具、ステートのメモ欄に記述することで
+特徴の「スキル封印」を名前で指定できます
+
+**書式:** `<スキル封印: スキル名>`
+
+### 習得するスキル(アクター)
 アクターのメモ欄に記述することで、習得スキルを名前で指定できます
 
 **書式:** `<習得スキル: レベル, スキル名>`
 
-### 習得するスキル（職業）
+### 習得するスキル(職業)
 職業のメモ欄に記述することで、習得スキルを名前で指定できます
 
 **書式:** `<習得スキル: レベル, スキル名>`
 
-### ステート関連（特徴）
+### ステート関連(特徴)
 アクター、職業、武器、防具、ステートのメモ欄に記述します
 
 **ステート有効度:** `<ステート有効度: ステート名, 確率(%)>`
 **ステート無効化:** `<ステート無効化: ステート名>`
 **攻撃時ステート:** `<攻撃時ステート: ステート名, 確率(%)>`
 
-### ステート関連（使用効果）
+### ステート関連(使用効果)
 スキル、アイテムのメモ欄に記述します
 
 **ステート付加:** `<ステート付加: ステート名, 確率(%)>`
@@ -75,7 +82,7 @@ https://opensource.org/license/mit
 ### 注意事項
 このプラグインは名前でデータを検索します
 同じ名前の項目が複数ある場合、データベースの上にあるものが優先されます
-（例: 同名のアイテムと武器がある場合、アイテムが参照されます）
+(例: 同名のアイテムと武器がある場合、アイテムが参照されます)
 意図しない動作を避けるため、名前はユニークにすることをおすすめします
 
 @param ActorEquip
@@ -107,6 +114,21 @@ https://opensource.org/license/mit
     @desc スキル追加に使うメモ欄タグの名称
     デフォルトは スキル追加
     @default スキル追加
+
+@param SealSkill
+@type boolean
+@text スキル封印(特徴)
+@desc スキル封印(特徴)に対応するかの設定
+@on 対応する
+@off 対応しない
+@default true
+
+    @param SealSkillMetaName
+    @parent SealSkill
+    @text スキル封印タグ
+    @desc スキル封印に使うメモ欄タグの名称
+    デフォルトは スキル封印
+    @default スキル封印
 
 @param ActorLearning
 @type boolean
@@ -388,6 +410,8 @@ https://opensource.org/license/mit
     const ActorEquipMetaName   = String(params.ActorEquipMetaName || '装備');
     const AddSkill             = Potadra_convertBool(params.AddSkill);
     const AddSkillMetaName     = String(params.AddSkillMetaName || 'スキル追加');
+    const SealSkill            = Potadra_convertBool(params.SealSkill);
+    const SealSkillMetaName    = String(params.SealSkillMetaName || 'スキル封印');
     const StateRate            = Potadra_convertBool(params.StateRate);
     const StateRateMetaName    = String(params.StateRateMetaName || 'ステート有効度');
     const StateResist          = Potadra_convertBool(params.StateResist);
@@ -475,8 +499,8 @@ https://opensource.org/license/mit
 
         /**
          * アクターを扱うクラスです。
-         * このクラスは Game_Actors クラス（$gameActors）の内部で使用され、
-         * Game_Party クラス（$gameParty）からも参照されます。
+         * このクラスは Game_Actors クラス($gameActors)の内部で使用され、
+         * Game_Party クラス($gameParty)からも参照されます。
          *
          * @class
          */
@@ -504,8 +528,8 @@ https://opensource.org/license/mit
     if (AddSkill) {
         /**
          * アクターを扱うクラスです。
-         * このクラスは Game_Actors クラス（$gameActors）の内部で使用され、
-         * Game_Party クラス（$gameParty）からも参照されます。
+         * このクラスは Game_Actors クラス($gameActors)の内部で使用され、
+         * Game_Party クラス($gameParty)からも参照されます。
          *
          * @class
          */
@@ -518,6 +542,24 @@ https://opensource.org/license/mit
         Game_Actor.prototype.addedSkills = function() {
             const skill_ids = Potadra_checkMetaIds(this, AddSkillMetaName, $dataSkills);
             return this.traitsSet(Game_BattlerBase.TRAIT_SKILL_ADD).concat(skill_ids);
+        };
+    }
+
+    // スキル封印(特徴)
+    if (SealSkill) {
+        /**
+         * スキル封印の判定（元の処理 + メタタグ封印 + traits封印）
+         *
+         * @param {number} skillId
+         * @returns {boolean}
+         */
+        const _Game_BattlerBase_isSkillSealed = Game_BattlerBase.prototype.isSkillSealed;
+        Game_BattlerBase.prototype.isSkillSealed = function(skillId) {
+            // 元の処理を優先
+            if (_Game_BattlerBase_isSkillSealed.apply(this, arguments)) return true;
+
+            // どちらかに含まれていれば封印
+            return Potadra_checkMetaIds(this, SealSkillMetaName, $dataSkills).includes(skillId);
         };
     }
 
@@ -617,8 +659,8 @@ https://opensource.org/license/mit
     if (Learning || ActorLearning) {
         /**
          * アクターを扱うクラスです。
-         * このクラスは Game_Actors クラス（$gameActors）の内部で使用され、
-         * Game_Party クラス（$gameParty）からも参照されます。
+         * このクラスは Game_Actors クラス($gameActors)の内部で使用され、
+         * Game_Party クラス($gameParty)からも参照されます。
          *
          * @class
          */

@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-守護 Ver1.0.0(2025/10/4)
+守護 Ver1.0.1(2026/1/18)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Battle/Card/ChangeProtection.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.1: ヘルプに守護無視タグの説明追加
 * Ver1.0.0: 初期版完成
 
 Copyright (c) 2026 ポテトードラゴン
@@ -20,6 +21,17 @@ https://opensource.org/license/mit
 ## 使い方
 初期設定は必要ありません  
 プラグイン導入だけで動作します
+
+### 守護無視タグ  
+このタグをスキルのメモ欄に記述すると、  
+そのスキルは「守護（身代わり）」による強制ターゲット変更を無視して攻撃できます。
+
+・用途：守護を突破するスキルを作りたい場合に使用  
+・設定場所：スキルのメモ欄  
+・デフォルトタグ名：<守護無視>
+
+【記述例】
+<守護無視>
 
 @param IgnoreProtectionMetaName
 @text 守護無視タグ
