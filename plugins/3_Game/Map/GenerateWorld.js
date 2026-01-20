@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.6.7(2025/10/19)
+ワールド自動生成 Ver0.6.8(2026/1/21)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,12 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.6.8
+- パーリンノイズを重ねる機能を仮追加(現在は内部で使える状態にだけした)
+- 高さを保持するように修正(無駄にパーリンノイズを計算する部分が減ったのでかすかに高速化)
+- 元のリージョンを保存するように修正
+- タイル完全固定リージョンが正しく動いていないバグ修正
+- 固定リージョンとタイル完全固定リージョンは整形しないように修正
 * Ver0.6.7
 - 池の仮実装
 - 開発用のプロジェクトの必要性がほとんどないため、廃止
@@ -1327,6 +1333,9 @@ https://opensource.org/license/mit
         }
         return true;
     }
+    function PotadraGenerate_index2D(x, y) {
+        return y * $dataMap.width + x;
+    }
     function PotadraGenerate_index(x, y, z) {
         return (z * $dataMap.height + y) * $dataMap.width + x;
     }
@@ -1401,6 +1410,19 @@ https://opensource.org/license/mit
         if (value > 1) return 1;
         if (value < -1) return -1;
         return value;
+    }
+    function PotadraPerlinNoise_octaveNoise(x, y, seed_length, my_seed, octaves = 4, persistence = 0.5) {
+        let total = 0;
+        let frequency = 1;
+        let amplitude = 1;
+        let maxValue = 0; // 正規化用
+        for (let i = 0; i < octaves; i++) {
+            total += PotadraPerlinNoise_my_noise(x * frequency, y * frequency, seed_length, my_seed) * amplitude;
+            maxValue += amplitude;
+            amplitude *= persistence; // 振幅を減衰
+            frequency *= 2;           // 周波数を倍に
+        }
+        return total / maxValue; // -1～1 に正規化
     }
     function PotadraShip_checkValues(BoatSwitch, ShipSwitch, AirshipSwitch) {
         const boat    = Potadra_checkSwitch(BoatSwitch);
@@ -1754,9 +1776,13 @@ https://opensource.org/license/mit
     PluginManager.registerCommand(plugin_name, "InitMap", args => {
         if (RetentionSaveData) {
             $gameMap._potadra_worlds = [];
+            $gameMap._potadra_values = [];
+            $gameMap._potadra_regions = [];
             $gameMap._potadra_auto = false;
         } else {
             $gameTemp._potadra_worlds = [];
+            $gameTemp._potadra_values = [];
+            $gameTemp._potadra_regions = [];
             $gameTemp._potadra_auto = false;
         }
         if (Potadra_checkVariable(SeedVariable)) {
@@ -1775,7 +1801,7 @@ https://opensource.org/license/mit
         // シードを変数に記憶
         const s = setSeed();
 
-        // 乱数設定(Xorshift)
+        // 乱数設定
         if ($gameTemp._seed !== s) {
             if (RandomNumber) {
                 $gameTemp._seedArray = shuffle(s);
@@ -1978,7 +2004,9 @@ https://opensource.org/license/mit
             for (let y = 0; y < max_j; y++) {
                 const region  = _Game_Map_tileId.call(this, x, y, 5);
                 const layer_2 = _Game_Map_tileId.call(this, x, y, 1);
-                if ((TileRegion !== 0 && region === TileRegion) || (TwoChoiceRegion !== 0 && region === TwoChoiceRegion)) {
+                if ((TileRegion !== 0 && region === TileRegion) ||
+                    (TwoChoiceRegion !== 0 && region === TwoChoiceRegion) ||
+                    (LockTileRegion !== 0 && region === LockTileRegion)) {
                     layer1[x][y] = MiniatureTileId(x, y);
                     layer2[x][y] = MiniatureTileId(x, y, 1);
                     layer3[x][y] = MiniatureTileId(x, y, 2);
@@ -1992,6 +2020,7 @@ https://opensource.org/license/mit
                 } else {
                     tiles[x][y] = MiniatureTileId(x, y);
                 }
+                setTileRegion(x, y, region);
             }
         }
 
@@ -2017,7 +2046,7 @@ https://opensource.org/license/mit
                 for (let x = start_x; x < end_x; x++) {
                     for (let y = start_y; y < end_y; y++) {
                         const tile = tiles[i][j];
-                        if (TileRegion !== 0 && tile === TileRegion) { // 固定
+                        if (TileRegion !== 0 && tile === TileRegion || LockTileRegion !== 0 && tile === LockTileRegion) { // 固定
                             if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
                             if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, layer2[i][j]);
                             if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, layer3[i][j]);
@@ -2058,9 +2087,14 @@ https://opensource.org/license/mit
     function fixWorld() {
         for (let x = 0; x < $dataMap.width; x++) {
             for (let y = 0; y < $dataMap.height; y++) {
+                // タイル固定リージョンは整形しない
+                if (TileRegion !== 0 && getRegion(x, y) === TileRegion || LockTileRegion !== 0 && getRegion(x, y) === LockTileRegion) {
+                    continue;
+                }
+
                 const layer1 = edgeTileId(x, y, 0, 2816);
                 const layer2 = edgeTileId(x, y, 1, 2096);
-                const value = PotadraPerlinNoise_my_noise(x, y, SEED_LENGTH, $gameTemp._seedArray);
+                const value = getValue(x, y);
 
                 // 山(岩) のとき
                 if (layer2 === 3872) {
@@ -2151,6 +2185,30 @@ https://opensource.org/license/mit
     }
 
     /**
+     * 高さの取得
+     *
+     * @param {number} x - X座標
+     * @param {number} y - Y座標
+     * @returns {}
+     */
+    function getValue(x, y) {
+        const data = RetentionSaveData ? $gameMap : $gameTemp;
+        return data._potadra_values[PotadraGenerate_index2D(x, y)];
+    }
+
+    /**
+     * リージョンの取得
+     *
+     * @param {number} x - X座標
+     * @param {number} y - Y座標
+     * @returns {}
+     */
+    function getRegion(x, y) {
+        const data = RetentionSaveData ? $gameMap : $gameTemp;
+        return data._potadra_regions[PotadraGenerate_index2D(x, y)];
+    }
+
+    /**
      * 指定座標にあるタイル ID の取得(ワールド自動生成前のタイル)
      *
      * @param {number} x - X座標
@@ -2175,6 +2233,32 @@ https://opensource.org/license/mit
         const index = PotadraGenerate_index(x, y, z);
         const data  = RetentionSaveData ? $gameMap : $gameTemp;
         data._potadra_worlds[index] = tileId;
+    }
+
+    /**
+     * 指定座標の高さの設定
+     *
+     * @param {number} x - X座標
+     * @param {number} y - Y座標
+     * @param {number} value - 値
+     */
+    function setTileValue(x, y, value) {
+        const index = PotadraGenerate_index2D(x, y);
+        const data  = RetentionSaveData ? $gameMap : $gameTemp;
+        data._potadra_values[index] = value;
+    }
+
+    /**
+     * 指定座標のリージョンの設定
+     *
+     * @param {number} x - X座標
+     * @param {number} y - Y座標
+     * @param {number} region - リージョン
+     */
+    function setTileRegion(x, y, region) {
+        const index = PotadraGenerate_index2D(x, y);
+        const data  = RetentionSaveData ? $gameMap : $gameTemp;
+        data._potadra_regions[index] = region;
     }
 
     /**
@@ -2313,6 +2397,8 @@ https://opensource.org/license/mit
         // const biome_tile_sets = BiomeTileSets.biome_tile_sets;
         // console.debug(BiomeTileSets);
         const value = PotadraPerlinNoise_my_noise(x, y, seed_length, $gameTemp._seedArray);
+        //const value = PotadraPerlinNoise_octaveNoise(x, y, seed_length, $gameTemp._seedArray, 1, 1.0);
+        setTileValue(x, y, value);
         topTile(value, x, y, biome.top_tile, upper, passable);
         bottomTile(value, x, y, biome.bottom_tile);
     }
@@ -3014,6 +3100,8 @@ https://opensource.org/license/mit
         Game_Map.prototype.initialize = function() {
             _Game_Map_initialize.apply(this, arguments);
             this._potadra_worlds = [];
+            this._potadra_values = [];
+            this._potadra_regions = [];
             this._potadra_auto = false;
         };
     } else {
@@ -3021,6 +3109,8 @@ https://opensource.org/license/mit
         Game_Temp.prototype.initialize = function() {
             _Game_Temp_initialize.apply(this, arguments);
             this._potadra_worlds = [];
+            this._potadra_values = [];
+            this._potadra_regions = [];
             this._potadra_auto = false;
         };
     }
