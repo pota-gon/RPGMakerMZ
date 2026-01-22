@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-スキルコスト Ver1.0.0(2025/10/19)
+スキルコスト Ver1.0.1(2026/1/21)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/SkillCost.js
 @orderAfter Madante
@@ -8,6 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.1: HP1で残すことが出来るプラグインパラメータ追加
 * Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2026 ポテトードラゴン
@@ -103,6 +104,14 @@ HP、MP、TP、所持金、アイテムなど多様なコストを設定でき�
 @on 0にする
 @off 消費する
 @default false
+
+@param HpCostOverOne
+@type boolean
+@text HP1で残る
+@desc HP0になる場合の処理
+@on HP1で残る
+@off HP0になる
+@default true
 
 @param HpCostColor
 @type color
@@ -304,6 +313,7 @@ HP、MP、TP、所持金、アイテムなど多様なコストを設定でき�
     const FixSkillCostSize = Potadra_convertBool(params.FixSkillCostSize);
     const ItemCostName = String(params.ItemCostName || '個');
     const AttackCostZero = Potadra_convertBool(params.AttackCostZero);
+    const HpCostOverOne = Potadra_convertBool(params.HpCostOverOne);
     const HpCostColor = Number(params.HpCostColor || 21);
     const GoldCostColor = Number(params.GoldCostColor || 14);
     const ItemCostColor = Number(params.ItemCostColor || 0);
@@ -544,7 +554,12 @@ HP、MP、TP、所持金、アイテムなど多様なコストを設定でき�
         if (attackCostZero(skill, this)) return true;
 
         _Game_BattlerBase_paySkillCost.apply(this, arguments);
-        this._hp -= this.skillHpCost(skill);
+        const hp_cost = this.skillHpCost(skill);
+        if (HpCostOverOne && this.hp <= hp_cost) {
+            this._hp = 1;
+        } else {
+            this._hp -= hp_cost;
+        }
         $gameParty.loseGold(this.skillGoldCost(skill));
         if (this._item) {
             $gameParty.loseItem(this._item, this.skillItemCost(skill), false);

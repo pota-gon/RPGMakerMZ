@@ -803,7 +803,7 @@ https://opensource.org/license/mit
                 }
             }
 
-            _Game_Action_apply.call(this, target);
+            _Game_Action_apply.apply(this, arguments);
 
             // ステート解除(使用効果)
             let remote_effects = [];
