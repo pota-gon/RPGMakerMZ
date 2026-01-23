@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.7.1(2026/1/23)
+ワールド自動生成 Ver0.7.2(2026/1/24)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,12 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.7.2
+- 池の生成をON・OFF出来なかったバグ修正
+- ワールド自動生成前のタイルを取得出来るプラグインコマンド追加
+- 座標の高さを変数に取得することが出来るプラグインコマンド追加
+- マップ情報を取得するプラグインコマンド削除(指定位置の情報取得で全部可能なため)
+- リファクタリング
 * Ver0.7.1
 - 座標を記憶する機能追加
 - リファクタリング
@@ -770,9 +776,9 @@ https://opensource.org/license/mit
 @text マップ情報初期化
 @desc ワールド自動生成で作成したマップ情報を初期化します
 
-@command GetMap
-@text マップ情報取得
-@desc ワールド自動生成で作成したマップ情報を取得します
+@command GetTile
+@text ワールド自動生成前タイル取得
+@desc ワールド自動生成前のタイル情報を取得します
 
     @arg x
     @type number
@@ -791,6 +797,29 @@ https://opensource.org/license/mit
     @text Z座標
     @desc マップ情報を取得するZ座標(0: レイヤー1, 1: レイヤー2
     2: レイヤー3, 3: レイヤー4, 4: 影, 5: リージョン)
+    @default 0
+
+    @arg variable
+    @type variable
+    @text 変数
+    @desc 取得したマップ情報を代入する変数
+    0の場合は、値を返却します
+    @default 0
+
+@command GetHeight
+@text ワールド自動生成タイル高さ取得
+@desc ワールド自動生成のタイルの高さ情報を取得します
+
+    @arg x
+    @type number
+    @text X座標
+    @desc マップ情報を取得するX座標
+    @default 0
+
+    @arg y
+    @type number
+    @text Y座標
+    @desc マップ情報を取得するY座標
     @default 0
 
     @arg variable
@@ -918,9 +947,10 @@ https://opensource.org/license/mit
     let distantTileIds = [];
     let x_points       = [];
     let y_points       = [];
-    function showTime(time, message) {
+    function showTime(message, time = Date.now()) {
         let endTime = Date.now(); // 終了時間
         console.debug(message + '時間: ' + (endTime - time) + 'ms'); // 何ミリ秒かかったかを表示する
+        return endTime;
     }
     class PotadraXorshift {
         constructor(seed = 1) {
@@ -1007,6 +1037,9 @@ https://opensource.org/license/mit
     function Potadra_getPluginParams(plugin_name) {
         return Potadra_isPlugin(plugin_name) ? PluginManager.parameters(plugin_name) : false;
     }
+    function Potadra_random(probability, rate = 1) {
+        return Math.random() <= probability / 100 * rate;
+    }
 
 
 
@@ -1064,9 +1097,6 @@ https://opensource.org/license/mit
             }
         }
         return false;
-    }
-    function Potadra_random(probability, rate = 1) {
-        return Math.random() <= probability / 100 * rate;
     }
     function Potadra_isTest(play_test = true) {
         return !play_test || Utils.isOptionValid("test");
@@ -1654,6 +1684,36 @@ https://opensource.org/license/mit
         }
         return false;
     }
+    function PotadraSeed_setSeed(seed_variable, random_number) {
+        let s;
+        if (Potadra_checkVariable(seed_variable) && $gameVariables.value(seed_variable) !== 0) {
+            s = $gameVariables.value(seed_variable);
+        } else {
+            s = Math.floor(Math.random() * (99999999 - (-99999999) + 1)) - 99999999;
+            $gameVariables.setValue(seed_variable, s);
+        }
+        if ($gameTemp._seed !== s) {
+            $gameTemp._seed = s;
+            $gameTemp._seedArray = random_number ? PotadraSeed_shuffle(s) : PotadraSeed_xor_shuffle(s);
+        }
+        console.debug("シード番号:" + s);
+    }
+    function PotadraSeed_shuffle(s) {
+        const random = new PotadraMersenneTwister(s);
+        const array = [];
+        for (let i = 0; i < 256; i++) {
+            array.push(random.genrand());
+        }
+        return array;
+    }
+    function PotadraSeed_xor_shuffle(s) {;
+        const random = new PotadraXorshift(s);
+        const array = [];
+        for (let i = 0; i < 256; i++) {
+            array.push(random.xorshift() % 256); // 0 - 255 の値
+        }
+        return array;
+    }
 
 
 
@@ -1696,6 +1756,153 @@ https://opensource.org/license/mit
     // 他プラグイン連携(パラメータ取得)
     const backup_params  = Potadra_getPluginParams('BackUpDatabase');
     const backUpPathText = backup_params ? String(backup_params.backUpPathText || '/backup') : '/backup';
+
+    //==============================================================================
+    // ワールド自動生成
+    //==============================================================================
+    function GenerateWorld() {
+        // 最初が空白タイルの場合は、自動生成しない。
+        if (_Game_Map_tileId.call(this, 0, 0, 0) === 0) return false;
+
+        // 計測開始時間
+        let StartTime = Date.now();
+
+        // 1. シードを変数に記憶
+        PotadraSeed_setSeed(SeedVariable, RandomNumber); // let endTime = showTime('シード設定');
+
+        // バイオーム判定
+        CustomBiome(); // endTime = showTime('バイオーム判定', endTime);
+
+        // ワールド自動生成マップかどうかの判定
+        retentionSaveData()._potadra_auto = $gameMap.mapId();
+
+        // 地形の整形
+        fixWorld(); // endTime = showTime('地形の整形', endTime);
+
+        // 池の作成
+        if (Pond) PotadraCheck_pond(getMapData, setTileId); // endTime = showTime('池の作成', endTime);
+
+        // オートタイル配置
+        setAutoTile(); // endTime = showTime('オートタイル配置', endTime);
+
+        // イベント設定
+        setEvents(); // endTime = showTime('イベント設定配置', endTime);
+
+        showTime('マップ作成', StartTime);
+    }
+
+    //==============================================================================
+    // バイオーム
+    //==============================================================================
+
+    // カスタムバイオーム
+    function CustomBiome() {
+        const BiomeSize = SetBiomeSize();
+        const max_i = Math.ceil($dataMap.width / BiomeSize);
+        const max_j = Math.ceil($dataMap.height / BiomeSize);
+
+        // ミニチュアの読み込み
+        const tiles  = [];
+        const layer1 = [];
+        const layer2 = [];
+        const layer3 = [];
+        const layer4 = [];
+        const layer5 = [];
+        for (let x = 0; x < max_i; x++) {
+            tiles[x]  = [];
+            layer1[x] = [];
+            layer2[x] = [];
+            layer3[x] = [];
+            layer4[x] = [];
+            layer5[x] = [];
+            for (let y = 0; y < max_j; y++) {
+                const region  = getRegion(x, y);
+                const layer_2 = _Game_Map_tileId.call(this, x, y, 1);
+                if (checkRegion(region, TileRegion) || checkRegion(region, TwoChoiceRegion) || checkRegions(region, LockTileRegion, LockTileRegions)) {
+                    layer1[x][y] = MiniatureTileId(x, y);
+                    layer2[x][y] = MiniatureTileId(x, y, 1);
+                    layer3[x][y] = MiniatureTileId(x, y, 2);
+                    layer4[x][y] = MiniatureTileId(x, y, 3);
+                    layer5[x][y] = MiniatureTileId(x, y, 4);
+                    tiles[x][y] = region;
+                } else if (layer_2 > 0) {
+                    tiles[x][y] = MiniatureTileId(x, y, 1);
+                } else {
+                    tiles[x][y] = MiniatureTileId(x, y);
+                }
+            }
+        }
+
+        // マップ初期化
+        for (let x = 0; x < $dataMap.width; x++) {
+            for (let y = 0; y < $dataMap.height; y++) {
+                setTileId(x, y, 1);
+                setTileId(x, y, 2);
+                setTileId(x, y, 3);
+                setTileId(x, y, 4); // 影
+                setTileId(x, y, 5); // リージョン
+            }
+        }
+
+        // ミニチュアの反映
+        for (let i = 0; i < max_i; i++) {
+            for (let j = 0; j < max_j; j++) {
+                const start_x = i * BiomeSize;
+                const start_y = j * BiomeSize;
+                const end_x = Math.min(start_x + BiomeSize, $dataMap.width);
+                const end_y = Math.min(start_y + BiomeSize, $dataMap.height);
+
+                for (let x = start_x; x < end_x; x++) {
+                    for (let y = start_y; y < end_y; y++) {
+                        const tile = tiles[i][j];
+                        if (checkRegion(tile, TileRegion) || checkRegions(tile, LockTileRegion, LockTileRegions)) { // 固定
+                            if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
+                            if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, layer2[i][j]);
+                            if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, layer3[i][j]);
+                            if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, layer4[i][j]);
+                            if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, layer5[i][j]);
+                        } else if (checkRegion(tile, TwoChoiceRegion)) { // 上層 OR 下層タイル リージョン
+                            if (Potadra_random(50)) { // 固定
+                                if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
+                                if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, layer2[i][j]);
+                                if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, layer3[i][j]);
+                                if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, layer4[i][j]);
+                                if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, layer5[i][j]);
+                            } else { // 下層のみ
+                                if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
+                                if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, 0);
+                                if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, 0);
+                                if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, 0);
+                                if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, 0);
+                            }
+                        } else if (checkRegion(tile, ExceptRegion)) { // 上層タイル除外
+                            createBiome(x, y, BIOME[tile], SEED_LENGTH, false);
+                        } else if (checkRegion(tile, PassableRegion)) { // 通行可能タイルのみ
+                            createBiome(x, y, BIOME[tile], SEED_LENGTH, true, true);
+                        } else if (BIOME[tile]) {
+                            createBiome(x, y, BIOME[tile], SEED_LENGTH);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function MiniatureTileId(x, y, z = 0) {
+        let tileId = _Game_Map_tileId.call(this, x, y, z);
+        const autotileType = tileId >= Tilemap.TILE_ID_A1 ? Math.floor((tileId - Tilemap.TILE_ID_A1) % 48) : -1;
+        if (autotileType > 0) tileId -= autotileType;
+        return tileId;
+    }
+
+    function SetBiomeSize() {
+        let tmp_x;
+        for (tmp_x = 0; tmp_x < $dataMap.width; tmp_x++) {
+            const tmp_tile_id = _Game_Map_tileId.call(this, tmp_x, 0, 0);
+            if (tmp_tile_id === 0) break;
+        }
+        return $dataMap.width / tmp_x;
+    }
 
     //==============================================================================
     // 関数
@@ -1946,106 +2153,32 @@ https://opensource.org/license/mit
         }
     });
 
-    // プラグインコマンド(マップ情報取得)
-    PluginManager.registerCommand(plugin_name, "GetMap", args => {
+    // プラグインコマンド(ワールド自動生成前のタイル情報取得)
+    PluginManager.registerCommand(plugin_name, "GetTile", args => {
         const x        = Number(args.x || 0);
         const y        = Number(args.y || 0);
         const z        = Number(args.z || 0);
         const variable = Number(args.variable || 0);
-        const value    = getMapData(x, y, z);
+        const tile     = _Game_Map_tileId.call(this, x, y, z);
         if (Potadra_checkVariable(variable)) {
-            $gameVariables.setValue(variable, value);
+            $gameVariables.setValue(variable, tile);
         } else {
-            return value;
+            return tile;
         }
     });
 
-    //==============================================================================
-    // ワールド自動生成
-    //==============================================================================
-    function GenerateWorld() {
-        if (_Game_Map_tileId.call(this, 0, 0, 0) === 0) return false;
-
-        let firstTime = Date.now(); // 開始時間
-
-        // シードを変数に記憶
-        const s = setSeed();
-
-        // 乱数設定
-        if ($gameTemp._seed !== s) {
-            $gameTemp._seedArray = RandomNumber ? shuffle(s) : xor_shuffle(s);
-            $gameTemp._seed = s;
-        }
-
-        showTime(firstTime, 'シード設定');
-
-        let startTime = Date.now(); // 開始時間
-
-        // バイオーム判定
-        CustomBiome();
-
-        showTime(startTime, 'バイオーム判定');
-
-        // ワールド自動生成マップかどうかの判定
-        retentionSaveData()._potadra_auto = $gameMap.mapId();
-
-        // 地形の整形
-        startTime = Date.now(); // 開始時間
-        fixWorld();
-        showTime(startTime, '地形の整形');
-
-        // 池の作成
-        startTime = Date.now(); // 開始時間
-        PotadraCheck_pond(getMapData, setTileId);
-        showTime(startTime, '池の作成');
-
-        // オートタイル配置
-        startTime = Date.now(); // 開始時間
-        setAutoTile();
-        showTime(startTime, 'オートタイル配置');
-
-        // イベント設定
-        startTime = Date.now(); // 開始時間
-        setEvents();    
-        showTime(startTime, 'イベント設定配置');
-
-        showTime(firstTime, 'マップ作成');
-    }
-
-    //==============================================================================
-    // シード設定
-    //==============================================================================
-
-    // シードを変数に記憶
-    function setSeed() {
-        let s;
-        if (Potadra_checkVariable(SeedVariable) && $gameVariables.value(SeedVariable) !== 0) {
-            s = $gameVariables.value(SeedVariable);
+    // プラグインコマンド(座標の高さを変数に取得)
+    PluginManager.registerCommand(plugin_name, "GetHeight", args => {
+        const x        = Number(args.x || 0);
+        const y        = Number(args.y || 0);
+        const variable = Number(args.variable || 0);
+        const height   = getHeight(x, y);
+        if (Potadra_checkVariable(variable)) {
+            $gameVariables.setValue(variable, height);
         } else {
-            s = Math.floor(Math.random() * (99999999 - (-99999999) + 1)) - 99999999;
-            $gameVariables.setValue(SeedVariable, s);
+            return height;
         }
-        console.debug("シード番号:" + s);
-        return s;
-    }
-
-    // 0-255のランダムな値を配列に追加
-    function shuffle(s) {
-        const random = new PotadraMersenneTwister(s);
-        const array = [];
-        for (let i = 0; i < 256; i++) {
-            array.push(random.genrand());
-        }
-        return array;
-    }
-    function xor_shuffle(s) {;
-        const random = new PotadraXorshift(s);
-        const array = [];
-        for (let i = 0; i < 256; i++) {
-            array.push(random.xorshift() % 256); // 0 - 255 の値
-        }
-        return array;
-    }
+    });
 
     //==============================================================================
     // イベントの設定
@@ -2116,118 +2249,6 @@ https://opensource.org/license/mit
                 } else {
                     // 非表示対象
                     $gameMap.eraseEvent(event._eventId);
-                }
-            }
-        }
-    }
-
-    //==============================================================================
-    // バイオーム
-    //==============================================================================
-    function MiniatureTileId(x, y, z = 0) {
-        let tileId = _Game_Map_tileId.call(this, x, y, z);
-        const autotileType = tileId >= Tilemap.TILE_ID_A1 ? Math.floor((tileId - Tilemap.TILE_ID_A1) % 48) : -1;
-        if (autotileType > 0) tileId -= autotileType;
-        return tileId;
-    }
-
-    function SetBiomeSize() {
-        let tmp_x;
-        for (tmp_x = 0; tmp_x < $dataMap.width; tmp_x++) {
-            const tmp_tile_id = _Game_Map_tileId.call(this, tmp_x, 0, 0);
-            if (tmp_tile_id === 0) break;
-        }
-        return $dataMap.width / tmp_x;
-    }
-
-    // カスタムバイオーム
-    function CustomBiome() {
-        const BiomeSize = SetBiomeSize();
-        const max_i = Math.ceil($dataMap.width / BiomeSize);
-        const max_j = Math.ceil($dataMap.height / BiomeSize);
-
-        // ミニチュアの読み込み
-        const tiles  = [];
-        const layer1 = [];
-        const layer2 = [];
-        const layer3 = [];
-        const layer4 = [];
-        const layer5 = [];
-        for (let x = 0; x < max_i; x++) {
-            tiles[x]  = [];
-            layer1[x] = [];
-            layer2[x] = [];
-            layer3[x] = [];
-            layer4[x] = [];
-            layer5[x] = [];
-            for (let y = 0; y < max_j; y++) {
-                const region  = getRegion(x, y);
-                const layer_2 = _Game_Map_tileId.call(this, x, y, 1);
-                if (checkRegion(region, TileRegion) || checkRegion(region, TwoChoiceRegion) || checkRegions(region, LockTileRegion, LockTileRegions)) {
-                    layer1[x][y] = MiniatureTileId(x, y);
-                    layer2[x][y] = MiniatureTileId(x, y, 1);
-                    layer3[x][y] = MiniatureTileId(x, y, 2);
-                    layer4[x][y] = MiniatureTileId(x, y, 3);
-                    layer5[x][y] = MiniatureTileId(x, y, 4);
-                    tiles[x][y] = region;
-                } else if (layer_2 > 0) {
-                    tiles[x][y] = MiniatureTileId(x, y, 1);
-                } else {
-                    tiles[x][y] = MiniatureTileId(x, y);
-                }
-            }
-        }
-
-        // マップ初期化
-        for (let x = 0; x < $dataMap.width; x++) {
-            for (let y = 0; y < $dataMap.height; y++) {
-                setTileId(x, y, 1);
-                setTileId(x, y, 2);
-                setTileId(x, y, 3);
-                setTileId(x, y, 4); // 影
-                setTileId(x, y, 5); // リージョン
-            }
-        }
-
-        // ミニチュアの反映
-        for (let i = 0; i < max_i; i++) {
-            for (let j = 0; j < max_j; j++) {
-                const start_x = i * BiomeSize;
-                const start_y = j * BiomeSize;
-                const end_x = Math.min(start_x + BiomeSize, $dataMap.width);
-                const end_y = Math.min(start_y + BiomeSize, $dataMap.height);
-
-                for (let x = start_x; x < end_x; x++) {
-                    for (let y = start_y; y < end_y; y++) {
-                        const tile = tiles[i][j];
-                        if (checkRegion(tile, TileRegion) || checkRegions(tile, LockTileRegion, LockTileRegions)) { // 固定
-                            if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
-                            if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, layer2[i][j]);
-                            if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, layer3[i][j]);
-                            if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, layer4[i][j]);
-                            if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, layer5[i][j]);
-                        } else if (checkRegion(tile, TwoChoiceRegion)) { // 上層 OR 下層タイル リージョン
-                            if (Potadra_random(50)) { // 固定
-                                if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
-                                if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, layer2[i][j]);
-                                if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, layer3[i][j]);
-                                if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, layer4[i][j]);
-                                if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, layer5[i][j]);
-                            } else { // 下層のみ
-                                if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
-                                if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, 0);
-                                if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, 0);
-                                if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, 0);
-                                if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, 0);
-                            }
-                        } else if (checkRegion(tile, ExceptRegion)) { // 上層タイル除外
-                            createBiome(x, y, BIOME[tile], SEED_LENGTH, false);
-                        } else if (checkRegion(tile, PassableRegion)) { // 通行可能タイルのみ
-                            createBiome(x, y, BIOME[tile], SEED_LENGTH, true, true);
-                        } else if (BIOME[tile]) {
-                            createBiome(x, y, BIOME[tile], SEED_LENGTH);
-                        }
-                    }
                 }
             }
         }
@@ -2341,19 +2362,6 @@ https://opensource.org/license/mit
     }
 
     /**
-     * 指定座標にあるタイル ID の取得(ワールド自動生成前のタイル)
-     *
-     * @param {number} x - X座標
-     * @param {number} y - Y座標
-     * @param {number} z - レイヤー
-     * @returns {number} タイル ID
-     * @returns {} 
-     */
-    function orgTileId(x, y, z) {
-        return $dataMap.data[(z * $dataMap.height + y) * $dataMap.width + x] || 0;
-    };
-
-    /**
      * 指定座標にあるタイル ID の設定
      *
      * @param {number} x - X座標
@@ -2371,11 +2379,11 @@ https://opensource.org/license/mit
      *
      * @param {number} x - X座標
      * @param {number} y - Y座標
-     * @param {number} value - 値
+     * @param {number} height - 高さ
      */
-    function setTileHeight(x, y, value) {
+    function setTileHeight(x, y, height) {
         const index = PotadraGenerate_index2D(x, y);
-        heightSaveData()._potadra_heights[index] = value;
+        heightSaveData()._potadra_heights[index] = height;
     }
 
     /**
@@ -2490,28 +2498,28 @@ https://opensource.org/license/mit
         return false;
     }
 
-    function topTile(value, x, y, top_tiles, upper, passable) {
+    function topTile(height, x, y, top_tiles, upper, passable) {
         for (let i = 0; i < top_tiles.length; i++) {
             const tile = top_tiles[i];
-            if (tile[1] < value && value <= tile[2]) {
+            if (tile[1] < height && height <= tile[2]) {
                 if (upper && tile[3] >= 1) continue;
                 setTileId(x, y, tile[3], tile[0]);
             }
         }
     }
-    function bottomTile(value, x, y, bottom_tiles) {
+    function bottomTile(height, x, y, bottom_tiles) {
         for (let i = 0; i < bottom_tiles.length; i++) {
             const tile = bottom_tiles[i];
-            if (tile[2] <= value && value <= tile[1]) {
+            if (tile[2] <= height && height <= tile[1]) {
                 setTileId(x, y, tile[3], tile[0]);
             }
         }
     }
     function createBiome(x, y, biome, seed_length, upper = false, passable = false) {
-        const value = PotadraPerlinNoise_my_noise(x, y, seed_length, $gameTemp._seedArray);
-        setTileHeight(x, y, value);
-        topTile(value, x, y, biome.top_tile, upper, passable);
-        bottomTile(value, x, y, biome.bottom_tile);
+        const height = PotadraPerlinNoise_my_noise(x, y, seed_length, $gameTemp._seedArray);
+        setTileHeight(x, y, height);
+        topTile(height, x, y, biome.top_tile, upper, passable);
+        bottomTile(height, x, y, biome.bottom_tile);
     }
 
     // 船を呼び出せるマップか判定
@@ -3079,7 +3087,7 @@ https://opensource.org/license/mit
                         if (same_map_export_json || export_org_region) { // 同一マップに出力 OR 元リージョン出力
                             for (let x = 0; x < $dataMap.width; x++) {
                                 for (let y = 0; y < $dataMap.height; y++) {
-                                    const region = orgTileId(x, y, 5);
+                                    const region = _Game_Map_tileId.call(this, x, y, 5);
                                     const index  = PotadraGenerate_index(x, y, 5);
                                     tmp_potadra_worlds[index] = region;
                                 }
