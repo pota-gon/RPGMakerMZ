@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.6.9(2026/1/22)
+ワールド自動生成 Ver0.7.0(2026/1/23)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,9 +9,15 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.7.0
+- 通常マップでバグる問題修正
+- タイル完全固定リージョンを複数指定出来るように変更
+- TileIDやリージョンを変数に入れることが出来るプラグインコマンド追加
+- タイルセット設定に橋のON・OFF機能追加
+- リファクタリング
 * Ver0.6.9
 - タイルセットの設定読み込みをマップ準備直後に行うように改善(船タイルの参照回数が減ったのでかすかに高速化)
-- 池のON・OFF機能追加
+- タイルセット設定に池のON・OFF機能追加
 - 元のリージョンは保持の必要なかったので廃止
 - リファクタリング
 * Ver0.6.8
@@ -230,13 +236,22 @@ https://opensource.org/license/mit
 
     @param LockTileRegion
     @parent Region
-    @type number
-    @text タイル完全固定リージョン
-    @desc タイルをリージョンを含め固定するリージョン
-    0 でリージョンは設定されなくなります
-    @default 6
-    @min 0
-    @max 255
+    @type boolean
+    @text タイル完全固定リージョン使用可否
+    @desc タイル完全固定リージョンを使用するか
+    @on 使用する
+    @off 使用しない
+    @default true
+
+        @param LockTileRegions
+        @parent LockTileRegion
+        @type number[]
+        @text タイル完全固定リージョン
+        @desc タイルをリージョンを含め固定するリージョン
+        0 でリージョンは設定されなくなります
+        @default ["6","7","8","9","10"]
+        @min 0
+        @max 255
 
     @param StartTileRegion
     @parent Region
@@ -244,7 +259,7 @@ https://opensource.org/license/mit
     @text タイル連番リージョン
     @desc タイルに指定する連番リージョン
     0 でリージョンは設定されなくなります
-    @default 7
+    @default 11
     @min 0
     @max 255
 
@@ -742,6 +757,36 @@ https://opensource.org/license/mit
 @command InitMap
 @text マップ情報初期化
 @desc ワールド自動生成で作成したマップ情報を初期化します
+
+@command GetMap
+@text マップ情報取得
+@desc ワールド自動生成で作成したマップ情報を取得します
+
+    @arg x
+    @type number
+    @text X座標
+    @desc マップ情報を取得するX座標
+    @default 0
+
+    @arg y
+    @type number
+    @text Y座標
+    @desc マップ情報を取得するY座標
+    @default 0
+
+    @arg z
+    @type number
+    @text Z座標
+    @desc マップ情報を取得するZ座標(0: レイヤー1, 1: レイヤー2
+    2: レイヤー3, 3: レイヤー4, 4: 影, 5: リージョン)
+    @default 0
+
+    @arg variable
+    @type variable
+    @text 変数
+    @desc 取得したマップ情報を代入する変数
+    0の場合は、値を返却します
+    @default 0
 */
 
 /*~struct~Tilesets:
@@ -762,6 +807,14 @@ https://opensource.org/license/mit
 @type boolean
 @text 池
 @desc 池を出現させるか
+@on 出現する
+@off 出現しない
+@default true
+
+@param bridge
+@type boolean
+@text 橋
+@desc 橋を出現させるか
 @on 出現する
 @off 出現しない
 @default true
@@ -933,6 +986,9 @@ https://opensource.org/license/mit
             return true;
         }
     }
+    function Potadra_numberArray(data) {
+        return data ? JSON.parse(data).map(Number) : [];
+    }
     function Potadra_isPlugin(plugin_name) {
         return PluginManager._scripts.includes(plugin_name);
     }
@@ -980,9 +1036,6 @@ https://opensource.org/license/mit
             return Potadra_nameSearch(data, name.trim(), "id", "name", val);
         }
         return Number(name || val);
-    }
-    function Potadra_numberArray(data) {
-        return data ? JSON.parse(data).map(Number) : [];
     }
     function Potadra_checkVariable(variable_no) {
         return variable_no > 0 && variable_no <= 5000;
@@ -1605,7 +1658,8 @@ https://opensource.org/license/mit
     const ExceptRegion      = Number(params.ExceptRegion || 3);
     const PassableRegion    = Number(params.PassableRegion || 4);
     const ImpassableRegion  = Number(params.ImpassableRegion || 5);
-    const LockTileRegion    = Number(params.LockTileRegion || 6);
+    const LockTileRegion    = Potadra_convertBool(params.LockTileRegion);
+    const LockTileRegions   = Potadra_numberArray(params.LockTileRegions);
     const StartTileRegion   = Number(params.StartTileRegion || 7);
     const RegenerateCommand = String(params.RegenerateCommand);
     const ExportJsonCommand = String(params.ExportJsonCommand);
@@ -1622,7 +1676,7 @@ https://opensource.org/license/mit
     const ShipSwitch        = Number(params.ShipSwitch || 0);
     const AirshipSwitch     = Number(params.AirshipSwitch || 0);
 
-    let Pond, BoatTileIds, ShipTileIds, AirshipTileIds;
+    let Pond, Bridge, BoatTileIds, ShipTileIds, AirshipTileIds;
     let Maps;
 
     if (params.Maps) Maps = JSON.parse(params.Maps);
@@ -1648,6 +1702,15 @@ https://opensource.org/license/mit
         return RetentionSaveData ? $gameMap._potadra_auto : $gameTemp._potadra_auto;
     }
 
+    function checkRegions(region, value, region_types) {
+        if (!value) return false;
+
+        for (const region_type of region_types) {
+            if (checkRegion(region, region_type)) return true;
+        }
+
+        return false;
+    }
     function checkRegion(region, region_type) {
         return region_type !== 0 && region === region_type;
     }
@@ -1678,7 +1741,7 @@ https://opensource.org/license/mit
      */
     const _Spriteset_Map_createTilemap = Spriteset_Map.prototype.createTilemap;
     Spriteset_Map.prototype.createTilemap = function() {
-        if (isGenerateWorld()) {
+        if (isAuto()) {
             const value = getAuto();
             if (!value) GenerateWorld();
 
@@ -1701,12 +1764,13 @@ https://opensource.org/license/mit
     Game_Map.prototype.setup = function(mapId) {
         _Game_Map_setup.apply(this, arguments);
 
-        if (params.Tilesets) {
+        if (isAuto() && params.Tilesets) {
             for (const s of JSON.parse(params.Tilesets)) {
                 const tile_set = JSON.parse(s);
                 const tile_set_id = Potadra_checkName($dataTilesets, tile_set.tile_set_id);
                 if ($gameMap.tilesetId() === tile_set_id) {
                     Pond           = Potadra_convertBool(tile_set.pond);
+                    Bridge         = Potadra_convertBool(tile_set.bridge);
                     BoatTileIds    = Potadra_numberArray(tile_set.boat_tile_ids);
                     ShipTileIds    = Potadra_numberArray(tile_set.ship_tile_ids);
                     AirshipTileIds = Potadra_numberArray(tile_set.airship_tile_ids);
@@ -1722,7 +1786,7 @@ https://opensource.org/license/mit
      */
     const _Game_Map_data = Game_Map.prototype.data;
     Game_Map.prototype.data = function() {
-        if (isGenerateWorld()) {
+        if (isAuto()) {
             return getWorld();
         }
 
@@ -1740,7 +1804,7 @@ https://opensource.org/license/mit
      */
     const _Game_Map_tileId = Game_Map.prototype.tileId;
     Game_Map.prototype.tileId = function(x, y, z) {
-        if (isGenerateWorld()) {
+        if (isAuto()) {
             return getMapData(x, y, z) || 0;
         }
 
@@ -1757,7 +1821,7 @@ https://opensource.org/license/mit
     const _Game_Player_triggerButtonAction = Game_Player.prototype.triggerButtonAction;
     Game_Player.prototype.triggerButtonAction = function() {
         const value = _Game_Player_triggerButtonAction.apply(this, arguments);
-        if (Vehicle && params.Tilesets && Input.isTriggered("ok") && !this.isInVehicle()) {
+        if (isAuto() && Vehicle && params.Tilesets && Input.isTriggered("ok") && !this.isInVehicle()) {
             checkShipMap(this);
         }
         return value;
@@ -1766,7 +1830,7 @@ https://opensource.org/license/mit
     const _Game_Player_triggerTouchAction = Game_Player.prototype.triggerTouchAction;
     Game_Player.prototype.triggerTouchAction = function() {
         const value = _Game_Player_triggerTouchAction.apply(this, arguments);
-        if (Vehicle && params.Tilesets && $gameTemp.isDestinationValid() && !this.isInVehicle()) {
+        if (isAuto() && Vehicle && params.Tilesets && $gameTemp.isDestinationValid() && !this.isInVehicle()) {
             checkShipMap(this);
         }
         return value;
@@ -1791,7 +1855,7 @@ https://opensource.org/license/mit
                 return false;
             }
             // ワールド自動生成時のみ、すり抜けONのイベントは着陸出来るように変更
-            const events = isGenerateWorld() ? $gameMap.eventsXyNt(x, y) : $gameMap.eventsXy(x, y);
+            const events = isAuto() ? $gameMap.eventsXyNt(x, y) : $gameMap.eventsXy(x, y);
             if (events.length > 0) {
                 return false;
             }
@@ -1851,6 +1915,20 @@ https://opensource.org/license/mit
 
         if (Potadra_checkVariable(SeedVariable)) {
             $gameVariables.setValue(SeedVariable, 0);
+        }
+    });
+
+    // プラグインコマンド(マップ情報取得)
+    PluginManager.registerCommand(plugin_name, "GetMap", args => {
+        const x        = Number(args.x || 0);
+        const y        = Number(args.y || 0);
+        const z        = Number(args.z || 0);
+        const variable = Number(args.variable || 0);
+        const value    = getMapData(x, y, z);
+        if (Potadra_checkVariable(variable)) {
+            $gameVariables.setValue(variable, value);
+        } else {
+            return value;
         }
     });
 
@@ -2063,7 +2141,7 @@ https://opensource.org/license/mit
             for (let y = 0; y < max_j; y++) {
                 const region  = getRegion(x, y);
                 const layer_2 = _Game_Map_tileId.call(this, x, y, 1);
-                if (checkRegion(region, TileRegion) || checkRegion(region, TwoChoiceRegion) || checkRegion(region, LockTileRegion)) {
+                if (checkRegion(region, TileRegion) || checkRegion(region, TwoChoiceRegion) || checkRegions(region, LockTileRegion, LockTileRegions)) {
                     layer1[x][y] = MiniatureTileId(x, y);
                     layer2[x][y] = MiniatureTileId(x, y, 1);
                     layer3[x][y] = MiniatureTileId(x, y, 2);
@@ -2102,7 +2180,7 @@ https://opensource.org/license/mit
                 for (let x = start_x; x < end_x; x++) {
                     for (let y = start_y; y < end_y; y++) {
                         const tile = tiles[i][j];
-                        if (checkRegion(tile, TileRegion) || checkRegion(tile, LockTileRegion)) { // 固定
+                        if (checkRegion(tile, TileRegion) || checkRegions(tile, LockTileRegion, LockTileRegions)) { // 固定
                             if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
                             if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, layer2[i][j]);
                             if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, layer3[i][j]);
@@ -2145,7 +2223,7 @@ https://opensource.org/license/mit
             for (let y = 0; y < $dataMap.height; y++) {
                 // タイル固定リージョンは整形しない
                 const region = getRegion(x, y);
-                if (checkRegion(region, TileRegion) || checkRegion(region, LockTileRegion)) {
+                if (checkRegion(region, TileRegion) || checkRegions(region, LockTileRegion, LockTileRegions)) {
                     continue;
                 }
 
@@ -2174,10 +2252,12 @@ https://opensource.org/license/mit
                     }
 
                     // 橋を架ける
-                    if (isBridge(x, y)) {
-                        setTileId(x, y, 3, 25); // 橋（縦）
-                    } else if (isSideBridge(x, y)) {
-                        setTileId(x, y, 3, 24); // 橋（横）
+                    if (Bridge) {
+                        if (isBridge(x, y)) {
+                            setTileId(x, y, 3, 25); // 橋（縦）
+                        } else if (isSideBridge(x, y)) {
+                            setTileId(x, y, 3, 24); // 橋（横）
+                        }
                     }
                 } else if (isAdjacentTile(x, y, 0, 2048)) {
                     // A2タイルを隣接させない
@@ -2224,7 +2304,7 @@ https://opensource.org/license/mit
     //==============================================================================
 
     // ワールド自動生成マップかどうかの判定
-    function isGenerateWorld() {
+    function isAuto() {
         return Potadra_meta($dataMap.meta, 'ワールド自動生成');
     }
 
@@ -2772,8 +2852,9 @@ https://opensource.org/license/mit
                 autoTile(x, y, 2);
                 autoTile(x, y, 3);
 
-                if (checkRegion(getRegion(x, y), LockTileRegion)) {
-                    setTileId(x, y, 5, LockTileRegion); // タイル完全固定リージョン
+                const lock_tile_region = getRegion(x, y);
+                if (checkRegions(lock_tile_region, LockTileRegion, LockTileRegions)) {
+                    setTileId(x, y, 5, lock_tile_region); // タイル完全固定リージョン
                 } else if (StartTileRegion !== 0) {
                     setTileId(x, y, 5, region); // 自動設定リージョン
                 } else {
@@ -2882,7 +2963,7 @@ https://opensource.org/license/mit
          */
         const _Window_MenuCommand_addMainCommands = Window_MenuCommand.prototype.addMainCommands;
         Window_MenuCommand.prototype.addMainCommands = function() {
-            this.addCommand(RegenerateCommand, "regenerate_world", isGenerateWorld());
+            this.addCommand(RegenerateCommand, "regenerate_world", isAuto());
             _Window_MenuCommand_addMainCommands.apply(this, arguments);
         };
 
@@ -3032,7 +3113,7 @@ https://opensource.org/license/mit
             let tmp, lines = [];
             for (const item in $dataMap) {
                 if (item === 'data') {
-                    if (isGenerateWorld()) {
+                    if (isAuto()) {
                         const tmp_potadra_worlds = getWorld();
                         if (same_map_export_json || export_org_region) { // 同一マップに出力 OR 元リージョン出力
                             for (let x = 0; x < $dataMap.width; x++) {
@@ -3104,7 +3185,7 @@ https://opensource.org/license/mit
     // ワールド再生成
     //==============================================================================
     function RegenerateWorld() {
-        if (isGenerateWorld()) {
+        if (isAuto()) {
             GenerateWorld();
             PotadraSpawn_spawn(0);
         }
