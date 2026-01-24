@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.7.2(2026/1/24)
+ワールド自動生成 Ver0.7.3(2026/1/24)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,12 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.7.3
+- オートタイルの判定をワールド自動生成用に最適化(かすかに高速化)
+- マップ初期化内の無駄なループを削除(かすかに高速化)
+- ワールド自動生成ではないマップでの競合の影響を少なくなるように修正
+- 高さの保持設定がおかしかった問題修正
+- リファクタリング
 * Ver0.7.2
 - 池の生成をON・OFF出来なかったバグ修正
 - ワールド自動生成前のタイルを取得出来るプラグインコマンド追加
@@ -1040,6 +1046,19 @@ https://opensource.org/license/mit
     function Potadra_random(probability, rate = 1) {
         return Math.random() <= probability / 100 * rate;
     }
+    function Potadra_meta(meta, tag) {
+        if (meta) {
+            const data = meta[tag];
+            if (data) {
+                if (data !== true) {
+                    return data.trim();
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
 
 
@@ -1082,21 +1101,9 @@ https://opensource.org/license/mit
         }
         return Number(name || val);
     }
+
     function Potadra_checkVariable(variable_no) {
         return variable_no > 0 && variable_no <= 5000;
-    }
-    function Potadra_meta(meta, tag) {
-        if (meta) {
-            const data = meta[tag];
-            if (data) {
-                if (data !== true) {
-                    return data.trim();
-                } else {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
     function Potadra_isTest(play_test = true) {
         return !play_test || Utils.isOptionValid("test");
@@ -1339,6 +1346,14 @@ https://opensource.org/license/mit
             return 13;
         }
             return 33;
+    }
+    function PotadraBiome_SetBiomeSize(game_map_tile_id) {
+        let tmp_x;
+        for (tmp_x = 0; tmp_x < $dataMap.width; tmp_x++) {
+            const tmp_tile_id = game_map_tile_id.call(this, tmp_x, 0, 0);
+            if (tmp_tile_id === 0) break;
+        }
+        return $dataMap.width / tmp_x;
     }
     function PotadraCheck_pond(getMapData, setTileId) {
         const SEA_TILE_ID = 2048; // 海のタイルID
@@ -1758,46 +1773,57 @@ https://opensource.org/license/mit
     const backUpPathText = backup_params ? String(backup_params.backUpPathText || '/backup') : '/backup';
 
     //==============================================================================
-    // ワールド自動生成
+    // ワールド自動生成・ワールド再生成
     //==============================================================================
-    function GenerateWorld() {
+    function GenerateWorld(spawn = true, direction = 0, vehicle = true) {
         // 最初が空白タイルの場合は、自動生成しない。
         if (_Game_Map_tileId.call(this, 0, 0, 0) === 0) return false;
 
         // 計測開始時間
         let StartTime = Date.now();
 
-        // 1. シードを変数に記憶
-        PotadraSeed_setSeed(SeedVariable, RandomNumber); // let endTime = showTime('シード設定');
-
-        // バイオーム判定
-        CustomBiome(); // endTime = showTime('バイオーム判定', endTime);
-
-        // ワールド自動生成マップかどうかの判定
+        // 0. ワールド自動生成マップ情報の登録
         retentionSaveData()._potadra_auto = $gameMap.mapId();
 
-        // 地形の整形
-        fixWorld(); // endTime = showTime('地形の整形', endTime);
+        // 1. シードを変数に記憶
+        PotadraSeed_setSeed(SeedVariable, RandomNumber);
+        let endTime = showTime('1. シード設定');
 
-        // 池の作成
-        if (Pond) PotadraCheck_pond(getMapData, setTileId); // endTime = showTime('池の作成', endTime);
+        // 2. バイオーム判定
+        CustomBiome();
+        endTime = showTime('2. バイオーム判定', endTime);
 
-        // オートタイル配置
-        setAutoTile(); // endTime = showTime('オートタイル配置', endTime);
+        // 3. 地形の整形
+        fixWorld();
+        endTime = showTime('3. 地形の整形', endTime);
 
-        // イベント設定
-        setEvents(); // endTime = showTime('イベント設定配置', endTime);
+        // 4. オートタイル配置
+        setAutoTile();
+        endTime = showTime('4. オートタイル配置', endTime);
+
+        // 5. イベント設定
+        setEvents();
+        endTime = showTime('5. イベント設定配置', endTime);
 
         showTime('マップ作成', StartTime);
+
+        if (spawn) PotadraSpawn_spawn(direction, vehicle);
+    }
+
+    function RegenerateWorld() {
+        if (!isAuto()) return false;
+
+        GenerateWorld();
+        SceneManager.goto(Scene_Map);
     }
 
     //==============================================================================
-    // バイオーム
+    // 2. バイオーム判定
     //==============================================================================
 
     // カスタムバイオーム
     function CustomBiome() {
-        const BiomeSize = SetBiomeSize();
+        const BiomeSize = PotadraBiome_SetBiomeSize(_Game_Map_tileId);
         const max_i = Math.ceil($dataMap.width / BiomeSize);
         const max_j = Math.ceil($dataMap.height / BiomeSize);
 
@@ -1833,17 +1859,6 @@ https://opensource.org/license/mit
             }
         }
 
-        // マップ初期化
-        for (let x = 0; x < $dataMap.width; x++) {
-            for (let y = 0; y < $dataMap.height; y++) {
-                setTileId(x, y, 1);
-                setTileId(x, y, 2);
-                setTileId(x, y, 3);
-                setTileId(x, y, 4); // 影
-                setTileId(x, y, 5); // リージョン
-            }
-        }
-
         // ミニチュアの反映
         for (let i = 0; i < max_i; i++) {
             for (let j = 0; j < max_j; j++) {
@@ -1854,6 +1869,13 @@ https://opensource.org/license/mit
 
                 for (let x = start_x; x < end_x; x++) {
                     for (let y = start_y; y < end_y; y++) {
+                        // マップ初期化
+                        setTileId(x, y, 1);
+                        // setTileId(x, y, 2);
+                        setTileId(x, y, 3);
+                        // setTileId(x, y, 4); // 影
+                        // setTileId(x, y, 5); // リージョン
+
                         const tile = tiles[i][j];
                         if (checkRegion(tile, TileRegion) || checkRegions(tile, LockTileRegion, LockTileRegions)) { // 固定
                             if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
@@ -1862,14 +1884,14 @@ https://opensource.org/license/mit
                             if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, layer4[i][j]);
                             if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, layer5[i][j]);
                         } else if (checkRegion(tile, TwoChoiceRegion)) { // 上層 OR 下層タイル リージョン
+                            if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
+
                             if (Potadra_random(50)) { // 固定
-                                if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
                                 if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, layer2[i][j]);
                                 if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, layer3[i][j]);
                                 if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, layer4[i][j]);
                                 if (layer5[i][j] && layer5[i][j] !== 0) setTileId(x, y, 4, layer5[i][j]);
                             } else { // 下層のみ
-                                if (layer1[i][j] && layer1[i][j] !== 0) setTileId(x, y, 0, layer1[i][j]);
                                 if (layer2[i][j] && layer2[i][j] !== 0) setTileId(x, y, 1, 0);
                                 if (layer3[i][j] && layer3[i][j] !== 0) setTileId(x, y, 2, 0);
                                 if (layer4[i][j] && layer4[i][j] !== 0) setTileId(x, y, 3, 0);
@@ -1891,17 +1913,281 @@ https://opensource.org/license/mit
     function MiniatureTileId(x, y, z = 0) {
         let tileId = _Game_Map_tileId.call(this, x, y, z);
         const autotileType = tileId >= Tilemap.TILE_ID_A1 ? Math.floor((tileId - Tilemap.TILE_ID_A1) % 48) : -1;
+
         if (autotileType > 0) tileId -= autotileType;
+
         return tileId;
     }
 
-    function SetBiomeSize() {
-        let tmp_x;
-        for (tmp_x = 0; tmp_x < $dataMap.width; tmp_x++) {
-            const tmp_tile_id = _Game_Map_tileId.call(this, tmp_x, 0, 0);
-            if (tmp_tile_id === 0) break;
+    function createBiome(x, y, biome, seed_length, upper = false, passable = false) {
+        const height = PotadraPerlinNoise_my_noise(x, y, seed_length, $gameTemp._seedArray);
+        setTileHeight(x, y, height);
+        topTile(height, x, y, biome.top_tile, upper, passable);
+        bottomTile(height, x, y, biome.bottom_tile);
+    }
+
+    /**
+     * 指定座標の高さの設定
+     *
+     * @param {number} x - X座標
+     * @param {number} y - Y座標
+     * @param {number} height - 高さ
+     */
+    function setTileHeight(x, y, height) {
+        const index = PotadraGenerate_index2D(x, y);
+        heightSaveData()._potadra_heights[index] = height;
+    }
+
+    function topTile(height, x, y, top_tiles, upper, passable) {
+        for (let i = 0; i < top_tiles.length; i++) {
+            const tile = top_tiles[i];
+            if (tile[1] < height && height <= tile[2]) {
+                if (upper && tile[3] >= 1) continue;
+
+                setTileId(x, y, tile[3], tile[0]);
+            }
         }
-        return $dataMap.width / tmp_x;
+    }
+    function bottomTile(height, x, y, bottom_tiles) {
+        for (let i = 0; i < bottom_tiles.length; i++) {
+            const tile = bottom_tiles[i];
+            if (tile[2] <= height && height <= tile[1]) {
+                setTileId(x, y, tile[3], tile[0]);
+            }
+        }
+    }
+
+    //==============================================================================
+    // 3. 地形の整形
+    //==============================================================================
+    function fixWorld() {
+        // 池の作成
+        if (Pond) PotadraCheck_pond(getMapData, setTileId);
+
+        for (let x = 0; x < $dataMap.width; x++) {
+            for (let y = 0; y < $dataMap.height; y++) {
+                // タイル固定リージョンは整形しない
+                const region = getRegion(x, y);
+                if (checkRegion(region, TileRegion) || checkRegions(region, LockTileRegion, LockTileRegions)) {
+                    continue;
+                }
+
+                const layer1 = edgeTileId(x, y, 0, 2816);
+                const layer2 = edgeTileId(x, y, 1, 2096);
+                const value = getHeight(x, y);
+
+                // 山(岩) のとき
+                if (layer2 === 3872) {
+                    if (value > 0.6) {
+                        if (isScope(3, x, y, x + 1, y + 1, [0, 0, 0, 0]) && isScope(1, x - 1, y, x + 2, y + 1, [3872, 3872, 3872, 3872, 3872, 3872, 3872, 3872])) {
+                            setTileId(x, y, 3, 202);
+                            setTileId(PotadraLoop_roundX(x, 1), y, 3, 203);
+                            setTileId(x, PotadraLoop_roundY(y, 1), 3, 210);
+                            setTileId(PotadraLoop_roundX(x, 1), PotadraLoop_roundY(y, 1), 3, 211);
+                        }
+                    }
+                }
+
+                // 海のとき
+                if (layer1 === 2048) {
+                    // 変に繋がっている地形は海にする
+                    if (edgeTileId(x + 1, y, 0, 2816) === 2816 && edgeTileId(x, y + 1, 0, 2816) === 2816 && edgeTileId(x + 1, y + 1, 0, 2048) === 2048) {
+                        setTileId(x, y, 0, 2048); // 海
+                        setTileId(x, y, 1);
+                    }
+
+                    // 橋を架ける
+                    if (Bridge) {
+                        if (isBridge(x, y)) {
+                            setTileId(x, y, 3, 25); // 橋（縦）
+                        } else if (isSideBridge(x, y)) {
+                            setTileId(x, y, 3, 24); // 橋（横）
+                        }
+                    }
+                } else if (isAdjacentTile(x, y, 0, 2048)) {
+                    // A2タイルを隣接させない
+                    setTileId(x, y, 1);
+                }
+
+                // 草原のとき
+                if (layer1 === 2816) {
+                    // 変に繋がっている地形は海にする
+                    if (
+                        edgeTileId(x + 1, y, 0, 2048) === 2048 &&  // 右(海)
+                        edgeTileId(x, y + 1, 0, 2048) === 2048 &&  // 下(海)
+                        edgeTileId(x + 1, y + 1, 0, 2816) === 2816 // 右下(草原)
+                       ) {
+                        setTileId(x, y, 0, 2048); // 海
+                        setTileId(x, y, 1);
+                    }
+
+                    // 深い海と草原を隣接させない
+                    fillDistantTile(x, y, 1, 2096, 1);
+                }
+
+                // 木なら
+                if (layer1 === 7904) {
+                    if (edgeTileId(x, y - 1, 0, 1552) === 1552) {
+                        fillAroundTile(x, y, 0, 7520, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    //==============================================================================
+    // 4. オートタイル配置
+    //==============================================================================
+    function setAutoTile() {
+        for (let x = 0; x < $dataMap.width; x++) {
+            for (let y = 0; y < $dataMap.height; y++) {
+                // リージョン設定
+                let layer2 = edgeTileId(x, y, 1);
+                let region;
+                if (layer2 !== 0) {
+                    layer2 -= 2000;
+                    region = (layer2 / 48) + StartTileRegion;
+                } else {
+                    let layer1 = edgeTileId(x, y, 0);
+                    layer1 -= 2000;
+                    region = (layer1 / 48) + StartTileRegion;
+                }
+
+                autoTile(x, y, 0);
+                autoTile(x, y, 1);
+                // autoTile(x, y, 2);
+                // autoTile(x, y, 3);
+
+                const lock_tile_region = getRegion(x, y);
+                if (checkRegions(lock_tile_region, LockTileRegion, LockTileRegions)) {
+                    setTileId(x, y, 5, lock_tile_region); // タイル完全固定リージョン
+                } else if (StartTileRegion !== 0) {
+                    setTileId(x, y, 5, region); // 自動設定リージョン
+                } else {
+                    setTileId(x, y, 5); // リージョンなし
+                }
+            }
+        }
+    }
+
+    function calcRegion(x, y) {
+        const layer2 = edgeTileId(x, y, 1);
+        const layer = (layer2 !== 0) ? layer2 : edgeTileId(x, y, 0);
+
+        return ((layer - 2000) / 48) + StartTileRegion;
+    }
+
+    /** 
+     * オートタイル設定
+     *
+     * @param {number} x - X座標
+     * @param {number} y - Y座標
+     * @param {number} z - レイヤー
+     */
+    function autoTile(x, y, z) {
+        const tileID = randomTileId(x, y, z);
+        if (tileID === 0) return true;
+
+        let UpperLeftID, UpperID, UpperRightID, LeftID, RightID, LowerLeftID, LowerID, LowerRightID;
+        if (PotadraEdge_isEdge(x, y)) {
+            UpperLeftID  = loopTileId(x - 1, y - 1, z, tileID); // 左上
+            UpperID      = loopTileId(x    , y - 1, z, tileID); // 上
+            UpperRightID = loopTileId(x + 1, y - 1, z, tileID); // 右上
+            LeftID       = loopTileId(x - 1, y    , z, tileID); // 左
+            RightID      = loopTileId(x + 1, y    , z, tileID); // 右
+            LowerLeftID  = loopTileId(x - 1, y + 1, z, tileID); // 左下
+            LowerID      = loopTileId(x    , y + 1, z, tileID); // 下
+            LowerRightID = loopTileId(x + 1, y + 1, z, tileID); // 右下
+        } else {
+            UpperLeftID  = randomTileId(x - 1, y - 1, z); // 左上
+            UpperID      = randomTileId(x    , y - 1, z); // 上
+            UpperRightID = randomTileId(x + 1, y - 1, z); // 右上
+            LeftID       = randomTileId(x - 1, y    , z); // 左
+            RightID      = randomTileId(x + 1, y    , z); // 右
+            LowerLeftID  = randomTileId(x - 1, y + 1, z); // 左下
+            LowerID      = randomTileId(x    , y + 1, z); // 下
+            LowerRightID = randomTileId(x + 1, y + 1, z); // 右下
+        }
+        const upper_left  = PotadraAutoTile_UpperLeft(tileID, UpperLeftID, UpperID, LeftID);
+        const upper_right = PotadraAutoTile_UpperRight(tileID, UpperRightID, UpperID, RightID);
+        const lower_left  = PotadraAutoTile_LowerLeft(tileID, LowerLeftID, LowerID, LeftID);
+        const lower_right = PotadraAutoTile_LowerRight(tileID, LowerRightID, LowerID, RightID);
+        const shape = PotadraAutoTile_FLOOR_AUTOTILE_TABLE()[upper_left + upper_right + lower_left + lower_right] || 0;
+        setTileId(x, y, z, tileID + shape);
+    }
+
+    //==============================================================================
+    // 5. イベントの設定
+    //==============================================================================
+    function setEvents() {
+        const ng_positions       = []; // RateMap イベント以外の座標
+        const passable_positions = [];
+        const regions            = {};
+        const events             = $gameMap.events();
+
+        // RateMap イベント以外
+        for (const event of events) {
+            const meta       = event.event().meta;
+            const meta_value = Potadra_meta(meta, 'RateMap');
+            if (!meta_value && !event.isThrough()) {
+                ng_positions.push({x: event.event().x, y: event.event().y});
+            }
+        }
+
+        // 位置取得
+        for (let x = 0; x < $dataMap.width; x++) {
+            for (let y = 0; y < $dataMap.height; y++) {
+                if (!PotadraEvent_check_ng_postions(ng_positions, {x: x, y: y})) {
+                    continue;
+                }
+
+                const region = $gameMap.tileId(x, y, 5);
+                if (!regions[region]) regions[region] = [];
+
+                if ($gameMap.isBoatPassable(x, y) || $gameMap.isShipPassable(x, y)) { // 小型船と大型船は、リージョン指定時のみ配置
+                    regions[region].push({x: x, y: y});
+                } else if (PotadraSpawn_isPassable(x, y)) { // 上下左右のどこかが通行可能な場所
+                    passable_positions.push({x: x, y: y});
+                    regions[region].push({x: x, y: y});
+                }
+            }
+        }
+
+        // RateMap イベント
+        for (const event of events) {
+            const meta       = event.event().meta;
+            const meta_value = Potadra_meta(meta, 'RateMap');
+            if (meta_value) {
+                // RateMap イベント
+                let probability = Number(meta_value || 0);
+                const passable_positions_length = passable_positions.length;
+                if (passable_positions_length > 0 && Math.random() < probability) {
+                    // 表示対象
+                    const region_value = Potadra_meta(meta, 'Region');
+                    if (region_value) {
+                        const region = Number(region_value);
+                        if (region > 0) {
+                            const r = regions[region];
+                            if (r && r.length > 0) {
+                                const rand = Math.floor(Math.random() * r.length);
+                                event.locate(r[rand].x, r[rand].y);
+                                r.splice(rand, 1);
+                                passable_positions.splice(rand, 1);
+                            } else { // リージョンの地形が存在しない場合、イベントを削除する
+                                $gameMap.eraseEvent(event._eventId);
+                            }
+                            continue;
+                        }
+                    }
+                    const rand = Math.floor(Math.random() * passable_positions_length);
+                    event.locate(passable_positions[rand].x, passable_positions[rand].y);
+                    passable_positions.splice(rand, 1);
+                } else {
+                    // 非表示対象
+                    $gameMap.eraseEvent(event._eventId);
+                }
+            }
+        }
     }
 
     //==============================================================================
@@ -1949,8 +2235,6 @@ https://opensource.org/license/mit
         if (isAuto()) {
             const value = getAuto();
             if (!value) GenerateWorld();
-
-            PotadraSpawn_spawn(0, true);
         }
 
         _Spriteset_Map_createTilemap.apply(this, arguments);
@@ -1967,7 +2251,6 @@ https://opensource.org/license/mit
         if (!RetentionSaveData) {
             this._potadra_auto = false;
             this._potadra_worlds = [];
-            this._potadra_heights = [];
         }
         if (!HeightSaveData) this._potadra_heights = [];
     };
@@ -2081,25 +2364,20 @@ https://opensource.org/license/mit
      * @param {} d - 
      * @returns {} 
      */
+    const _Game_Vehicle_isLandOk = Game_Vehicle.prototype.isLandOk;
     Game_Vehicle.prototype.isLandOk = function(x, y, d) {
-        if (this.isAirship()) {
-            if (!$gameMap.isAirshipLandOk(x, y)) {
-                return false;
-            }
-            // ワールド自動生成時のみ、すり抜けONのイベントは着陸出来るように変更
-            const events = isAuto() ? $gameMap.eventsXyNt(x, y) : $gameMap.eventsXy(x, y);
-            if (events.length > 0) {
-                return false;
-            }
-        } else {
-            const x2 = $gameMap.roundXWithDirection(x, d);
-            const y2 = $gameMap.roundYWithDirection(y, d);
-            if (!$gameMap.isValid(x2, y2) || 
-                !$gameMap.isPassable(x2, y2, this.reverseDir(d)) || 
-                this.isCollidedWithCharacters(x2, y2)) {
-                return false;
-            }
+        if (!isAuto || !this.isAirship()) return _Game_Vehicle_isLandOk.apply(this, arguments);
+
+        if (!$gameMap.isAirshipLandOk(x, y)) {
+            return false;
         }
+
+        // ワールド自動生成時のみ、すり抜けONのイベントは着陸出来るように変更
+        const events = $gameMap.eventsXyNt(x, y);
+        if (events.length > 0) {
+            return false;
+        }
+
         return true;
     };
 
@@ -2109,13 +2387,12 @@ https://opensource.org/license/mit
 
     // プラグインコマンド(ワールド自動生成)
     PluginManager.registerCommand(plugin_name, "GenerateWorld", args => {
-        // ワールド自動生成
-        GenerateWorld();
+        if (isAuto()) return false;
 
-        // キャラクターの移動可能場所チェック
-        if (Potadra_convertBool(args.spawn)) {
-            PotadraSpawn_spawn(Number(args.direction || 0), Potadra_convertBool(args.vehicle));
-        }
+        const spawn     = Potadra_convertBool(args.spawn);
+        const direction = Potadra_spawn(Number(args.direction || 0));
+        const vehicle   = Potadra_convertBool(args.vehicle);
+        GenerateWorld(spawn, direction, vehicle);
     });
 
     // プラグインコマンド(スポーン地点設定)
@@ -2181,155 +2458,6 @@ https://opensource.org/license/mit
     });
 
     //==============================================================================
-    // イベントの設定
-    //==============================================================================
-    function setEvents() {
-        const ng_positions       = []; // RateMap イベント以外の座標
-        const passable_positions = [];
-        const regions            = {};
-        const events             = $gameMap.events();
-
-        // RateMap イベント以外
-        for (const event of events) {
-            const meta       = event.event().meta;
-            const meta_value = Potadra_meta(meta, 'RateMap');
-            if (!meta_value && !event.isThrough()) {
-                ng_positions.push({x: event.event().x, y: event.event().y});
-            }
-        }
-
-        // 位置取得
-        for (let x = 0; x < $dataMap.width; x++) {
-            for (let y = 0; y < $dataMap.height; y++) {
-                if (!PotadraEvent_check_ng_postions(ng_positions, {x: x, y: y})) {
-                    continue;
-                }
-
-                const region = $gameMap.tileId(x, y, 5);
-                if (!regions[region]) regions[region] = [];
-
-                if ($gameMap.isBoatPassable(x, y) || $gameMap.isShipPassable(x, y)) { // 小型船と大型船は、リージョン指定時のみ配置
-                    regions[region].push({x: x, y: y});
-                } else if (PotadraSpawn_isPassable(x, y)) { // 上下左右のどこかが通行可能な場所
-                    passable_positions.push({x: x, y: y});
-                    regions[region].push({x: x, y: y});
-                }
-            }
-        }
-
-        // RateMap イベント
-        for (const event of events) {
-            const meta       = event.event().meta;
-            const meta_value = Potadra_meta(meta, 'RateMap');
-            if (meta_value) {
-                // RateMap イベント
-                let probability = Number(meta_value || 0);
-                const passable_positions_length = passable_positions.length;
-                if (passable_positions_length > 0 && Math.random() < probability) {
-                    // 表示対象
-                    const region_value = Potadra_meta(meta, 'Region');
-                    if (region_value) {
-                        const region = Number(region_value);
-                        if (region > 0) {
-                            const r = regions[region];
-                            if (r && r.length > 0) {
-                                const rand = Math.floor(Math.random() * r.length);
-                                event.locate(r[rand].x, r[rand].y);
-                                r.splice(rand, 1);
-                                passable_positions.splice(rand, 1);
-                            } else { // リージョンの地形が存在しない場合、イベントを削除する
-                                $gameMap.eraseEvent(event._eventId);
-                            }
-                            continue;
-                        }
-                    }
-                    const rand = Math.floor(Math.random() * passable_positions_length);
-                    event.locate(passable_positions[rand].x, passable_positions[rand].y);
-                    passable_positions.splice(rand, 1);
-                } else {
-                    // 非表示対象
-                    $gameMap.eraseEvent(event._eventId);
-                }
-            }
-        }
-    }
-
-    //==============================================================================
-    // 地形の整形
-    //==============================================================================
-    function fixWorld() {
-        for (let x = 0; x < $dataMap.width; x++) {
-            for (let y = 0; y < $dataMap.height; y++) {
-                // タイル固定リージョンは整形しない
-                const region = getRegion(x, y);
-                if (checkRegion(region, TileRegion) || checkRegions(region, LockTileRegion, LockTileRegions)) {
-                    continue;
-                }
-
-                const layer1 = edgeTileId(x, y, 0, 2816);
-                const layer2 = edgeTileId(x, y, 1, 2096);
-                const value = getHeight(x, y);
-
-                // 山(岩) のとき
-                if (layer2 === 3872) {
-                    if (value > 0.6) {
-                        if (isScope(3, x, y, x + 1, y + 1, [0, 0, 0, 0]) && isScope(1, x - 1, y, x + 2, y + 1, [3872, 3872, 3872, 3872, 3872, 3872, 3872, 3872])) {
-                            setTileId(x, y, 3, 202);
-                            setTileId(PotadraLoop_roundX(x, 1), y, 3, 203);
-                            setTileId(x, PotadraLoop_roundY(y, 1), 3, 210);
-                            setTileId(PotadraLoop_roundX(x, 1), PotadraLoop_roundY(y, 1), 3, 211);
-                        }
-                    }
-                }
-
-                // 海のとき
-                if (layer1 === 2048) {
-                    // 変に繋がっている地形は海にする
-                    if (edgeTileId(x + 1, y, 0, 2816) === 2816 && edgeTileId(x, y + 1, 0, 2816) === 2816 && edgeTileId(x + 1, y + 1, 0, 2048) === 2048) {
-                        setTileId(x, y, 0, 2048); // 海
-                        setTileId(x, y, 1);
-                    }
-
-                    // 橋を架ける
-                    if (Bridge) {
-                        if (isBridge(x, y)) {
-                            setTileId(x, y, 3, 25); // 橋（縦）
-                        } else if (isSideBridge(x, y)) {
-                            setTileId(x, y, 3, 24); // 橋（横）
-                        }
-                    }
-                } else if (isAdjacentTile(x, y, 0, 2048)) {
-                    // A2タイルを隣接させない
-                    setTileId(x, y, 1);
-                }
-
-                // 草原のとき
-                if (layer1 === 2816) {
-                    // 変に繋がっている地形は海にする
-                    if (
-                        edgeTileId(x + 1, y, 0, 2048) === 2048 &&  // 右(海)
-                        edgeTileId(x, y + 1, 0, 2048) === 2048 &&  // 下(海)
-                        edgeTileId(x + 1, y + 1, 0, 2816) === 2816 // 右下(草原)
-                       ) {
-                        setTileId(x, y, 0, 2048); // 海
-                        setTileId(x, y, 1);
-                    }
-
-                    // 深い海と草原を隣接させない
-                    fillDistantTile(x, y, 1, 2096, 1);
-                }
-
-                // 木なら
-                if (layer1 === 7904) {
-                    if (edgeTileId(x, y - 1, 0, 1552) === 1552) {
-                        fillAroundTile(x, y, 0, 7520, 0);
-                    }
-                }
-            }
-        }
-    }
-
-    //==============================================================================
     // 関数
     //==============================================================================
 
@@ -2372,18 +2500,6 @@ https://opensource.org/license/mit
     function setTileId(x, y, z, tileId) {
         const index = PotadraGenerate_index(x, y, z);
         retentionSaveData()._potadra_worlds[index] = tileId;
-    }
-
-    /**
-     * 指定座標の高さの設定
-     *
-     * @param {number} x - X座標
-     * @param {number} y - Y座標
-     * @param {number} height - 高さ
-     */
-    function setTileHeight(x, y, height) {
-        const index = PotadraGenerate_index2D(x, y);
-        heightSaveData()._potadra_heights[index] = height;
     }
 
     /**
@@ -2498,29 +2614,7 @@ https://opensource.org/license/mit
         return false;
     }
 
-    function topTile(height, x, y, top_tiles, upper, passable) {
-        for (let i = 0; i < top_tiles.length; i++) {
-            const tile = top_tiles[i];
-            if (tile[1] < height && height <= tile[2]) {
-                if (upper && tile[3] >= 1) continue;
-                setTileId(x, y, tile[3], tile[0]);
-            }
-        }
-    }
-    function bottomTile(height, x, y, bottom_tiles) {
-        for (let i = 0; i < bottom_tiles.length; i++) {
-            const tile = bottom_tiles[i];
-            if (tile[2] <= height && height <= tile[1]) {
-                setTileId(x, y, tile[3], tile[0]);
-            }
-        }
-    }
-    function createBiome(x, y, biome, seed_length, upper = false, passable = false) {
-        const height = PotadraPerlinNoise_my_noise(x, y, seed_length, $gameTemp._seedArray);
-        setTileHeight(x, y, height);
-        topTile(height, x, y, biome.top_tile, upper, passable);
-        bottomTile(height, x, y, biome.bottom_tile);
-    }
+
 
     // 船を呼び出せるマップか判定
     function checkShipMap(player) {
@@ -2799,121 +2893,6 @@ https://opensource.org/license/mit
     }
 
     //==============================================================================
-    // オートタイル配置
-    //==============================================================================
-    function setAutoTile() {
-        for (let x = 0; x < $dataMap.width; x++) {
-            for (let y = 0; y < $dataMap.height; y++) {
-                // リージョン設定
-                let layer2 = edgeTileId(x, y, 1);
-                let region;
-                if (layer2 !== 0) {
-                    layer2 -= 2000;
-                    region = (layer2 / 48) + StartTileRegion;
-                } else {
-                    let layer1 = edgeTileId(x, y, 0);
-                    layer1 -= 2000;
-                    region = (layer1 / 48) + StartTileRegion;
-                }
-
-                autoTile(x, y, 0);
-                autoTile(x, y, 1);
-                autoTile(x, y, 2);
-                autoTile(x, y, 3);
-
-                const lock_tile_region = getRegion(x, y);
-                if (checkRegions(lock_tile_region, LockTileRegion, LockTileRegions)) {
-                    setTileId(x, y, 5, lock_tile_region); // タイル完全固定リージョン
-                } else if (StartTileRegion !== 0) {
-                    setTileId(x, y, 5, region); // 自動設定リージョン
-                } else {
-                    setTileId(x, y, 5); // リージョンなし
-                }
-            }
-        }
-    }
-
-    /** 
-     * オートタイル設定
-     *
-     * @param {number} x - X座標
-     * @param {number} y - Y座標
-     * @param {number} z - レイヤー
-     */
-    function autoTile(x, y, z) {
-        const tileID = randomTileId(x, y, z);
-        if (Tilemap.isFloorTypeAutotile(tileID)) {
-            let UpperLeftID, UpperID, UpperRightID, LeftID, RightID, LowerLeftID, LowerID, LowerRightID;
-            if (PotadraEdge_isEdge(x, y)) {
-                UpperLeftID  = loopTileId(x - 1, y - 1, z, tileID); // 左上
-                UpperID      = loopTileId(x    , y - 1, z, tileID); // 上
-                UpperRightID = loopTileId(x + 1, y - 1, z, tileID); // 右上
-                LeftID       = loopTileId(x - 1, y    , z, tileID); // 左
-                RightID      = loopTileId(x + 1, y    , z, tileID); // 右
-                LowerLeftID  = loopTileId(x - 1, y + 1, z, tileID); // 左下
-                LowerID      = loopTileId(x    , y + 1, z, tileID); // 下
-                LowerRightID = loopTileId(x + 1, y + 1, z, tileID); // 右下
-            } else {
-                UpperLeftID  = randomTileId(x - 1, y - 1, z); // 左上
-                UpperID      = randomTileId(x    , y - 1, z); // 上
-                UpperRightID = randomTileId(x + 1, y - 1, z); // 右上
-                LeftID       = randomTileId(x - 1, y    , z); // 左
-                RightID      = randomTileId(x + 1, y    , z); // 右
-                LowerLeftID  = randomTileId(x - 1, y + 1, z); // 左下
-                LowerID      = randomTileId(x    , y + 1, z); // 下
-                LowerRightID = randomTileId(x + 1, y + 1, z); // 右下
-            }
-            const upper_left  = PotadraAutoTile_UpperLeft(tileID, UpperLeftID, UpperID, LeftID);
-            const upper_right = PotadraAutoTile_UpperRight(tileID, UpperRightID, UpperID, RightID);
-            const lower_left  = PotadraAutoTile_LowerLeft(tileID, LowerLeftID, LowerID, LeftID);
-            const lower_right = PotadraAutoTile_LowerRight(tileID, LowerRightID, LowerID, RightID);
-            const shape = PotadraAutoTile_FLOOR_AUTOTILE_TABLE()[upper_left + upper_right + lower_left + lower_right] || 0;
-            setTileId(x, y, z, tileID + shape);
-        } else if (Tilemap.isWallTypeAutotile(tileID)) {
-            let UpperID, LeftID, RightID, LowerID;
-            if (PotadraEdge_isEdge(x, y)) {
-                UpperID = loopTileId(x    , y - 1, z, tileID); // 上
-                LeftID  = loopTileId(x - 1, y    , z, tileID); // 左
-                RightID = loopTileId(x + 1, y    , z, tileID); // 右
-                LowerID = loopTileId(x    , y + 1, z, tileID); // 下
-            } else {
-                UpperID = randomTileId(x    , y - 1, z); // 上
-                LeftID  = randomTileId(x - 1, y    , z); // 左
-                RightID = randomTileId(x + 1, y    , z); // 右
-                LowerID = randomTileId(x    , y + 1, z); // 下
-            }
-            const upper_left  = PotadraAutoTile_WallUpperLeft(tileID, UpperID, LeftID);
-            const upper_right = PotadraAutoTile_WallUpperRight(tileID, UpperID, RightID);
-            const lower_left  = PotadraAutoTile_WallLowerLeft(tileID, LowerID, LeftID);
-            const lower_right = PotadraAutoTile_WallLowerRight(tileID, LowerID, RightID);
-            const shape       = PotadraAutoTile_WALL_AUTOTILE_TABLE()[upper_left + upper_right + lower_left + lower_right] || 0;
-            setTileId(x, y, z, tileID + shape);
-        } else if (Tilemap.isWaterfallTypeAutotile(tileID)) {
-            let tileID1, tileID2;
-            if (PotadraEdge_isEdge(x, y)) {
-                tileID1 = loopTileId(x - 1, y, z, tileID); // 左
-                tileID2 = loopTileId(x + 1, y, z, tileID); // 右
-            } else {
-                tileID1 = randomTileId(x - 1, y, z); // 左
-                tileID2 = randomTileId(x + 1, y, z); // 右
-            }
-            const left  = Tilemap.isSameKindTile(tileID, tileID1);
-            const right = Tilemap.isSameKindTile(tileID, tileID2);
-            let shape;
-            if (left && right) {
-                shape = 0;
-            } else if (!left) {
-                shape = 1;
-            } else if (!right) {
-                shape = 2;
-            } else {
-                shape = 3;
-            }
-            setTileId(x, y, z, tileID + shape);
-        }
-    }
-
-    //==============================================================================
     // メニューコマンド
     //==============================================================================
 
@@ -3148,16 +3127,5 @@ https://opensource.org/license/mit
             }
         }
         return false;
-    }
-
-    //==============================================================================
-    // ワールド再生成
-    //==============================================================================
-    function RegenerateWorld() {
-        if (isAuto()) {
-            GenerateWorld();
-            PotadraSpawn_spawn(0);
-        }
-        SceneManager.goto(Scene_Map);
     }
 })();
