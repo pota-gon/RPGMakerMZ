@@ -1,12 +1,15 @@
 /*:
 @plugindesc
-ファストトラベル Ver1.0.5(2025/12/28)
+ファストトラベル Ver1.0.6(2026/1/26)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/4_UI/MapUI/FastTravel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.6
+- メニューの設定が空配列のときにエラーになる問題を修正
+- FastTravel.js のプラグインパラメータの位置を整理
 * Ver1.0.5: 説明文が全て空の場合、ヘルプウィンドウを非表示にする機能を追加
 * Ver1.0.4: 存在しないMapIDを指定したときに警告メッセージを表示し、エラーにしないように修正
 * Ver1.0.3: マップ名の表示機能が正しく動作していない問題を修正
@@ -305,75 +308,25 @@ ONのときコマンドが使用不可（灰色表示）になります
 */
 
 /*~struct~MoveMapList:
-@param showSwitch
-@type switch
-@text 移動先表示スイッチ
-@desc このスイッチがONのときに行き先を表示します
-0(なし)の場合、常に移動先が表示されます
-@default 0
-
-@param hideSwitch
-@type switch
-@text 移動先非表示スイッチ
-@desc このスイッチがONのときに行き先を非表示にします
-0(なし)の場合、常に移動先が表示されます
-@default 0
-
-@param moveSwitch
-@type switch
-@text 移動判定スイッチ
-@desc 移動をしたときにこのスイッチがONになります
-0(なし)の場合、使用しません
-@default 0
-
-@param moveChangeVariable
-@type number
-@text 移動先マップ情報番号変更
-@desc 移動先マップ情報の変数を変更します
-@default 0
-
-@param move_map_name
-@type string
-@text マップ移動先名
-@desc 移動先のマップ名称を指定します
-
-@param map_help
-@type multiline_string
-@text マップ説明
-@desc マップについての説明
-文章の表示と同様の表示が可能です
-
-@param common_event
-@type common_event
-@text コモンイベントID
-@desc 移動処理のコモンイベントID
-0(なし)の場合、使用しません
-@default 0
-@min 0
-
-    @param before_common_event
-    @parent common_event
-    @type common_event
-    @text 移動前コモンイベントID
-    @desc 移動前のコモンイベントID
-    0(なし)の場合、使用しません
-    @default 0
-    @min 0
-
-    @param after_common_event
-    @parent common_event
-    @type common_event
-    @text 移動後コモンイベントID
-    @desc 移動後のコモンイベントID
-    0(なし)の場合、使用しません
-    @default 0
-    @min 0
-
 @param map
 @type location
 @text マップ
 @desc 移動先のマップ情報
 @default {"mapId":"0","x":"0","y":"0"}
+
+    @param move_map_name
+    @parent map
+    @type string
+    @text マップ移動先名
+    @desc 移動先のマップ名称を指定します
+    指定しない場合は、マップの名前が表示されます
+
+    @param map_help
+    @parent map
+    @type multiline_string
+    @text マップ説明
+    @desc マップについての説明
+    文章の表示と同様の表示が可能です
 
     @param direction
     @parent map
@@ -413,8 +366,73 @@ ONのときコマンドが使用不可（灰色表示）になります
     指定しない場合、再生しません
     @default {"name":"Move1","volume":"90","pitch":"100","pan":"0"}
 
+@param common_event
+@type common_event
+@text コモンイベントID
+@desc 移動処理のコモンイベントID
+0(なし)の場合、使用しません
+@default 0
+@min 0
+
+    @param before_common_event
+    @parent common_event
+    @type common_event
+    @text 移動前コモンイベントID
+    @desc 移動前のコモンイベントID
+    0(なし)の場合、使用しません
+    @default 0
+    @min 0
+
+    @param after_common_event
+    @parent common_event
+    @type common_event
+    @text 移動後コモンイベントID
+    @desc 移動後のコモンイベントID
+    0(なし)の場合、使用しません
+    @default 0
+    @min 0
+
+@param switch
+@text スイッチ設定
+@desc ※ 分類用のパラメータです
+
+    @param showSwitch
+    @parent switch
+    @type switch
+    @text 移動先表示スイッチ
+    @desc このスイッチがONのときに行き先を表示します
+    0(なし)の場合、常に移動先が表示されます
+    @default 0
+
+    @param hideSwitch
+    @parent switch
+    @type switch
+    @text 移動先非表示スイッチ
+    @desc このスイッチがONのときに行き先を非表示にします
+    0(なし)の場合、常に移動先が表示されます
+    @default 0
+
+    @param moveSwitch
+    @parent switch
+    @type switch
+    @text 移動判定スイッチ
+    @desc 移動をしたときにこのスイッチがONになります
+    0(なし)の場合、使用しません
+    @default 0
+
+@param variable
+@text 変数設定
+@desc ※ 分類用のパラメータです
+
+    @param moveChangeVariable
+    @parent variable
+    @type variable
+    @text 移動先マップ情報番号変更
+    @desc 移動先マップ情報の変数を変更します
+    @default 0
+
     @param map_id_variable
-    @parent map
+    @parent variable
     @type variable
     @text 移動先マップID記憶変数
     @desc 移動先マップIDを記憶するかどうか
@@ -438,7 +456,7 @@ ONのときコマンドが使用不可（灰色表示）になります
         @default 0
 
     @param exit_map_id_variable
-    @parent map
+    @parent variable
     @type variable
     @text 出口マップID記憶変数
     @desc 出口のマップIDを記憶する変数
@@ -462,7 +480,7 @@ ONのときコマンドが使用不可（灰色表示）になります
         @default 0
 
     @param escape_map_id_variable
-    @parent map
+    @parent variable
     @type variable
     @text エスケープマップID記憶変数
     @desc エスケープのマップIDを記憶する変数
@@ -485,26 +503,33 @@ ONのときコマンドが使用不可（灰色表示）になります
         0 の場合は、パラメータの変数を参照
         @default 0
 
-@param boat
-@type location
-@text 小型船座標
-@desc 移動先の小型船座標
-マップIDは設定しても現在のマップになります
-@default {"mapId":"0","x":"0","y":"0"}
+@param vehicle
+@text 乗り物設定
+@desc ※ 分類用のパラメータです
 
-@param ship
-@type location
-@text 大型船座標
-@desc 移動先の大型船座標
-マップIDは設定しても現在のマップになります
-@default {"mapId":"0","x":"0","y":"0"}
+    @param boat
+    @parent vehicle
+    @type location
+    @text 小型船座標
+    @desc 移動先の小型船座標
+    マップIDは設定しても現在のマップになります
+    @default {"mapId":"0","x":"0","y":"0"}
 
-@param air_ship
-@type location
-@text 飛行船座標
-@desc 移動先の飛行船座標
-マップIDは設定しても現在のマップになります
-@default {"mapId":"0","x":"0","y":"0"}
+    @param ship
+    @parent vehicle
+    @type location
+    @text 大型船座標
+    @desc 移動先の大型船座標
+    マップIDは設定しても現在のマップになります
+    @default {"mapId":"0","x":"0","y":"0"}
+
+    @param air_ship
+    @parent vehicle
+    @type location
+    @text 飛行船座標
+    @desc 移動先の飛行船座標
+    マップIDは設定しても現在のマップになります
+    @default {"mapId":"0","x":"0","y":"0"}
 */
 
 /*~struct~SE:
@@ -654,7 +679,7 @@ ONのときコマンドが使用不可（灰色表示）になります
     const FullWidthWhenNoHelp = Potadra_convertBool(params.FullWidthWhenNoHelp);
 
     let MoveMapList;
-    if (MenuCommand && params.mapLists) {
+    if (MenuCommand && params.mapLists && params.mapLists !== "[]") {
         const MapList = JSON.parse(params.mapLists);
         const map_list_number = MapListVariable === 0 ? MapListVariable : $gameVariables.value(MapListVariable);
         const move_map_list = JSON.parse(MapList[map_list_number]);

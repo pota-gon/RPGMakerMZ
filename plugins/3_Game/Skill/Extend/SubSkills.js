@@ -1,12 +1,14 @@
 /*:
 @plugindesc
-サブスキル Ver1.1.0(2026/1/25)
+サブスキル Ver1.1.1(2026/1/26)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Extend/SubSkills.js
+@orderAfter Game_Action_Result
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.1.1: プラグインの有無でエラーになる問題を修正
 * Ver1.1.0: 発動確率を設定出来る機能を追加
 * Ver1.0.5: 敵キャラなどアクションが1つも設定されていないとエラーになるバグ修正
 * Ver1.0.4: 元のスキルのコストが足りていない時もプレスキルが追加されるバグ修正
@@ -167,6 +169,7 @@ https://opensource.org/license/mit
         }
         return [];
     };
+    const StartTurn_Game_Action_Result = Potadra_isPlugin('Game_Action_Result');
     const start_turn_pre_skills_params = Potadra_getPluginParams('PreSkills');
     const StartTurnPreSkillMetaName = String(start_turn_pre_skills_params.PreSkillMetaName || "プレスキル");
     const StartTurnPreSkillCostZero = Potadra_convertBool(start_turn_pre_skills_params.PreSkillCostZero);
@@ -219,7 +222,7 @@ https://opensource.org/license/mit
                         if (targets.length === 1) {
                             const target = targets[0];
                             action.setTarget(target);
-                            if (!action._result) action.applyResult(target);
+                            if (StartTurn_Game_Action_Result) action.applyResult(target);
                         }
                         add_actions.push(action);
                     }
@@ -250,7 +253,7 @@ https://opensource.org/license/mit
                         if (targets.length === 1) {
                             const target = targets[0];
                             action.setTarget(target);
-                            if (!action._result) action.applyResult(target);
+                            if (StartTurn_Game_Action_Result) action.applyResult(target);
                         }
                         add_actions.push(action);
                     } else {
@@ -356,11 +359,11 @@ https://opensource.org/license/mit
             return true;
         }
     }
-    function Potadra_isPlugin(plugin_name) {
-        return PluginManager._scripts.includes(plugin_name);
-    }
     function Potadra_getPluginParams(plugin_name) {
         return Potadra_isPlugin(plugin_name) ? PluginManager.parameters(plugin_name) : false;
+    }
+    function Potadra_isPlugin(plugin_name) {
+        return PluginManager._scripts.includes(plugin_name);
     }
 
 })();

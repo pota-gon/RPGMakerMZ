@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-名前データベース Ver1.0.4(2026/1/25)
+名前データベース Ver1.0.5(2026/1/26)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/2_System/Name/NameDatabase.js
 @orderAfter Game_Action_Result
@@ -8,6 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.5: ステート付加・解除の処理がおかしかった問題修正
 * Ver1.0.4: ステート有効度が正しく動作していないバグ修正
 * Ver1.0.3: スキル封印(特徴)を追加
 * Ver1.0.2
@@ -797,25 +798,29 @@ https://opensource.org/license/mit
          */
         const _Game_Action_apply = Game_Action.prototype.apply;
         Game_Action.prototype.apply = function(target) {
-            this.applyResult(target);
+            let result;
+            let effects = [];
 
             // ステート解除(使用効果)
-            let effects = [];
             if (Game_Action_Result) {
-                effects = set_remove_effects(this.item(), this._result);
+                result = this.applyResult(target);
+                effects = set_remove_effects(this.item(), result);
                 for (const effect of effects) {
                     this.applyItemEffect(target, effect);
                 }
             }
 
+            // 元の処理を実行
             _Game_Action_apply.apply(this, arguments);
+
+            if (!Game_Action_Result && !result) result = target.result();
 
             // ステート解除(使用効果)
             let remote_effects = [];
-            if (!Game_Action_Result) remote_effects = set_remove_effects(this.item(), this._result);
+            if (!Game_Action_Result) remote_effects = set_remove_effects(this.item(), result);
 
             // ステート付加(使用効果)
-            const add_effects = set_add_effects(this.item(), this._result);
+            const add_effects = set_add_effects(this.item(), result);
             effects = remote_effects.concat(add_effects);
             for (const effect of effects) {
                 this.applyItemEffect(target, effect);

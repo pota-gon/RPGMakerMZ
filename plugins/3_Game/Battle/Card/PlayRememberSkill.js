@@ -3,6 +3,7 @@
 スキル実行回数記憶 Ver1.0.2(2026/1/12)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Battle/Card/PlayRememberSkill.js
+@orderAfter Game_Action_Result
 @target MZ
 @author ポテトードラゴン
 
@@ -55,6 +56,7 @@ https://opensource.org/license/mit
     'use strict';
 
     // ベースプラグインの処理
+    const StartTurn_Game_Action_Result = Potadra_isPlugin('Game_Action_Result');
     const start_turn_pre_skills_params = Potadra_getPluginParams('PreSkills');
     const StartTurnPreSkillMetaName = String(start_turn_pre_skills_params.PreSkillMetaName || "プレスキル");
     const StartTurnPreSkillCostZero = Potadra_convertBool(start_turn_pre_skills_params.PreSkillCostZero);
@@ -107,7 +109,7 @@ https://opensource.org/license/mit
                         if (targets.length === 1) {
                             const target = targets[0];
                             action.setTarget(target);
-                            if (!action._result) action.applyResult(target);
+                            if (StartTurn_Game_Action_Result) action.applyResult(target);
                         }
                         add_actions.push(action);
                     }
@@ -138,7 +140,7 @@ https://opensource.org/license/mit
                         if (targets.length === 1) {
                             const target = targets[0];
                             action.setTarget(target);
-                            if (!action._result) action.applyResult(target);
+                            if (StartTurn_Game_Action_Result) action.applyResult(target);
                         }
                         add_actions.push(action);
                     } else {
@@ -241,11 +243,11 @@ https://opensource.org/license/mit
             return true;
         }
     }
-    function Potadra_isPlugin(plugin_name) {
-        return PluginManager._scripts.includes(plugin_name);
-    }
     function Potadra_getPluginParams(plugin_name) {
         return Potadra_isPlugin(plugin_name) ? PluginManager.parameters(plugin_name) : false;
+    }
+    function Potadra_isPlugin(plugin_name) {
+        return PluginManager._scripts.includes(plugin_name);
     }
     function Potadra_getPluginName(extension = 'js') {
         const reg = new RegExp(".+\/(.+)\." + extension);
