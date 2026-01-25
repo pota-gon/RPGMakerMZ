@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-戦闘中ポイント増加 Ver1.0.1(2026/1/10)
+戦闘中ポイント増加 Ver1.0.2(2026/1/25)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Battle/Card/IncreasePointBattle.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.2: 戦闘不能状態でMPが増えないようにするプラグインパラメータ追加
 * Ver1.0.1: ターン順に定義することで動くように仕様変更
 * Ver1.0.0: 初期版完成
 
@@ -50,8 +51,8 @@ https://opensource.org/license/mit
         @param TurnIncreasesMp
         @parent IncreaseMp
         @type struct<TurnIncreases>[]
-        @text 増加MP（詳細設定）
-        @desc ターンごとに増加するMPの値（詳細設定）
+        @text 増加MP(詳細設定)
+        @desc ターンごとに増加するMPの値(詳細設定)
 
     @param StopIncreaseMp
     @parent MpUp
@@ -70,6 +71,15 @@ https://opensource.org/license/mit
     回復しない場合、増加値のみ回復します
     @on 回復する
     @off 回復しない
+    @default true
+
+    @param SkipDeadMp
+    @parent MpUp
+    @type boolean
+    @text 戦闘不能時MP増加無効
+    @desc 戦闘不能状態のときMPを増加しないか
+    @on 増加しない
+    @off 増加する
     @default true
 
     @param ActorAwakeSwitch
@@ -126,8 +136,8 @@ https://opensource.org/license/mit
         @param TurnIncreasesTp
         @parent IncreaseTp
         @type struct<TurnIncreases>[]
-        @text 増加TP（詳細設定）
-        @desc ターンごとに増加するTPの値（詳細設定）
+        @text 増加TP(詳細設定)
+        @desc ターンごとに増加するTPの値(詳細設定)
 
     @param StopIncreaseTp
     @parent TpUp
@@ -147,6 +157,15 @@ https://opensource.org/license/mit
     @on 回復する
     @off 回復しない
     @default false
+
+    @param SkipDeadTp
+    @parent TpUp
+    @type boolean
+    @text 戦闘不能時TP増加無効
+    @desc 戦闘不能状態のときTPを増加しないか
+    @on 増加しない
+    @off 増加する
+    @default true
 
     @param ActorAwakeTpSwitch
     @parent TpUp
@@ -251,6 +270,7 @@ https://opensource.org/license/mit
     }
     const StopIncreaseMp     = Number(params.StopIncreaseMp || 10);
     const RecoverMaxMp       = Potadra_convertBool(params.RecoverMaxMp);
+    const SkipDeadMp         = Potadra_convertBool(params.SkipDeadMp);
     const ActorAwakeSwitch   = Number(params.ActorAwakeSwitch || 0);
     const ActorAwakeMp       = Number(params.ActorAwakeMp || 7);
     const EnemyAwakeSwitch   = Number(params.EnemyAwakeSwitch || 0);
@@ -263,6 +283,7 @@ https://opensource.org/license/mit
     }
     const StopIncreaseTp     = Number(params.StopIncreaseTp || 10);
     const RecoverMaxTp       = Potadra_convertBool(params.RecoverMaxTp);
+    const SkipDeadTp         = Potadra_convertBool(params.SkipDeadTp);
     const ActorAwakeTpSwitch = Number(params.ActorAwakeTpSwitch || 0);
     const ActorAwakeTp       = Number(params.ActorAwakeTp || 7);
     const EnemyAwakeTpSwitch = Number(params.EnemyAwakeTpSwitch || 0);
@@ -362,12 +383,16 @@ https://opensource.org/license/mit
 
             // アクター
             for (const actor of $gameParty.battleMembers()) {
-                actor.potadraIncreaseMp(increase_mp);
+                if (!SkipDeadMp || !actor.isDead()) {
+                    actor.potadraIncreaseMp(increase_mp);
+                }
             }
 
             // 敵キャラ
             for (const enemy of $gameTroop.members()) {
-                enemy.potadraIncreaseMp(increase_mp);
+                if (!SkipDeadMp || !enemy.isDead()) {
+                    enemy.potadraIncreaseMp(increase_mp);
+                }
             }
         }
 
@@ -390,12 +415,20 @@ https://opensource.org/license/mit
 
             // アクター
             for (const actor of $gameParty.battleMembers()) {
-                if (actor.tp < StopIncreaseTp) actor.potadraIncreaseTp(increase_tp);
+                if (actor.tp < StopIncreaseTp) {
+                    if (!SkipDeadTp || !actor.isDead()) {
+                        actor.potadraIncreaseTp(increase_tp);
+                    }
+                }
             }
 
             // 敵キャラ
             for (const enemy of $gameTroop.members()) {
-                if (enemy.tp < StopIncreaseTp) enemy.potadraIncreaseTp(increase_tp);
+                if (enemy.tp < StopIncreaseTp) {
+                    if (!SkipDeadTp || !enemy.isDead()) {
+                        enemy.potadraIncreaseTp(increase_tp);
+                    }
+                }
             }
         }
 
@@ -405,7 +438,7 @@ https://opensource.org/license/mit
     /**
      * 戦闘終了
      *
-     * @param {} result - 結果（0:勝利 1:逃走 2:敗北）
+     * @param {} result - 結果(0:勝利 1:逃走 2:敗北)
      */
     const _BattleManager_endBattle = BattleManager.endBattle;
     BattleManager.endBattle = function(result) {

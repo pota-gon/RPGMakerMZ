@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-名前データベース Ver1.0.3(2026/1/18)
+名前データベース Ver1.0.4(2026/1/25)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/2_System/Name/NameDatabase.js
 @orderAfter Game_Action_Result
@@ -8,6 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.4: ステート有効度が正しく動作していないバグ修正
 * Ver1.0.3: スキル封印(特徴)を追加
 * Ver1.0.2
 - ステート解除をスキル・アイテム実行前に行うように修正、リファクタリング
@@ -568,8 +569,8 @@ https://opensource.org/license/mit
         /**
          * ステート有効度の取得
          *
-         * @param {} stateId - 
-         * @returns {} 
+         * @param {number} stateId - ステートID
+         * @returns {number} ステート有効度
          */
         Game_BattlerBase.prototype.stateRate = function(stateId) {
             const state_data = Potadra_checkMetaData(this, StateRateMetaName);
@@ -577,10 +578,14 @@ https://opensource.org/license/mit
             if (state_data) {
                 for (const state_str of state_data) {
                     const state_datum = state_str.split(",");
+                    if (state_datum.length < 2) continue; // 配列の長さチェック
+                    
                     const state_name  = state_datum[0].trim();
                     const state_id    = Potadra_nameSearch($dataStates, state_name);
+                    
                     if (state_id === stateId) {
-                        const state_value = Number(state_datum[1]) / 100;
+                        // trim()を追加して、空白を除去
+                        const state_value = Number(state_datum[1].trim()) / 100;
                         let trait = {};
                         trait.code   = Game_BattlerBase.TRAIT_STATE_RATE;
                         trait.dataId = stateId;

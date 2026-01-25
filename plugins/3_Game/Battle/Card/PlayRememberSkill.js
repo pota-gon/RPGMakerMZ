@@ -57,8 +57,13 @@ https://opensource.org/license/mit
     // ベースプラグインの処理
     const start_turn_pre_skills_params = Potadra_getPluginParams('PreSkills');
     const StartTurnPreSkillMetaName = String(start_turn_pre_skills_params.PreSkillMetaName || "プレスキル");
+    const StartTurnPreSkillCostZero = Potadra_convertBool(start_turn_pre_skills_params.PreSkillCostZero);
     const start_turn_sub_skills_params = Potadra_getPluginParams('SubSkills');
-    const StartTurnSubSkillMetaName = String(start_turn_sub_skills_params.SubSkillMetaName || "サブキル");
+    const StartTurnSubSkillMetaName = String(start_turn_sub_skills_params.SubSkillMetaName || "サブスキル");
+    const StartTurnSubSkillCostZero = Potadra_convertBool(start_turn_sub_skills_params.SubSkillCostZero);
+    const start_turn_combo_skills_params = Potadra_getPluginParams('ComboSkills');
+    const StartTurnComboSkillMetaName = String(start_turn_combo_skills_params.ComboSkillMetaName || "コンボスキル");
+    const StartTurnComboSkillCostZero = Potadra_convertBool(start_turn_combo_skills_params.ComboSkillCostZero);
     const start_turn_play_remember_skill_params = Potadra_getPluginParams('PlayRememberSkill');
     const StartTurnActorTurnPlayVariable = Number(start_turn_play_remember_skill_params.ActorTurnPlayVariable || 0);
     const StartTurnEnemyTurnPlayVariable = Number(start_turn_play_remember_skill_params.EnemyTurnPlayVariable || 0);
@@ -68,18 +73,36 @@ https://opensource.org/license/mit
             mp >= this.skillMpCost(skill)
         );
     };
-    if (start_turn_pre_skills_params || start_turn_sub_skills_params || start_turn_play_remember_skill_params) {
+    function isSkillCostZero(meta_name) {
+        if (meta_name === StartTurnPreSkillMetaName) {
+            return StartTurnPreSkillCostZero;
+        } else if (meta_name === StartTurnSubSkillMetaName) {
+            return StartTurnSubSkillCostZero;
+        } else if (meta_name === StartTurnComboSkillMetaName) {
+            return StartTurnComboSkillCostZero;
+        }
+        return false;
+    }
+    if (start_turn_pre_skills_params || start_turn_sub_skills_params || start_turn_combo_skills_params || start_turn_play_remember_skill_params) {
         function set_actions(member, original_action, item, meta_name) {
             let add_actions = [];
-            const skill_names = Potadra_metaData(item.meta[meta_name]);
-            if (skill_names && skill_names.length > 0) {
+            const skill_data = Potadra_metaData(item.meta[meta_name]);
+            const cost_zero = isSkillCostZero(meta_name);
+            if (skill_data && skill_data.length > 0) {
                 const original_targets = original_action.makeTargets();
-                for (const skill_name of skill_names) {
-                    if (!skill_name) continue;
+                for (const skill_str of skill_data) {
+                    if (!skill_str) continue;
+                    const skill_datum = skill_str.split(",");
+                    const skill_name = skill_datum[0].trim();
+                    const probability = skill_datum[1] ? Number(skill_datum[1]) : 100;
+                    if (Math.random() * 100 >= probability) continue;
                     const skill_id = Potadra_checkName($dataSkills, skill_name);
                     if (skill_id) {
                         const action = new Game_Action(member);
                         action.setSkill(skill_id);
+                        if (cost_zero) {
+                            action._potadraCostZero = true;
+                        }
                         const targets = action.potadraMakeTargets(original_action, original_targets);
                         if (targets.length === 1) {
                             const target = targets[0];
@@ -92,7 +115,40 @@ https://opensource.org/license/mit
             }
             return add_actions;
         }
-        function PreSubSkills() {
+        function set_combo_actions(member, original_action, item, meta_name) {
+            let add_actions = [];
+            const skill_data = Potadra_metaData(item.meta[meta_name]);
+            const cost_zero = isSkillCostZero(meta_name);
+            if (skill_data && skill_data.length > 0) {
+                const original_targets = original_action.makeTargets();
+                for (const skill_str of skill_data) {
+                    if (!skill_str) continue;
+                    const skill_datum = skill_str.split(",");
+                    const skill_name = skill_datum[0].trim();
+                    const probability = skill_datum[1] ? Number(skill_datum[1]) : 100;
+                    if (Math.random() * 100 >= probability) break;
+                    const skill_id = Potadra_checkName($dataSkills, skill_name);
+                    if (skill_id) {
+                        const action = new Game_Action(member);
+                        action.setSkill(skill_id);
+                        if (cost_zero) {
+                            action._potadraCostZero = true;
+                        }
+                        const targets = action.potadraMakeTargets(original_action, original_targets);
+                        if (targets.length === 1) {
+                            const target = targets[0];
+                            action.setTarget(target);
+                            if (!action._result) action.applyResult(target);
+                        }
+                        add_actions.push(action);
+                    } else {
+                        break;
+                    }
+                }
+            }
+            return add_actions;
+        }
+        function PreSubComboSkills() {
             const members = $gameParty.movableMembers().concat($gameTroop.movableMembers());
             for (const member of members) {
                 let add_actions = [];
@@ -109,9 +165,17 @@ https://opensource.org/license/mit
                     mp -= member.skillMpCost(item);
                     let pre_actions = [];
                     let sub_actions = [];
-                    if (start_turn_pre_skills_params) pre_actions = set_actions(member, original_action, item, StartTurnPreSkillMetaName);
-                    if (start_turn_sub_skills_params) sub_actions = set_actions(member, original_action, item, StartTurnSubSkillMetaName);
-                    add_actions = add_actions.concat(pre_actions).concat([original_action]).concat(sub_actions);
+                    let combo_actions = [];
+                    if (start_turn_pre_skills_params) {
+                        pre_actions = set_actions(member, original_action, item, StartTurnPreSkillMetaName);
+                    }
+                    if (start_turn_sub_skills_params) {
+                        sub_actions = set_actions(member, original_action, item, StartTurnSubSkillMetaName);
+                    }
+                    if (start_turn_combo_skills_params) {
+                        combo_actions = set_combo_actions(member, original_action, item, StartTurnComboSkillMetaName);
+                    }
+                    add_actions = add_actions.concat(pre_actions).concat([original_action]).concat(sub_actions).concat(combo_actions);
                 }
                 member._actions = add_actions;
             }
@@ -120,14 +184,39 @@ https://opensource.org/license/mit
             const _BattleManager_startTurn = BattleManager.startTurn;
             BattleManager.startTurn = function() {
                 _BattleManager_startTurn.apply(this, arguments);
-                if (start_turn_pre_skills_params || start_turn_sub_skills_params) PreSubSkills();
+                if (start_turn_pre_skills_params || start_turn_sub_skills_params || start_turn_combo_skills_params) {
+                    PreSubComboSkills();
+                }
                 if (start_turn_play_remember_skill_params) {
-                    if (Potadra_checkVariable(StartTurnActorTurnPlayVariable)) $gameVariables.setValue(StartTurnActorTurnPlayVariable, 0);
-                    if (Potadra_checkVariable(StartTurnEnemyTurnPlayVariable)) $gameVariables.setValue(StartTurnEnemyTurnPlayVariable, 0);
+                    if (Potadra_checkVariable(StartTurnActorTurnPlayVariable)) {
+                        $gameVariables.setValue(StartTurnActorTurnPlayVariable, 0);
+                    }
+                    if (Potadra_checkVariable(StartTurnEnemyTurnPlayVariable)) {
+                        $gameVariables.setValue(StartTurnEnemyTurnPlayVariable, 0);
+                    }
                 }
             };
             BattleManager._potadraStartTurn = true;
         }
+        const _Game_BattlerBase_paySkillCost = Game_BattlerBase.prototype.paySkillCost;
+        Game_BattlerBase.prototype.paySkillCost = function(skill) {
+            const action = BattleManager._action;
+            if (action && action._potadraCostZero) {
+                return;
+            }
+            _Game_BattlerBase_paySkillCost.apply(this, arguments);
+        };
+        const _Game_BattlerBase_canPaySkillCost = Game_BattlerBase.prototype.canPaySkillCost;
+        Game_BattlerBase.prototype.canPaySkillCost = function(skill) {
+            const action = BattleManager._action;
+            if (action && action._potadraCostZero) {
+                const currentSkill = action.item();
+                if (currentSkill && currentSkill === skill) {
+                    return true;
+                }
+            }
+            return _Game_BattlerBase_canPaySkillCost.apply(this, arguments);
+        };
     }
     function Potadra_nameSearch(data, name, column = "id", search_column = "name", val = "", initial = 1) {
         return Potadra_search(data, name, column, search_column, val, initial);
@@ -144,6 +233,13 @@ https://opensource.org/license/mit
             if (data) return data.map(datum => datum.trim());
         }
         return false;
+    }
+    function Potadra_convertBool(bool) {
+        if (bool === "false" || bool === '' || bool === undefined) {
+            return false;
+        } else {
+            return true;
+        }
     }
     function Potadra_isPlugin(plugin_name) {
         return PluginManager._scripts.includes(plugin_name);
