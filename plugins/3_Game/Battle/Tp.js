@@ -1,12 +1,15 @@
 /*:
 @plugindesc
-TP Ver1.0.2(2023/12/9)
+TP Ver1.0.3(2026/2/8)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Battle/Tp.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.3
+- TP最大値が0のとき、TPの最大値を変更しないように修正
+- 数値系のプラグインパラメータに上限と下限を設定
 * Ver1.0.2: TP最大値 を設定する機能追加
 
 Copyright (c) 2026 ポテトードラゴン
@@ -25,6 +28,8 @@ TP関連のパラメータを必要に応じて変更してください
 @text TP最大値
 @desc TPの最大値
 @default 100
+@min 0
+@max 999999999999999
 
 @param FixedTp
 @type boolean
@@ -40,6 +45,8 @@ TP関連のパラメータを必要に応じて変更してください
     @text 戦闘開始TP初期値
     @desc 戦闘開始時のTP初期値
     @default 0
+    @min 0
+    @max 999999999999999
 
 @param NoChargeTpDamage
 @type boolean
@@ -83,9 +90,11 @@ TP関連のパラメータを必要に応じて変更してください
      *
      * @returns {number} 
      */
-    Game_BattlerBase.prototype.maxTp = function() {
-        return MaxTp;
-    };
+    if (MaxTp > 0) {
+        Game_BattlerBase.prototype.maxTp = function() {
+            return MaxTp;
+        };
+    }
 
     /**
      * TP の初期化

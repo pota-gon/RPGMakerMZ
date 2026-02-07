@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-プレスキル Ver1.1.1(2026/1/26)
+プレスキル Ver1.1.2(2026/2/8)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Extend/PreSkills.js
 @orderAfter Game_Action_Result
@@ -8,6 +8,9 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.1.2
+- スキル消費を0にする設定が正しく動いていないバグ修正
+- ランダム処理のアルゴリズム変更
 * Ver1.1.1: プラグインの有無でエラーになる問題を修正
 * Ver1.1.0: 発動確率を設定出来る機能を追加
 * Ver1.0.5: 敵キャラなどアクションが1つも設定されていないとエラーになるバグ修正
@@ -181,79 +184,54 @@ https://opensource.org/license/mit
     const start_turn_play_remember_skill_params = Potadra_getPluginParams('PlayRememberSkill');
     const StartTurnActorTurnPlayVariable = Number(start_turn_play_remember_skill_params.ActorTurnPlayVariable || 0);
     const StartTurnEnemyTurnPlayVariable = Number(start_turn_play_remember_skill_params.EnemyTurnPlayVariable || 0);
-    Game_BattlerBase.prototype.canPaySimulateSkillCost = function(skill, tp, mp) {
-        return (
-            tp >= this.skillTpCost(skill) &&
-            mp >= this.skillMpCost(skill)
-        );
-    };
-    function isSkillCostZero(meta_name) {
-        if (meta_name === StartTurnPreSkillMetaName) {
-            return StartTurnPreSkillCostZero;
-        } else if (meta_name === StartTurnSubSkillMetaName) {
-            return StartTurnSubSkillCostZero;
-        } else if (meta_name === StartTurnComboSkillMetaName) {
-            return StartTurnComboSkillCostZero;
-        }
-        return false;
-    }
     if (start_turn_pre_skills_params || start_turn_sub_skills_params || start_turn_combo_skills_params || start_turn_play_remember_skill_params) {
-        function set_actions(member, original_action, item, meta_name) {
+        function isSkillCostZero(meta_name) {
+            if (meta_name === StartTurnPreSkillMetaName) {
+                return StartTurnPreSkillCostZero;
+            } else if (meta_name === StartTurnSubSkillMetaName) {
+                return StartTurnSubSkillCostZero;
+            } else if (meta_name === StartTurnComboSkillMetaName) {
+                return StartTurnComboSkillCostZero;
+            }
+            return false;
+        }
+        function set_skill_name(skill_str) {
+            if (!skill_str) return false;
+            const skill_datum = skill_str.split(",");
+            const skill_name = skill_datum[0].trim();
+            const probability = skill_datum[1] ? Number(skill_datum[1]) : 100;
+            if (!Potadra_random(probability)) return false;
+            return skill_name;
+        }
+        function set_actions(battler, original_action, item, meta_name, prefix) {
             let add_actions = [];
             const skill_data = Potadra_metaData(item.meta[meta_name]);
-            const cost_zero = isSkillCostZero(meta_name);
             if (skill_data && skill_data.length > 0) {
                 const original_targets = original_action.makeTargets();
                 for (const skill_str of skill_data) {
-                    if (!skill_str) continue;
-                    const skill_datum = skill_str.split(",");
-                    const skill_name = skill_datum[0].trim();
-                    const probability = skill_datum[1] ? Number(skill_datum[1]) : 100;
-                    if (Math.random() * 100 >= probability) continue;
+                    const skill_name = set_skill_name(skill_str);
+                    if (!skill_name) continue;
                     const skill_id = Potadra_checkName($dataSkills, skill_name);
                     if (skill_id) {
-                        const action = new Game_Action(member);
-                        action.setSkill(skill_id);
-                        if (cost_zero) {
-                            action._potadraCostZero = true;
-                        }
-                        const targets = action.potadraMakeTargets(original_action, original_targets);
-                        if (targets.length === 1) {
-                            const target = targets[0];
-                            action.setTarget(target);
-                            if (StartTurn_Game_Action_Result) action.applyResult(target);
-                        }
+                        const action = set_action(battler, skill_id, original_action, original_targets, meta_name, prefix);
                         add_actions.push(action);
                     }
                 }
             }
             return add_actions;
         }
-        function set_combo_actions(member, original_action, item, meta_name) {
+        function set_combo_actions(battler, original_action, item, meta_name, prefix) {
             let add_actions = [];
             const skill_data = Potadra_metaData(item.meta[meta_name]);
-            const cost_zero = isSkillCostZero(meta_name);
             if (skill_data && skill_data.length > 0) {
                 const original_targets = original_action.makeTargets();
                 for (const skill_str of skill_data) {
                     if (!skill_str) continue;
-                    const skill_datum = skill_str.split(",");
-                    const skill_name = skill_datum[0].trim();
-                    const probability = skill_datum[1] ? Number(skill_datum[1]) : 100;
-                    if (Math.random() * 100 >= probability) break;
+                    const skill_name = set_skill_name(skill_str);
+                    if (!skill_name) break;
                     const skill_id = Potadra_checkName($dataSkills, skill_name);
                     if (skill_id) {
-                        const action = new Game_Action(member);
-                        action.setSkill(skill_id);
-                        if (cost_zero) {
-                            action._potadraCostZero = true;
-                        }
-                        const targets = action.potadraMakeTargets(original_action, original_targets);
-                        if (targets.length === 1) {
-                            const target = targets[0];
-                            action.setTarget(target);
-                            if (StartTurn_Game_Action_Result) action.applyResult(target);
-                        }
+                        const action = set_action(battler, skill_id, original_action, original_targets, meta_name, prefix);
                         add_actions.push(action);
                     } else {
                         break;
@@ -262,37 +240,24 @@ https://opensource.org/license/mit
             }
             return add_actions;
         }
-        function PreSubComboSkills() {
-            const members = $gameParty.movableMembers().concat($gameTroop.movableMembers());
-            for (const member of members) {
-                let add_actions = [];
-                let tp = member._tp;
-                let mp = member._mp;
-                for (const original_action of member._actions) {
-                    const item = original_action.item();
-                    if (!item) continue;
-                    if (!member.canPaySimulateSkillCost(item, tp, mp)) {
-                        add_actions.push(original_action);
-                        continue;
-                    }
-                    tp -= member.skillTpCost(item);
-                    mp -= member.skillMpCost(item);
-                    let pre_actions = [];
-                    let sub_actions = [];
-                    let combo_actions = [];
-                    if (start_turn_pre_skills_params) {
-                        pre_actions = set_actions(member, original_action, item, StartTurnPreSkillMetaName);
-                    }
-                    if (start_turn_sub_skills_params) {
-                        sub_actions = set_actions(member, original_action, item, StartTurnSubSkillMetaName);
-                    }
-                    if (start_turn_combo_skills_params) {
-                        combo_actions = set_combo_actions(member, original_action, item, StartTurnComboSkillMetaName);
-                    }
-                    add_actions = add_actions.concat(pre_actions).concat([original_action]).concat(sub_actions).concat(combo_actions);
-                }
-                member._actions = add_actions;
+        function set_action(battler, skill_id, original_action, original_targets, meta_name, prefix) {
+            const action = new Game_Action(battler);
+            action.setSkill(skill_id);
+            if (isSkillCostZero(meta_name)) {
+                $gameTemp._potadraCostZero[prefix + battler.id].push({id: skill_id, pay: false});
             }
+            const targets = action.potadraMakeTargets(original_action, original_targets);
+            if (targets.length === 1) {
+                const target = targets[0];
+                action.setTarget(target);
+                if (StartTurn_Game_Action_Result) action.applyResult(target);
+            }
+            return action;
+        }
+        function set_prefix(battler) {
+            let prefix = 'E';
+            if (battler.isActor()) prefix = 'A';
+            return prefix;
         }
         if (!BattleManager._potadraStartTurn) {
             const _BattleManager_startTurn = BattleManager.startTurn;
@@ -312,25 +277,78 @@ https://opensource.org/license/mit
             };
             BattleManager._potadraStartTurn = true;
         }
+        function PreSubComboSkills() {
+            const members = $gameParty.movableMembers().concat($gameTroop.movableMembers());
+            for (const battler of members) {
+                let add_actions = [];
+                let tp = battler._tp;
+                let mp = battler._mp;
+                let prefix = set_prefix(battler);
+                $gameTemp._potadraCostZero[prefix + battler.id] = [];
+                for (const original_action of battler._actions) {
+                    const item = original_action.item();
+                    if (!item) continue;
+                    if (!battler.canPaySimulateSkillCost(item, tp, mp)) {
+                        add_actions.push(original_action);
+                        continue;
+                    }
+                    tp -= battler.skillTpCost(item);
+                    mp -= battler.skillMpCost(item);
+                    let pre_actions = [];
+                    let sub_actions = [];
+                    let combo_actions = [];
+                    if (start_turn_pre_skills_params) {
+                        pre_actions = set_actions(battler, original_action, item, StartTurnPreSkillMetaName, prefix);
+                    }
+                    $gameTemp._potadraCostZero[prefix + battler.id].push({id: item.id, pay: true});
+                    if (start_turn_sub_skills_params) {
+                        sub_actions = set_actions(battler, original_action, item, StartTurnSubSkillMetaName, prefix);
+                    }
+                    if (start_turn_combo_skills_params) {
+                        combo_actions = set_combo_actions(battler, original_action, item, StartTurnComboSkillMetaName, prefix);
+                    }
+                    add_actions = add_actions.concat(pre_actions).concat([original_action]).concat(sub_actions).concat(combo_actions);
+                }
+                battler._actions = add_actions;
+            }
+        }
+        const _Game_Temp_initialize = Game_Temp.prototype.initialize;
+        Game_Temp.prototype.initialize = function() {
+            _Game_Temp_initialize.apply(this, arguments);
+            this._potadraCostZero = [];
+        };
+        Game_BattlerBase.prototype.canPaySimulateSkillCost = function(skill, tp, mp) {
+            return (
+                tp >= this.skillTpCost(skill) &&
+                mp >= this.skillMpCost(skill)
+            );
+        };
         const _Game_BattlerBase_paySkillCost = Game_BattlerBase.prototype.paySkillCost;
         Game_BattlerBase.prototype.paySkillCost = function(skill) {
-            const action = BattleManager._action;
-            if (action && action._potadraCostZero) {
-                return;
-            }
+            if (check_pay_cost_zero(this, skill)) return;
             _Game_BattlerBase_paySkillCost.apply(this, arguments);
         };
         const _Game_BattlerBase_canPaySkillCost = Game_BattlerBase.prototype.canPaySkillCost;
         Game_BattlerBase.prototype.canPaySkillCost = function(skill) {
-            const action = BattleManager._action;
-            if (action && action._potadraCostZero) {
-                const currentSkill = action.item();
-                if (currentSkill && currentSkill === skill) {
-                    return true;
-                }
-            }
+            if (check_cost_zero(this, skill)) return true;
             return _Game_BattlerBase_canPaySkillCost.apply(this, arguments);
         };
+        function check_cost_zero(battler, skill) {
+            const list = $gameTemp._potadraCostZero[set_prefix(battler) + battler.id];
+            if (!Array.isArray(list)) return false;
+            const entry = list.find(e => e.id === skill.id);
+            if (!entry) return false;
+            return entry.pay === false;
+        }
+        function check_pay_cost_zero(battler, skill) {
+            const list = $gameTemp._potadraCostZero[set_prefix(battler) + battler.id];
+            if (!Array.isArray(list)) return false;
+            const index = list.findIndex(e => e.id === skill.id);
+            if (index === -1) return false;
+            const entry = list[index];
+            list.splice(index, 1);
+            return entry.pay === false;
+        }
     }
     function Potadra_checkVariable(variable_no) {
         return variable_no > 0 && variable_no <= 5000;
@@ -350,6 +368,25 @@ https://opensource.org/license/mit
             if (data) return data.map(datum => datum.trim());
         }
         return false;
+    }
+    function Potadra_random(probability, rate = 1) {
+        const p = Math.floor(probability * rate);
+        if (p >= 100) return true;
+        if (p <= 0) return false;
+        const hitCount = p;
+        const missCount = 100 - p;
+        const useHitList = hitCount <= missCount;
+        const count = useHitList ? hitCount : missCount;
+        const set = new Set();
+        while (set.size < count) {
+            set.add(Math.floor(Math.random() * 100) + 1);
+        }
+        const roll = Math.floor(Math.random() * 100) + 1;
+        if (useHitList) {
+            return set.has(roll);
+        } else {
+            return !set.has(roll);
+        }
     }
     function Potadra_convertBool(bool) {
         if (bool === "false" || bool === '' || bool === undefined) {

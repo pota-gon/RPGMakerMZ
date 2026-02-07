@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-敗北経験値 Ver1.0.1(2025/7/22)
+敗北経験値 Ver1.0.2(2026/2/8)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Battle/Exp/LoseExp.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.2: 敗北経験値の有効/無効を切り替えるスイッチパラメータを追加
 * Ver1.0.1: 小数点は切り捨てるように修正
 * Ver1.0.0: 初期版完成
 
@@ -26,14 +27,40 @@ https://opensource.org/license/mit
 初期設定は必要ありません  
 プラグイン導入だけで動作します
 
+スイッチで敗北経験値の有効/無効を切り替える場合は、
+プラグインパラメータで「敗北経験値スイッチ」を設定してください
+
 ## 例
 - 通常経験値100 → 敗北経験値50
 - 通常経験値1 → 敗北経験値0（0.5を切り捨て）
 - 通常経験値3 → 敗北経験値1（1.5を切り捨て）
 - 通常経験値5 → 敗北経験値2（2.5を切り捨て）
+
+@param LoseExpSwitch
+@type switch
+@text 敗北経験値スイッチ
+@desc 敗北経験値を有効にするスイッチ
+0の場合は常に有効
+@default 0
 */
 (() => {
    'use strict';
+
+    // ベースプラグインの処理
+    function Potadra_getPluginName(extension = 'js') {
+        const reg = new RegExp(".+\/(.+)\." + extension);
+        return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
+    }
+    function Potadra_checkSwitch(switch_no, bool = true) {
+        return switch_no === 0 || $gameSwitches.value(switch_no) === bool;
+    }
+
+   // パラメータ用定数
+   const plugin_name = Potadra_getPluginName();
+   const params      = PluginManager.parameters(plugin_name);
+
+   // 各パラメータ用定数
+   const LoseExpSwitch = Number(params.LoseExpSwitch || 0);
 
    /**
     * 敗北の処理
@@ -41,9 +68,12 @@ https://opensource.org/license/mit
    const _BattleManager_processDefeat = BattleManager.processDefeat;
    BattleManager.processDefeat = function () {
       _BattleManager_processDefeat.apply(this, arguments);
-      this.potadraLoseMakeRewards();
-      this.displayRewards();
-      this.potadraLoseGainExp();
+
+      if (Potadra_checkSwitch(LoseExpSwitch)) {
+         this.potadraLoseMakeRewards();
+         this.displayRewards();
+         this.potadraLoseGainExp();
+      }
    };
 
    /**
@@ -68,7 +98,7 @@ https://opensource.org/license/mit
    };
 
    /**
-    * 経験値の獲得（経験獲得率を考慮）
+    * 経験値の獲得(経験獲得率を考慮)
     *
     * @param {number} exp - 経験値
     */

@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-クリティカルスキル Ver1.1.0(2026/1/23)
+クリティカルスキル Ver1.1.1(2026/2/8)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Skill/Add/CriticalSkill.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.1.1: ランダム処理のアルゴリズム変更
 * Ver1.1.0: 追加能力値の会心率を反映するように修正
 * Ver1.0.0: 初期版完成
 
@@ -59,7 +60,23 @@ https://opensource.org/license/mit
         return false;
     }
     function Potadra_random(probability, rate = 1) {
-        return Math.random() <= probability / 100 * rate;
+        const p = Math.floor(probability * rate);
+        if (p >= 100) return true;
+        if (p <= 0) return false;
+        const hitCount = p;
+        const missCount = 100 - p;
+        const useHitList = hitCount <= missCount;
+        const count = useHitList ? hitCount : missCount;
+        const set = new Set();
+        while (set.size < count) {
+            set.add(Math.floor(Math.random() * 100) + 1);
+        }
+        const roll = Math.floor(Math.random() * 100) + 1;
+        if (useHitList) {
+            return set.has(roll);
+        } else {
+            return !set.has(roll);
+        }
     }
 
     // パラメータ用定数

@@ -1,12 +1,15 @@
 /*:
 @plugindesc
-合成屋 Ver1.0.0(2025/10/19)
+合成屋 Ver1.0.1(2026/2/8)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/4_UI/ShopUI/CreateShop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.1
+- ？の文字数をアイテム名に合わせる機能と最大文字数制限機能を追加
+- 未所持アイテム・素材の？？？表示機能を追加
 * Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2026 ポテトードラゴン
@@ -47,6 +50,36 @@ https://opensource.org/license/mit
 4. `メニュー表示スイッチ` にスイッチIDを設定すると
    そのスイッチがONのときだけメニューに表示されるようになります
    0の場合は常に表示されます
+
+### 3. 未所持アイテム・素材の？？？表示機能
+まだ入手していないアイテムや素材を「？？？」として隠すことができます
+
+#### アイテムの？？？表示
+- `未所持アイテムを？？？表示` パラメータを「？？？表示する」に設定すると
+  未所持のアイテムが「？？？」として表示されます
+- `未所持アイテム？？？表示スイッチ` にスイッチIDを設定すると
+  そのスイッチがONのときだけ？？？表示されます
+  0の場合はパラメータ設定に従います
+
+#### 素材の？？？表示
+- `未所持素材を？？？表示` パラメータを「？？？表示する」に設定すると
+  未所持の素材が「？？？」として表示されます
+- `未所持素材？？？表示スイッチ` にスイッチIDを設定すると
+  そのスイッチがONのときだけ？？？表示されます
+  0の場合はパラメータ設定に従います
+
+#### ？の文字数設定
+- `？の文字数モード` で？の表示方法を選択できます
+  - **アイテム名の文字数に合わせる**: 未所持アイテムの実際の名前の文字数分、？を表示します
+  - **固定文字数**: 設定した固定の文字数で？を表示します
+- `？の固定文字数` で固定文字数モード時の？の個数を設定します(1～20)
+- `？の最大文字数` で？の最大文字数を制限できます
+  0に設定すると無制限になります
+
+**使用例:**
+- ゲーム序盤は未所持アイテムを隠し、進行度に応じてスイッチで表示
+- レアアイテムの存在を隠したい場合に使用
+- アイテム名が長すぎる場合は最大文字数で制限
 
 ### 合成画面の操作
 - 合成に必要な素材が足りているアイテムは明るく表示され、選択できます
@@ -159,6 +192,81 @@ https://opensource.org/license/mit
 @on 対応する
 @off 対応しない
 @default false
+
+@param Unknown
+@text 未所持
+@desc ※ 分類用のパラメータです
+
+    @param UnknownName
+    @parent Unknown
+    @type string
+    @text 未所持名
+    @desc 未所持アイテムの表示名
+    @default ？
+
+    @param UnknownItem
+    @parent Unknown
+    @type boolean
+    @text 未所持アイテムを？？？表示
+    @desc 未所持の合成アイテムを？？？で表示するか
+    @on ？？？表示する
+    @off 通常表示
+    @default false
+
+        @param UnknownItemSwitch
+        @parent UnknownItem
+        @type switch
+        @text 未所持アイテム？？？表示スイッチ
+        @desc ONのとき未所持アイテムを？？？で表示します
+        0(なし)の場合、パラメータ設定に従います
+        @default 0
+
+    @param UnknownMaterial
+    @parent Unknown
+    @type boolean
+    @text 未所持素材を？？？表示
+    @desc 未所持の合成素材を？？？で表示するか
+    @on ？？？表示する
+    @off 通常表示
+    @default false
+
+        @param UnknownMaterialSwitch
+        @parent UnknownMaterial
+        @type switch
+        @text 未所持素材？？？表示スイッチ
+        @desc ONのとき未所持素材を？？？で表示します
+        0(なし)の場合、パラメータ設定に従います
+        @default 0
+
+    @param UnknownCharMode
+    @parent Unknown
+    @type select
+    @option アイテム名の文字数に合わせる
+    @value itemName
+    @option 固定文字数
+    @value fixed
+    @text ？の文字数モード
+    @desc ？？？の文字数をアイテム名に合わせるか、固定にするか
+    @default itemName
+
+        @param UnknownCharCount
+        @parent UnknownCharMode
+        @type number
+        @min 1
+        @max 20
+        @text ？の固定文字数
+        @desc 固定文字数モード時の？の個数
+        @default 3
+
+        @param UnknownCharMax
+        @parent UnknownCharMode
+        @type number
+        @min 1
+        @max 50
+        @text ？の最大文字数
+        @desc ？の最大文字数(この数を超える場合は制限されます)
+        0で無制限
+        @default 10
 
 @command create_shop
 @text 合成屋
@@ -376,6 +484,14 @@ https://opensource.org/license/mit
     const NoneMaterialError   = Potadra_convertBool(params.NoneMaterialError);
     const MiniWindow          = Potadra_convertBool(params.MiniWindow);
     const SubCommand          = Potadra_convertBool(params.SubCommand);
+    const UnknownItem         = Potadra_convertBool(params.UnknownItem);
+    const UnknownName         = String(params.UnknownName || '？');
+    const UnknownItemSwitch   = Number(params.UnknownItemSwitch || 0);
+    const UnknownMaterial     = Potadra_convertBool(params.UnknownMaterial);
+    const UnknownMaterialSwitch = Number(params.UnknownMaterialSwitch || 0);
+    const UnknownCharMode     = String(params.UnknownCharMode || 'itemName');
+    const UnknownCharCount    = Number(params.UnknownCharCount || 3);
+    const UnknownCharMax      = Number(params.UnknownCharMax || 10);
 
     // 他プラグイン連携(プラグインの導入有無)
     const ShopScene_Extension = Potadra_isPlugin('ShopScene_Extension');
@@ -384,6 +500,59 @@ https://opensource.org/license/mit
     const max_item_params   = Potadra_getPluginParams('MaxItem');
     const MaxDigits         = max_item_params ? String(max_item_params.MaxDigits || '00') : '00';
     const MaxDigitsMetaName = max_item_params ? String(max_item_params.MaxDigitsMetaName || '最大桁数') : '最大桁数';
+
+    /**
+     * 未所持アイテムを？？？表示するか判定
+     *
+     * @returns {boolean} ？？？表示するか
+     */
+    function isUnknownItemEnabled() {
+        if (UnknownItemSwitch > 0) {
+            return $gameSwitches.value(UnknownItemSwitch);
+        }
+        return UnknownItem;
+    }
+
+    /**
+     * 未所持素材を？？？表示するか判定
+     *
+     * @returns {boolean} ？？？表示するか
+     */
+    function isUnknownMaterialEnabled() {
+        if (UnknownMaterialSwitch > 0) {
+            return $gameSwitches.value(UnknownMaterialSwitch);
+        }
+        return UnknownMaterial;
+    }
+
+    /**
+     * ？の文字数を取得
+     *
+     * @param {object} item - アイテムオブジェクト
+     * @returns {string} ？の文字列
+     */
+    function getUnknownText(item) {
+        let count;
+        
+        if (UnknownCharMode === 'fixed') {
+            // 固定文字数モード
+            count = UnknownCharCount;
+        } else {
+            // アイテム名の文字数に合わせるモード
+            if (item && item.name) {
+                count = item.name.length;
+            } else {
+                count = UnknownCharCount; // アイテム名が取得できない場合は固定値
+            }
+        }
+        
+        // 最大文字数の制限を適用
+        if (UnknownCharMax > 0 && count > UnknownCharMax) {
+            count = UnknownCharMax;
+        }
+        
+        return UnknownName.repeat(count);
+    }
 
     // プラグインコマンド(合成屋)
     PluginManager.registerCommand(plugin_name, "create_shop", args => {
@@ -636,7 +805,19 @@ https://opensource.org/license/mit
             const priceX = rect.x + rect.width - priceWidth;
             const nameWidth = rect.width - priceWidth;
             this.changePaintOpacity(this.isEnabled(item, index));
-            this.drawItemName(item, rect.x, rect.y, nameWidth);
+            
+            // 未所持アイテムを？？？表示するか判定
+            if (isUnknownItemEnabled() && item && $gameParty.numItems(item) === 0) {
+                // アイテムを？？？として描画
+                this.changeTextColor(ColorManager.systemColor());
+                const iconBoxWidth = ImageManager.iconWidth + 4;
+                const unknownText = getUnknownText(item);
+                this.drawText(unknownText, rect.x + iconBoxWidth, rect.y, nameWidth - iconBoxWidth);
+                this.resetTextColor();
+            } else {
+                this.drawItemName(item, rect.x, rect.y, nameWidth);
+            }
+            
             this.drawText(price, priceX, rect.y, priceWidth, "right");
             this.changePaintOpacity(true);
         }
@@ -808,7 +989,19 @@ https://opensource.org/license/mit
                         const y = 34 * position;
                         const nameWidth = rect.width - maxItemWidth;
                         this.changePaintOpacity(possession >= need);
-                        this.drawItemName(item, 0, y, nameWidth);
+                        
+                        // 未所持素材を？？？表示するか判定
+                        if (isUnknownMaterialEnabled() && item && possession === 0) {
+                            // 素材を？？？として描画
+                            this.changeTextColor(ColorManager.systemColor());
+                            const iconBoxWidth = ImageManager.iconWidth + 4;
+                            const unknownText = getUnknownText(item);
+                            this.drawText(unknownText, iconBoxWidth, y, nameWidth - iconBoxWidth);
+                            this.resetTextColor();
+                        } else {
+                            this.drawItemName(item, 0, y, nameWidth);
+                        }
+                        
                         this.drawText(possession + " / " + need, maxItemX, y, maxItemWidth, "right");
                         this.changePaintOpacity(true);
                     }

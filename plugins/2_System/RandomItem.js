@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ランダムアイテム入手 Ver2.0.2(2025/12/17)
+ランダムアイテム入手 Ver2.0.3(2026/2/8)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/2_System/RandomItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver2.0.3: ランダム処理のアルゴリズム変更
 * Ver2.0.2: アイテム取得回数をカウントする変数設定機能を追加
 * Ver2.0.1: 減らす機能に装備の場合は装備品も含めるか選択できるパラメータ追加
 * Ver2.0.0
@@ -591,7 +592,23 @@ https://opensource.org/license/mit
         return false;
     }
     function Potadra_random(probability, rate = 1) {
-        return Math.random() <= probability / 100 * rate;
+        const p = Math.floor(probability * rate);
+        if (p >= 100) return true;
+        if (p <= 0) return false;
+        const hitCount = p;
+        const missCount = 100 - p;
+        const useHitList = hitCount <= missCount;
+        const count = useHitList ? hitCount : missCount;
+        const set = new Set();
+        while (set.size < count) {
+            set.add(Math.floor(Math.random() * 100) + 1);
+        }
+        const roll = Math.floor(Math.random() * 100) + 1;
+        if (useHitList) {
+            return set.has(roll);
+        } else {
+            return !set.has(roll);
+        }
     }
     function Potadra_gacha(seed, rates) {
         let sum = 0;
