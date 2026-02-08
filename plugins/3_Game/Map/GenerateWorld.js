@@ -1034,7 +1034,23 @@ https://opensource.org/license/mit
         return Potadra_isPlugin(plugin_name) ? PluginManager.parameters(plugin_name) : false;
     }
     function Potadra_random(probability, rate = 1) {
-        return Math.random() <= probability / 100 * rate;
+        const p = Math.floor(probability * rate);
+        if (p >= 100) return true;
+        if (p <= 0) return false;
+        const hitCount = p;
+        const missCount = 100 - p;
+        const useHitList = hitCount <= missCount;
+        const count = useHitList ? hitCount : missCount;
+        const set = new Set();
+        while (set.size < count) {
+            set.add(Math.floor(Math.random() * 100) + 1);
+        }
+        const roll = Math.floor(Math.random() * 100) + 1;
+        if (useHitList) {
+            return set.has(roll);
+        } else {
+            return !set.has(roll);
+        }
     }
     function Potadra_meta(meta, tag) {
         if (meta) {

@@ -85,10 +85,13 @@ https://opensource.org/license/mit
             const skill_datum = skill_str.split(",");
             const skill_name = skill_datum[0].trim();
             const probability = skill_datum[1] ? Number(skill_datum[1]) : 100;
-            if (!Potadra_random(probability)) return false;
-            return skill_name;
+            if (Potadra_random(probability)) {
+                return skill_name;
+            } else {
+                return false;
+            }
         }
-        function set_actions(battler, original_action, item, meta_name, prefix) {
+        function set_actions(battler, original_action, item, meta_name, id) {
             let add_actions = [];
             const skill_data = Potadra_metaData(item.meta[meta_name]);
             if (skill_data && skill_data.length > 0) {
@@ -98,14 +101,14 @@ https://opensource.org/license/mit
                     if (!skill_name) continue;
                     const skill_id = Potadra_checkName($dataSkills, skill_name);
                     if (skill_id) {
-                        const action = set_action(battler, skill_id, original_action, original_targets, meta_name, prefix);
+                        const action = set_action(battler, skill_id, original_action, original_targets, meta_name, id);
                         add_actions.push(action);
                     }
                 }
             }
             return add_actions;
         }
-        function set_combo_actions(battler, original_action, item, meta_name, prefix) {
+        function set_combo_actions(battler, original_action, item, meta_name, id) {
             let add_actions = [];
             const skill_data = Potadra_metaData(item.meta[meta_name]);
             if (skill_data && skill_data.length > 0) {
@@ -116,7 +119,7 @@ https://opensource.org/license/mit
                     if (!skill_name) break;
                     const skill_id = Potadra_checkName($dataSkills, skill_name);
                     if (skill_id) {
-                        const action = set_action(battler, skill_id, original_action, original_targets, meta_name, prefix);
+                        const action = set_action(battler, skill_id, original_action, original_targets, meta_name, id);
                         add_actions.push(action);
                     } else {
                         break;
@@ -125,11 +128,11 @@ https://opensource.org/license/mit
             }
             return add_actions;
         }
-        function set_action(battler, skill_id, original_action, original_targets, meta_name, prefix) {
+        function set_action(battler, skill_id, original_action, original_targets, meta_name, id) {
             const action = new Game_Action(battler);
             action.setSkill(skill_id);
             if (isSkillCostZero(meta_name)) {
-                $gameTemp._potadraCostZero[prefix + battler.id].push({id: skill_id, pay: false});
+                $gameTemp._potadraCostZero[id].push({id: skill_id, pay: false});
             }
             const targets = action.potadraMakeTargets(original_action, original_targets);
             if (targets.length === 1) {
@@ -139,10 +142,12 @@ https://opensource.org/license/mit
             }
             return action;
         }
-        function set_prefix(battler) {
-            let prefix = 'E';
-            if (battler.isActor()) prefix = 'A';
-            return prefix;
+        function set_id(battler) {
+            if (battler.isActor()) {
+              return 'E' + battler.actorId();
+            } else {
+              return 'A' + battler.enemyId();
+            }
         }
         if (!BattleManager._potadraStartTurn) {
             const _BattleManager_startTurn = BattleManager.startTurn;
@@ -168,8 +173,8 @@ https://opensource.org/license/mit
                 let add_actions = [];
                 let tp = battler._tp;
                 let mp = battler._mp;
-                let prefix = set_prefix(battler);
-                $gameTemp._potadraCostZero[prefix + battler.id] = [];
+                let id = set_id(battler);
+                $gameTemp._potadraCostZero[id] = [];
                 for (const original_action of battler._actions) {
                     const item = original_action.item();
                     if (!item) continue;
@@ -183,14 +188,14 @@ https://opensource.org/license/mit
                     let sub_actions = [];
                     let combo_actions = [];
                     if (start_turn_pre_skills_params) {
-                        pre_actions = set_actions(battler, original_action, item, StartTurnPreSkillMetaName, prefix);
+                        pre_actions = set_actions(battler, original_action, item, StartTurnPreSkillMetaName, id);
                     }
-                    $gameTemp._potadraCostZero[prefix + battler.id].push({id: item.id, pay: true});
+                    $gameTemp._potadraCostZero[id].push({id: item.id, pay: true});
                     if (start_turn_sub_skills_params) {
-                        sub_actions = set_actions(battler, original_action, item, StartTurnSubSkillMetaName, prefix);
+                        sub_actions = set_actions(battler, original_action, item, StartTurnSubSkillMetaName, id);
                     }
                     if (start_turn_combo_skills_params) {
-                        combo_actions = set_combo_actions(battler, original_action, item, StartTurnComboSkillMetaName, prefix);
+                        combo_actions = set_combo_actions(battler, original_action, item, StartTurnComboSkillMetaName, id);
                     }
                     add_actions = add_actions.concat(pre_actions).concat([original_action]).concat(sub_actions).concat(combo_actions);
                 }
@@ -219,14 +224,14 @@ https://opensource.org/license/mit
             return _Game_BattlerBase_canPaySkillCost.apply(this, arguments);
         };
         function check_cost_zero(battler, skill) {
-            const list = $gameTemp._potadraCostZero[set_prefix(battler) + battler.id];
+            const list = $gameTemp._potadraCostZero[set_id(battler)];
             if (!Array.isArray(list)) return false;
             const entry = list.find(e => e.id === skill.id);
             if (!entry) return false;
             return entry.pay === false;
         }
         function check_pay_cost_zero(battler, skill) {
-            const list = $gameTemp._potadraCostZero[set_prefix(battler) + battler.id];
+            const list = $gameTemp._potadraCostZero[set_id(battler)];
             if (!Array.isArray(list)) return false;
             const index = list.findIndex(e => e.id === skill.id);
             if (index === -1) return false;
