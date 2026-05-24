@@ -53,6 +53,9 @@ https://opensource.org/license/mit
         const reg = new RegExp(".+\/(.+)\." + extension);
         return decodeURIComponent(document.currentScript.src).replace(reg, '$1');
     }
+    function Potadra_isPlugin(plugin_name) {
+        return PluginManager._scripts.includes(plugin_name);
+    }
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
@@ -61,6 +64,9 @@ https://opensource.org/license/mit
     // 各パラメータ用変数
     const ObtainItemMessage = String(params.ObtainItemMessage);
     const OneItemMessage    = String(params.OneItemMessage);
+
+    // 他プラグイン連携(プラグインの導入有無)
+    const EquipTypeLabelPlugin = Potadra_isPlugin('EquipTypeLabel');
 
     /**
      * 戦闘の進行を管理する静的クラスです。
@@ -96,10 +102,11 @@ https://opensource.org/license/mit
                 if (item) {
                     // 同じアイテムを重複して表示しないようにする
                     if (gain_items.indexOf(item) == -1) {
+                        const item_name = EquipTypeLabelPlugin ? EquipTypeLabel.getEquipNameWithLabel(item) : item.name;
                         if (OneItemMessage && item_counts[item.name] === 1) {
-                            $gameMessage.add(OneItemMessage.format(item.iconIndex, item.name, item_counts[item.name]));
+                            $gameMessage.add(OneItemMessage.format(item.iconIndex, item_name, item_counts[item.name]));
                         } else if (ObtainItemMessage) {
-                            $gameMessage.add(ObtainItemMessage.format(item.iconIndex, item.name, item_counts[item.name]));
+                            $gameMessage.add(ObtainItemMessage.format(item.iconIndex, item_name, item_counts[item.name]));
                         }
                         gain_items.push(item);
                     }

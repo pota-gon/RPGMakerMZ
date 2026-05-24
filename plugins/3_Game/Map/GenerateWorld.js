@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.7.4(2026/1/25)
+ワールド自動生成 Ver0.7.5(2026/5/24)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.7.5: 0.7.4 で入れた判定でゲーム起動時にエラーになっていたバグ修正
 * Ver0.7.4
 - シード値の配列を Uint8Array を使うことでかすかに高速化
 - ワールド自動生成ではないマップでの競合の影響を少なくなるように修正
@@ -2207,13 +2208,12 @@ https://opensource.org/license/mit
     Game_Map.prototype.initialize = function() {
         _Game_Map_initialize.apply(this, arguments);
 
-        if (isGenerateWorld()) {
-            if (RetentionSaveData) {
-                this._potadra_auto = false;
-                this._potadra_worlds = [];
-            }
-            if (HeightSaveData) this._potadra_heights = [];
+        // ここでは $dataMapは読み込めないので判定廃止
+        if (RetentionSaveData) {
+            this._potadra_auto = false;
+            this._potadra_worlds = [];
         }
+        if (HeightSaveData) this._potadra_heights = [];
     };
 
     /**

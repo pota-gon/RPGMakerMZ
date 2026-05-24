@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-敵キャラレベル追加 Ver1.0.1(2026/2/8)
+敵キャラレベル追加 Ver1.0.2(2026/5/24)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Battle/Enemy/EnemyLevel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.2: 通常のドロップアイテムが入手できないバグ修正
 * Ver1.0.1: ランダム処理のアルゴリズム変更
 * Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
@@ -353,16 +354,11 @@ https://opensource.org/license/mit
      *                    1,ポーション,50,50,0>
      * @returns {}
      */
+    const _makeDropItems = Game_Enemy.prototype.makeDropItems;
     Game_Enemy.prototype.makeDropItems = function() {
-        const rate       = this.dropItemRate();
-        const drop_items = this.enemy().dropItems.reduce((r, di) => {
-            if (Potadra_random(di.denominator, rate)) {
-                return r.concat(this.itemObject(di.kind, di.dataId));
-            } else {
-                return r;
-            }
-        }, []);
+        const drop_items = _makeDropItems.apply(this, arguments);
 
+        const rate = this.dropItemRate();
         const data = Potadra_metaData(this.enemy().meta['ドロップ']);
         if (data) {
             for (const value of data) {
