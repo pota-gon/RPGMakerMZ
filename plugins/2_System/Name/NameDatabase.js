@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-名前データベース Ver1.0.5(2026/1/26)
+名前データベース Ver1.0.6(2026/5/31)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/2_System/Name/NameDatabase.js
 @orderAfter Game_Action_Result
@@ -8,6 +8,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.6: 初期装備を装備タイプ名(武器・盾など)で指定できるように修正
 * Ver1.0.5: ステート付加・解除の処理がおかしかった問題修正
 * Ver1.0.4: ステート有効度が正しく動作していないバグ修正
 * Ver1.0.3: スキル封印(特徴)を追加
@@ -37,14 +38,20 @@ https://opensource.org/license/mit
 
 **書式:**
 `<装備タイプ名: 装備名>`
-`<装備タイプ名(番号): 装備名>`
+`<装備タイプ名番号: 装備名>`
 
 **設定例:**
 ・武器に「銅の剣」を装備
 `<武器: 銅の剣>`
 
+・盾に「木の盾」を装備
+`<盾: 木の盾>`
+
 ・1番目の装飾品スロットに「指輪」を装備
 `<装飾品1: 指輪>`
+
+・2番目の装飾品スロットに「お守り」を装備
+`<装飾品2: お守り>`
 
 ### スキル追加(特徴)
 アクター、職業、武器、防具、ステートのメモ欄に記述することで
@@ -444,43 +451,39 @@ https://opensource.org/license/mit
             const meta    = actor.actor().meta;
             const dual    = actor.isDualWield();
 
+            // 同一装備タイプが何番目のスロットかをカウント
             const tmpType = {};
             const equipTypes = [];
-
-            // 装備
             for (let i = 0; i < slots.length; i++) {
                 const slot = slots[i];
-                const meta_datum = meta[ActorEquipMetaName + (i + 1)];
-                if (meta_datum) {
-                    const data = equipData(slot, dual);
-                    _equips[i].setEquip(slot === 1 || (slot === 2 && dual), Potadra_nameSearch(data, meta_datum.trim()));
-                }
                 if (tmpType[slot]) {
                     tmpType[slot]++;
-                    equipTypes[i] = tmpType[slot];
                 } else {
                     tmpType[slot] = 1;
-                    equipTypes[i] = 1;
                 }
+                equipTypes[i] = tmpType[slot];
             }
 
-            // 装備タイプ名
             for (let i = 0; i < slots.length; i++) {
-                const slot = slots[i];
-                const meta_datum = meta[ActorEquipMetaName + (i + 1)];
-                const data = equipData(slot, dual);
-                if (meta_datum) {
-                    _equips[i].setEquip(slot === 1 || (slot === 2 && dual), Potadra_nameSearch(data, meta_datum.trim()));
+                const slot     = slots[i];
+                const data     = equipData(slot, dual);
+                const isWeapon = slot === 1 || (slot === 2 && dual);
+                const typeNum  = equipTypes[i];
+                const typeName = $dataSystem.equipTypes[slot];
+
+                // 優先順位1: <装備1: 装備名> (インデックス番号指定)
+                let equip_meta = meta[ActorEquipMetaName + (i + 1)];
+                if (!equip_meta) {
+                    // 優先順位2: <武器1: 装備名> (装備タイプ名 + 番号)
+                    equip_meta = meta[typeName + typeNum];
+                }
+                if (!equip_meta && typeNum === 1) {
+                    // 優先順位3: <武器: 装備名> (装備タイプ名のみ、同タイプ1番目)
+                    equip_meta = meta[typeName];
                 }
 
-                let equip_meta = meta[$dataSystem.equipTypes[slot] + equipTypes[i]];
                 if (equip_meta) {
-                    _equips[i].setEquip(slot === 1 || (slot === 2 && dual), Potadra_nameSearch(data, equip_meta.trim()));
-                } else if (equipTypes[i] === 1) {
-                    equip_meta = meta[$dataSystem.equipTypes[slot]];
-                    if (equip_meta) {
-                        _equips[i].setEquip(slot === 1 || (slot === 2 && dual), Potadra_nameSearch(data, equip_meta.trim()));
-                    }
+                    _equips[i].setEquip(isWeapon, Potadra_nameSearch(data, equip_meta.trim()));
                 }
             }
         }

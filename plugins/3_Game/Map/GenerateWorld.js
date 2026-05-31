@@ -1,6 +1,6 @@
 /*:
 @plugindesc
-ワールド自動生成 Ver0.7.5(2026/5/24)
+ワールド自動生成 Ver0.7.6(2026/5/31)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/3_Game/Map/GenerateWorld.js
 @orderAfter wasdKeyMZ
@@ -9,6 +9,7 @@
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.7.6: 川の仮実装(他の地形整形(池と高い山)と干渉するのでデフォルトOFF)
 * Ver0.7.5: 0.7.4 で入れた判定でゲーム起動時にエラーになっていたバグ修正
 * Ver0.7.4
 - シード値の配列を Uint8Array を使うことでかすかに高速化
@@ -298,7 +299,7 @@ https://opensource.org/license/mit
 @type struct<Tilesets>[]
 @text タイルセット設定
 @desc タイルセットごとに必要な設定
-@default ["{\"tile_set_id\":\"1\",\"boat_tile_ids\":\"[\\\"2432\\\"]\",\"ship_tile_ids\":\"[\\\"2048\\\"]\",\"airship_tile_ids\":\"[\\\"2624\\\", \\\"2720\\\"]\"}"]
+@default ["{\"tile_set_id\":\"1\",\"pond\":\"true\",\"bridge\":\"true\",\"river\":\"true\",\"river_rate\":\"15\",\"river_size2_height\":\"0.75\",\"boat_tile_ids\":\"[\\\"2432\\\"]\",\"ship_tile_ids\":\"[\\\"2048\\\"]\",\"airship_tile_ids\":\"[\\\"2624\\\", \\\"2720\\\"]\"}"]
 
 @param Vehicle
 @type boolean
@@ -865,6 +866,29 @@ https://opensource.org/license/mit
 @on 出現する
 @off 出現しない
 @default true
+
+@param river
+@type boolean
+@text 川
+@desc 川を出現させるか
+@on 出現する
+@off 出現しない
+@default false
+
+@param river_rate
+@type number
+@text 川の発生確率(%)
+@desc 山タイルから川が発生する確率(0～100)
+@default 15
+@min 0
+@max 100
+
+@param river_size2_height
+@type string
+@text サイズ2川の最低高さ
+@desc サイズ2マスの川が発生する最低高さ(0.0～1.0)
+高い山ほど大きな川が発生します
+@default 0.75
 
 @param boat_tile_ids
 @type number[]
@@ -1772,6 +1796,11 @@ https://opensource.org/license/mit
 
     let Pond, Bridge, BoatTileIds, ShipTileIds, AirshipTileIds;
 
+    // 川関連の変数
+    let River = false;
+    let RiverRate = 15;
+    let RiverSize2Height = 0.75;
+
     // 他プラグイン連携(パラメータ取得)
     const backup_params  = Potadra_getPluginParams('BackUpDatabase');
     const backUpPathText = backup_params ? String(backup_params.backUpPathText || '/backup') : '/backup';
@@ -1800,6 +1829,10 @@ https://opensource.org/license/mit
         // 3. 地形の整形
         fixWorld();
         endTime = showTime('3. 地形の整形', endTime);
+
+        // 3.5. 川の生成
+        if (River) generateRivers();
+        endTime = showTime('3.5. 川の生成', endTime);
 
         // 4. オートタイル配置・イベント設定
         setAutoTileAndEvents();
@@ -2036,6 +2069,318 @@ https://opensource.org/license/mit
     }
 
     //==============================================================================
+    // 3.5. 川の生成
+    //==============================================================================
+
+    /**
+     * 川の生成
+     * 山タイルを起点に、標高が低い方向へ流れ、海タイルに変換する
+     */
+    function generateRivers() {
+        const mapW = $dataMap.width;
+        const mapH = $dataMap.height;
+
+        // 川を流せないマージン(残り10x10マスは実施しない)
+        const MARGIN = 10;
+
+        // 川タイルID: 海(2048)を川として使用
+        const RIVER_TILE = 2048;
+
+        // 海タイルID
+        const SEA_TILE = 2048;
+        // 山タイルID(layer2)
+        const MOUNTAIN_TILE = 3872;
+
+        // 上下左右の方向
+        const DIRS = [
+            { dx: 0, dy: -1 }, // 上
+            { dx: 0, dy:  1 }, // 下
+            { dx: -1, dy: 0 }, // 左
+            { dx:  1, dy: 0 }  // 右
+        ];
+
+        /**
+         * 座標が有効範囲内か
+         */
+        function inBounds(x, y) {
+            return x >= 0 && x < mapW && y >= 0 && y < mapH;
+        }
+
+        /**
+         * 座標がマージン内(端から10マス以内)か
+         */
+        function inMargin(x, y) {
+            return x < MARGIN || x >= mapW - MARGIN || y < MARGIN || y >= mapH - MARGIN;
+        }
+
+        /**
+         * 指定座標の現在のタイルID(layer0)を取得
+         */
+        function getTile(x, y) {
+            return getMapData(x, y, 0) || 0;
+        }
+
+        /**
+         * 指定座標が海かどうか
+         */
+        function isSea(x, y) {
+            if (!inBounds(x, y)) return false;
+            return getTile(x, y) === SEA_TILE;
+        }
+
+        /**
+         * 周囲4マスの高さの最小値を返す
+         */
+        function minNeighborHeight(x, y) {
+            let minH = Infinity;
+            for (const d of DIRS) {
+                const nx = x + d.dx;
+                const ny = y + d.dy;
+                if (!inBounds(nx, ny)) continue;
+                const h = getHeight(nx, ny);
+                if (h !== undefined && h < minH) minH = h;
+            }
+            return minH === Infinity ? 1 : minH;
+        }
+
+        /**
+         * 1マス幅の川を1本流す
+         * @param {number} startX - 起点X
+         * @param {number} startY - 起点Y
+         * @returns {boolean} 海まで到達したか
+         */
+        function flowRiver1(startX, startY) {
+            const path = [];
+            const visited = new Set();
+            let cx = startX;
+            let cy = startY;
+            const MAX_STEPS = mapW + mapH; // 無限ループ防止
+
+            for (let step = 0; step < MAX_STEPS; step++) {
+                const key = cx + '_' + cy;
+                if (visited.has(key)) break; // ループ検出
+                visited.add(key);
+
+                // マージン内に入ったら終了
+                if (inMargin(cx, cy)) break;
+
+                // 海に到達したら成功
+                if (isSea(cx, cy)) {
+                    // パスを川タイルに変換
+                    for (const p of path) {
+                        setTileId(p.x, p.y, 0, RIVER_TILE);
+                        setTileId(p.x, p.y, 1, 0);
+                    }
+                    return true;
+                }
+
+                const currentH = getHeight(cx, cy);
+                if (currentH === undefined) break;
+
+                // 周囲が現在より高くなったら終端(川が行き詰まり)
+                const minH = minNeighborHeight(cx, cy);
+                if (minH >= currentH && step > 0) {
+                    // 行き詰まり: 終端を海タイルに変換して終了
+                    for (const p of path) {
+                        setTileId(p.x, p.y, 0, RIVER_TILE);
+                        setTileId(p.x, p.y, 1, 0);
+                    }
+                    // 終端を海に
+                    setTileId(cx, cy, 0, SEA_TILE);
+                    setTileId(cx, cy, 1, 0);
+                    return true;
+                }
+
+                path.push({ x: cx, y: cy });
+
+                // 上下左右をシャッフルして低い方向を選ぶ
+                const shuffled = DIRS.slice().sort(() => Math.random() - 0.5);
+                let moved = false;
+                let bestH = currentH;
+                let bestX = -1;
+                let bestY = -1;
+
+                // まず現在より低いマスを探す
+                for (const d of shuffled) {
+                    const nx = cx + d.dx;
+                    const ny = cy + d.dy;
+                    if (!inBounds(nx, ny)) continue;
+                    if (inMargin(nx, ny)) continue;
+                    if (visited.has(nx + '_' + ny)) continue;
+                    const nh = getHeight(nx, ny);
+                    if (nh === undefined) continue;
+                    if (nh < bestH) {
+                        bestH = nh;
+                        bestX = nx;
+                        bestY = ny;
+                        moved = true;
+                    }
+                }
+
+                if (moved) {
+                    cx = bestX;
+                    cy = bestY;
+                } else {
+                    // 低い方向がない場合は海に向かう方向を探す
+                    let foundSea = false;
+                    for (const d of shuffled) {
+                        const nx = cx + d.dx;
+                        const ny = cy + d.dy;
+                        if (isSea(nx, ny)) {
+                            cx = nx;
+                            cy = ny;
+                            foundSea = true;
+                            break;
+                        }
+                    }
+                    if (!foundSea) break;
+                }
+            }
+            return false;
+        }
+
+        /**
+         * 2マス幅の川を1本流す
+         * @param {number} startX - 起点X
+         * @param {number} startY - 起点Y
+         * @returns {boolean} 海まで到達したか
+         */
+        function flowRiver2(startX, startY) {
+            const path = [];
+            const visited = new Set();
+            let cx = startX;
+            let cy = startY;
+            const MAX_STEPS = mapW + mapH;
+
+            for (let step = 0; step < MAX_STEPS; step++) {
+                const key = cx + '_' + cy;
+                if (visited.has(key)) break;
+                visited.add(key);
+
+                // マージン内に入ったら終了(2マス幅なので余裕を持たせる)
+                if (inMargin(cx, cy) || inMargin(cx + 1, cy) || inMargin(cx, cy + 1)) break;
+
+                // 海に到達したら成功
+                if (isSea(cx, cy)) {
+                    for (const p of path) {
+                        setTileId(p.x,     p.y,     0, RIVER_TILE);
+                        setTileId(p.x,     p.y,     1, 0);
+                        if (inBounds(p.x + 1, p.y)) {
+                            setTileId(p.x + 1, p.y, 0, RIVER_TILE);
+                            setTileId(p.x + 1, p.y, 1, 0);
+                        }
+                        if (inBounds(p.x, p.y + 1)) {
+                            setTileId(p.x, p.y + 1, 0, RIVER_TILE);
+                            setTileId(p.x, p.y + 1, 1, 0);
+                        }
+                        if (inBounds(p.x + 1, p.y + 1)) {
+                            setTileId(p.x + 1, p.y + 1, 0, RIVER_TILE);
+                            setTileId(p.x + 1, p.y + 1, 1, 0);
+                        }
+                    }
+                    return true;
+                }
+
+                const currentH = getHeight(cx, cy);
+                if (currentH === undefined) break;
+
+                const minH = minNeighborHeight(cx, cy);
+                if (minH >= currentH && step > 0) {
+                    for (const p of path) {
+                        setTileId(p.x,     p.y,     0, RIVER_TILE);
+                        setTileId(p.x,     p.y,     1, 0);
+                        if (inBounds(p.x + 1, p.y)) {
+                            setTileId(p.x + 1, p.y, 0, RIVER_TILE);
+                            setTileId(p.x + 1, p.y, 1, 0);
+                        }
+                        if (inBounds(p.x, p.y + 1)) {
+                            setTileId(p.x, p.y + 1, 0, RIVER_TILE);
+                            setTileId(p.x, p.y + 1, 1, 0);
+                        }
+                        if (inBounds(p.x + 1, p.y + 1)) {
+                            setTileId(p.x + 1, p.y + 1, 0, RIVER_TILE);
+                            setTileId(p.x + 1, p.y + 1, 1, 0);
+                        }
+                    }
+                    setTileId(cx, cy, 0, SEA_TILE);
+                    setTileId(cx, cy, 1, 0);
+                    return true;
+                }
+
+                path.push({ x: cx, y: cy });
+
+                const shuffled = DIRS.slice().sort(() => Math.random() - 0.5);
+                let moved = false;
+                let bestH = currentH;
+                let bestX = -1;
+                let bestY = -1;
+
+                for (const d of shuffled) {
+                    const nx = cx + d.dx;
+                    const ny = cy + d.dy;
+                    if (!inBounds(nx, ny)) continue;
+                    if (inMargin(nx, ny)) continue;
+                    if (visited.has(nx + '_' + ny)) continue;
+                    const nh = getHeight(nx, ny);
+                    if (nh === undefined) continue;
+                    if (nh < bestH) {
+                        bestH = nh;
+                        bestX = nx;
+                        bestY = ny;
+                        moved = true;
+                    }
+                }
+
+                if (moved) {
+                    cx = bestX;
+                    cy = bestY;
+                } else {
+                    let foundSea = false;
+                    for (const d of shuffled) {
+                        const nx = cx + d.dx;
+                        const ny = cy + d.dy;
+                        if (isSea(nx, ny)) {
+                            cx = nx;
+                            cy = ny;
+                            foundSea = true;
+                            break;
+                        }
+                    }
+                    if (!foundSea) break;
+                }
+            }
+            return false;
+        }
+
+        // 全マスをスキャンして山タイルを収集
+        for (let x = MARGIN; x < mapW - MARGIN; x++) {
+            for (let y = MARGIN; y < mapH - MARGIN; y++) {
+                // タイル固定リージョンはスキップ
+                const region = getRegion(x, y);
+                if (checkRegion(region, TileRegion) || checkRegions(region, LockTileRegion, LockTileRegions)) {
+                    continue;
+                }
+
+                const layer2 = edgeTileId(x, y, 1, 0);
+                if (layer2 !== MOUNTAIN_TILE) continue;
+
+                const height = getHeight(x, y);
+                if (height === undefined) continue;
+
+                // 確率判定
+                if (Math.random() * 100 >= RiverRate) continue;
+
+                // サイズ2マスの川: より高い山から発生
+                if (height >= RiverSize2Height) {
+                    flowRiver2(x, y);
+                } else {
+                    flowRiver1(x, y);
+                }
+            }
+        }
+    }
+
+    //==============================================================================
     // 4. オートタイル配置・イベントの設定
     //==============================================================================
     function setAutoTileAndEvents() {
@@ -2230,11 +2575,14 @@ https://opensource.org/license/mit
                 const tile_set = JSON.parse(s);
                 const tile_set_id = Potadra_checkName($dataTilesets, tile_set.tile_set_id);
                 if ($gameMap.tilesetId() === tile_set_id) {
-                    Pond           = Potadra_convertBool(tile_set.pond);
-                    Bridge         = Potadra_convertBool(tile_set.bridge);
-                    BoatTileIds    = Potadra_numberArray(tile_set.boat_tile_ids);
-                    ShipTileIds    = Potadra_numberArray(tile_set.ship_tile_ids);
-                    AirshipTileIds = Potadra_numberArray(tile_set.airship_tile_ids);
+                    Pond              = Potadra_convertBool(tile_set.pond);
+                    Bridge            = Potadra_convertBool(tile_set.bridge);
+                    River             = Potadra_convertBool(tile_set.river);
+                    RiverRate         = Number(tile_set.river_rate || 15);
+                    RiverSize2Height  = Number(tile_set.river_size2_height || 0.75);
+                    BoatTileIds       = Potadra_numberArray(tile_set.boat_tile_ids);
+                    ShipTileIds       = Potadra_numberArray(tile_set.ship_tile_ids);
+                    AirshipTileIds    = Potadra_numberArray(tile_set.airship_tile_ids);
                 }
             }
         }
