@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ステート名参照制御文字 Ver1.0.2(2026/1/10)
+ステート名参照制御文字 Ver1.0.3(2026/6/28)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/2_System/Ex/ExState.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.3: 名前に [] を含むステートで表示がおかしくなるバグ修正
 * Ver1.0.2: 検索にキャッシュ追加、ヘルプ修正
 * Ver1.0.1: 2つ以上同時に使用出来ないバグ修正
 * Ver1.0.0: 初期版完成
@@ -77,7 +78,7 @@ https://opensource.org/license/mit
     const _Window_Base_convertEscapeCharacters = Window_Base.prototype.convertEscapeCharacters;
     Window_Base.prototype.convertEscapeCharacters = function(text) {
         let tmp_text = _Window_Base_convertEscapeCharacters.apply(this, arguments);
-        tmp_text = tmp_text.replace(/\x1bSS\[(.+?)\]/gi, (_, p1) =>
+        tmp_text = tmp_text.replace(/\x1bSS\[(.+)\]/gi, (_, p1) =>
             "\x1bI[" + Potadra_nameSearch($dataStates, p1, 'iconIndex') + "]" + p1
         );
         return tmp_text;
