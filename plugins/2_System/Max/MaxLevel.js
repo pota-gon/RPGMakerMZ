@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-レベル上限突破 Ver1.0.0(2025/10/19)
+レベル上限突破 Ver1.0.1(2026/6/28)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/2_System/Max/MaxLevel.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.0.1: 攻撃力・防御力・魔法力・魔法防御・敏捷性・運を個別に設定できるパラメータ追加
 * Ver1.0.0: 安定したのでバージョンを 1.0.0 に変更
 
 Copyright (c) 2026 ポテトードラゴン
@@ -154,10 +155,58 @@ https://opensource.org/license/mit
     @parent Init
     @type number
     @text 能力初期値(通常)
-    @desc タグを指定しない場合の初期値
+    @desc 攻撃力～運の個別設定が空欄の場合に使われるまとめ設定
     @default 10
     @min 0
     @max 999999999999999
+
+        @param NormalInitAtk
+        @parent NormalInitParam
+        @type number
+        @text 攻撃力初期値(通常)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(通常)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalInitDef
+        @parent NormalInitParam
+        @type number
+        @text 防御力初期値(通常)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(通常)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalInitMat
+        @parent NormalInitParam
+        @type number
+        @text 魔法力初期値(通常)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(通常)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalInitMdf
+        @parent NormalInitParam
+        @type number
+        @text 魔法防御初期値(通常)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(通常)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalInitAgi
+        @parent NormalInitParam
+        @type number
+        @text 敏捷性初期値(通常)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(通常)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalInitLuk
+        @parent NormalInitParam
+        @type number
+        @text 運初期値(通常)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(通常)を使用)
+        @min 0
+        @max 999999999999999
 
     @param MobInitHp
     @parent Init
@@ -181,10 +230,58 @@ https://opensource.org/license/mit
     @parent Init
     @type number
     @text 能力初期値(モブ)
-    @desc タグを指定しない場合の初期値
+    @desc 攻撃力～運の個別設定が空欄の場合に使われるまとめ設定
     @default 5
     @min 0
     @max 999999999999999
+
+        @param MobInitAtk
+        @parent MobInitParam
+        @type number
+        @text 攻撃力初期値(モブ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(モブ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param MobInitDef
+        @parent MobInitParam
+        @type number
+        @text 防御力初期値(モブ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(モブ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param MobInitMat
+        @parent MobInitParam
+        @type number
+        @text 魔法力初期値(モブ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(モブ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param MobInitMdf
+        @parent MobInitParam
+        @type number
+        @text 魔法防御初期値(モブ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(モブ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param MobInitAgi
+        @parent MobInitParam
+        @type number
+        @text 敏捷性初期値(モブ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(モブ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param MobInitLuk
+        @parent MobInitParam
+        @type number
+        @text 運初期値(モブ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(モブ)を使用)
+        @min 0
+        @max 999999999999999
 
     @param SmallFishInitHp
     @parent Init
@@ -208,10 +305,58 @@ https://opensource.org/license/mit
     @parent Init
     @type number
     @text 能力初期値(ザコ)
-    @desc タグを指定しない場合の初期値
+    @desc 攻撃力～運の個別設定が空欄の場合に使われるまとめ設定
     @default 1
     @min 0
     @max 999999999999999
+
+        @param SmallFishInitAtk
+        @parent SmallFishInitParam
+        @type number
+        @text 攻撃力初期値(ザコ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(ザコ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param SmallFishInitDef
+        @parent SmallFishInitParam
+        @type number
+        @text 防御力初期値(ザコ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(ザコ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param SmallFishInitMat
+        @parent SmallFishInitParam
+        @type number
+        @text 魔法力初期値(ザコ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(ザコ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param SmallFishInitMdf
+        @parent SmallFishInitParam
+        @type number
+        @text 魔法防御初期値(ザコ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(ザコ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param SmallFishInitAgi
+        @parent SmallFishInitParam
+        @type number
+        @text 敏捷性初期値(ザコ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(ザコ)を使用)
+        @min 0
+        @max 999999999999999
+
+        @param SmallFishInitLuk
+        @parent SmallFishInitParam
+        @type number
+        @text 運初期値(ザコ)
+        @desc タグを指定しない場合の初期値(空欄で能力初期値(ザコ)を使用)
+        @min 0
+        @max 999999999999999
 
 @param Increase
 @text 成長率
@@ -239,10 +384,58 @@ https://opensource.org/license/mit
     @parent Increase
     @type number
     @text 能力成長率
-    @desc タグを指定しない場合の成長率
+    @desc 攻撃力～運の個別設定が空欄の場合に使われるまとめ設定
     @default 1
     @min 0
     @max 999999999999999
+
+        @param NormalIncreaseAtk
+        @parent NormalIncreaseParam
+        @type number
+        @text 攻撃力成長率
+        @desc タグを指定しない場合の成長率(空欄で能力成長率を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalIncreaseDef
+        @parent NormalIncreaseParam
+        @type number
+        @text 防御力成長率
+        @desc タグを指定しない場合の成長率(空欄で能力成長率を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalIncreaseMat
+        @parent NormalIncreaseParam
+        @type number
+        @text 魔法力成長率
+        @desc タグを指定しない場合の成長率(空欄で能力成長率を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalIncreaseMdf
+        @parent NormalIncreaseParam
+        @type number
+        @text 魔法防御成長率
+        @desc タグを指定しない場合の成長率(空欄で能力成長率を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalIncreaseAgi
+        @parent NormalIncreaseParam
+        @type number
+        @text 敏捷性成長率
+        @desc タグを指定しない場合の成長率(空欄で能力成長率を使用)
+        @min 0
+        @max 999999999999999
+
+        @param NormalIncreaseLuk
+        @parent NormalIncreaseParam
+        @type number
+        @text 運成長率
+        @desc タグを指定しない場合の成長率(空欄で能力成長率を使用)
+        @min 0
+        @max 999999999999999
 
 @command change_level
 @text レベルの変更
@@ -394,6 +587,31 @@ https://opensource.org/license/mit
     const NormalIncreaseMp    = Number(params.NormalIncreaseMp || 0);
     const NormalIncreaseParam = Number(params.NormalIncreaseParam || 0);
 
+    /**
+     * 個別パラメータを取得する(空欄ならまとめ設定にフォールバック)
+     *
+     * @param {string} key - params のキー名
+     * @param {number} fallback - まとめ設定の値
+     * @returns {number} 解決済みの値
+     */
+    function resolveParam(key, fallback) {
+        const v = params[key];
+        return (v !== undefined && v !== '') ? Number(v) : fallback;
+    }
+
+    // paramId ごとのデフォルト初期値・成長率テーブル
+    // [通常初期値, モブ初期値, ザコ初期値, 通常成長率]
+    const ParamDefaults = [
+        [NormalInitHp,                                          MobInitHp,                                          SmallFishInitHp,                                          NormalIncreaseHp],                                          // 0: HP
+        [NormalInitMp,                                          MobInitMp,                                          SmallFishInitMp,                                          NormalIncreaseMp],                                          // 1: MP
+        [resolveParam('NormalInitAtk', NormalInitParam),        resolveParam('MobInitAtk', MobInitParam),           resolveParam('SmallFishInitAtk', SmallFishInitParam),      resolveParam('NormalIncreaseAtk', NormalIncreaseParam)],    // 2: 攻撃力
+        [resolveParam('NormalInitDef', NormalInitParam),        resolveParam('MobInitDef', MobInitParam),           resolveParam('SmallFishInitDef', SmallFishInitParam),      resolveParam('NormalIncreaseDef', NormalIncreaseParam)],    // 3: 防御力
+        [resolveParam('NormalInitMat', NormalInitParam),        resolveParam('MobInitMat', MobInitParam),           resolveParam('SmallFishInitMat', SmallFishInitParam),      resolveParam('NormalIncreaseMat', NormalIncreaseParam)],    // 4: 魔法力
+        [resolveParam('NormalInitMdf', NormalInitParam),        resolveParam('MobInitMdf', MobInitParam),           resolveParam('SmallFishInitMdf', SmallFishInitParam),      resolveParam('NormalIncreaseMdf', NormalIncreaseParam)],    // 5: 魔法防御
+        [resolveParam('NormalInitAgi', NormalInitParam),        resolveParam('MobInitAgi', MobInitParam),           resolveParam('SmallFishInitAgi', SmallFishInitParam),      resolveParam('NormalIncreaseAgi', NormalIncreaseParam)],    // 6: 敏捷性
+        [resolveParam('NormalInitLuk', NormalInitParam),        resolveParam('MobInitLuk', MobInitParam),           resolveParam('SmallFishInitLuk', SmallFishInitParam),      resolveParam('NormalIncreaseLuk', NormalIncreaseParam)],    // 7: 運
+    ];
+
     // 他プラグイン連携(プラグインの導入有無)
     const NameDatabase = Potadra_isPlugin('NameDatabase');
 
@@ -502,33 +720,16 @@ https://opensource.org/license/mit
             const params      = Potadra_metaData(actor.meta[GrowName], ',');
             const small_fish  = Potadra_meta(actor.meta, SmallFishName);
             const mob         = Potadra_meta(actor.meta, MobName);
-            if (paramId === 0) {
-                param = NormalIncreaseHp;
-                if (small_fish) {
-                    init_param = SmallFishInitHp;
-                } else if (mob) {
-                    init_param = MobInitHp;
-                } else {
-                    init_param = NormalInitHp;
-                }
-            } else if (paramId == 1) {
-                param = NormalIncreaseMp;
-                if (small_fish) {
-                    init_param = SmallFishInitMp;
-                } else if (mob) {
-                    init_param = MobInitMp;
-                } else {
-                    init_param = NormalInitMp;
-                }
+
+            const defaults = ParamDefaults[paramId] || ParamDefaults[2];
+            // defaults: [通常初期値, モブ初期値, ザコ初期値, 通常成長率]
+            param = defaults[3];
+            if (small_fish) {
+                init_param = defaults[2];
+            } else if (mob) {
+                init_param = defaults[1];
             } else {
-                param = NormalIncreaseParam;
-                if (small_fish) {
-                    init_param = MobInitParam;
-                } else if (mob) {
-                    init_param = SmallFishInitParam;
-                } else {
-                    init_param = NormalInitParam;
-                }
+                init_param = defaults[0];
             }
 
             if (init_params) init_param = Number(init_params[paramId]);

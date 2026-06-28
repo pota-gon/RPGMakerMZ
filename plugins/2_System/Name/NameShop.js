@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-名前ショップ Ver1.3.8(2025/1/18)
+名前ショップ Ver1.3.9(2026/6/28)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/refs/heads/main/plugins/2_System/Name/NameShop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.3.9: 名前検索用のパラメータを商品名の子要素に変更
 * Ver1.3.8
 - 名前検索用のパラメータ位置変更
 - ヘルプ更新
@@ -53,26 +54,29 @@ https://opensource.org/license/mit
 @text 商品名
 @desc 商品名(アイテム)を名前で指定
 
+    @param item
+    @parent name
+    @type item
+    @text アイテム名検索用
+    @desc このパラメータはデータとしては使用しません
+
+    @param weapon
+    @parent name
+    @type weapon
+    @text 武器名検索用
+    @desc このパラメータはデータとしては使用しません
+
+    @param armor
+    @parent name
+    @type armor
+    @text 防具名検索用
+    @desc このパラメータはデータとしては使用しません
+
 @param price
 @type number
 @text 価格
 @desc 価格を指定。0: データベースの価格を適用
 @default 0
-
-@param item
-@type item
-@text アイテム名検索用
-@desc このパラメータはデータとしては使用しません
-
-@param weapon
-@type weapon
-@text 武器名検索用
-@desc このパラメータはデータとしては使用しません
-
-@param armor
-@type armor
-@text 防具名検索用
-@desc このパラメータはデータとしては使用しません
 */
 (() => {
     'use strict';
